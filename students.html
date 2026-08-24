@@ -1,38 +1,46 @@
 <!DOCTYPE html>
 <html lang="kn">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Students Database</title>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>
+Students Database - School Result System
+</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
 *{
     box-sizing:border-box;
+    margin:0;
+    padding:0;
 }
 
 body{
-    margin:0;
     font-family:Arial,"Noto Sans Kannada",sans-serif;
-    background:#f1f5f9;
-    color:#172554;
+    background:#f3f7fc;
+    color:#172033;
 }
 
 .header{
     background:linear-gradient(90deg,#17477f,#1875b5);
     color:white;
     text-align:center;
-    padding:18px;
+    padding:20px;
 }
 
 .header h1{
-    margin:0;
-    font-size:25px;
+    font-size:26px;
+    margin-bottom:6px;
 }
 
 .header p{
-    margin:5px 0 0;
     font-size:16px;
 }
 
@@ -44,7 +52,7 @@ body{
 
 .card{
     background:white;
-    border-radius:18px;
+    border-radius:16px;
     padding:22px;
     margin-bottom:20px;
     box-shadow:0 5px 20px rgba(0,0,0,.08);
@@ -52,22 +60,17 @@ body{
 
 .title{
     text-align:center;
-    margin-bottom:22px;
+    color:#17477f;
+    margin-bottom:20px;
 }
 
 .title h2{
-    margin:0;
-    font-size:28px;
-}
-
-.title p{
-    margin:5px 0;
-    color:#475569;
+    font-size:27px;
 }
 
 .grid{
     display:grid;
-    grid-template-columns:1fr 1fr 1fr auto;
+    grid-template-columns:1fr 1fr auto auto;
     gap:15px;
     align-items:end;
 }
@@ -80,10 +83,10 @@ body{
 
 label{
     font-weight:bold;
-    color:#1e293b;
 }
 
-input,select{
+input,
+select{
     width:100%;
     padding:12px;
     border:1px solid #cbd5e1;
@@ -92,10 +95,10 @@ input,select{
     background:white;
 }
 
-input:focus,select:focus{
+input:focus,
+select:focus{
     outline:none;
     border-color:#2563eb;
-    box-shadow:0 0 0 2px rgba(37,99,235,.12);
 }
 
 button{
@@ -130,6 +133,13 @@ button{
 .delete-btn{
     background:#dc2626;
     color:white;
+    padding:8px 12px;
+}
+
+.edit-btn{
+    background:#f59e0b;
+    color:white;
+    padding:8px 12px;
 }
 
 .message{
@@ -141,13 +151,13 @@ button{
     text-align:center;
 }
 
-.success{
+.message.success{
     display:block;
     background:#dcfce7;
     color:#166534;
 }
 
-.error{
+.message.error{
     display:block;
     background:#fee2e2;
     color:#991b1b;
@@ -176,10 +186,11 @@ button{
 table{
     width:100%;
     border-collapse:collapse;
-    min-width:1000px;
+    min-width:1200px;
 }
 
-th,td{
+th,
+td{
     border:1px solid #dbe4ee;
     padding:10px;
     text-align:center;
@@ -188,6 +199,7 @@ th,td{
 th{
     background:#17477f;
     color:white;
+    white-space:nowrap;
 }
 
 tr:nth-child(even){
@@ -200,24 +212,27 @@ tr:nth-child(even){
     justify-content:center;
 }
 
-.excel-section{
-    margin-top:20px;
-    padding-top:20px;
-    border-top:1px solid #e2e8f0;
+.loading{
+    text-align:center;
+    padding:25px;
+    color:#1769aa;
+    font-weight:bold;
 }
 
 @media(max-width:900px){
+
     .grid{
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:1fr;
     }
 
     .form-grid{
         grid-template-columns:1fr 1fr;
     }
+
 }
 
 @media(max-width:600px){
-    .grid,
+
     .form-grid{
         grid-template-columns:1fr;
     }
@@ -225,304 +240,624 @@ tr:nth-child(even){
     .container{
         width:98%;
     }
+
 }
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <div class="header">
-    <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
-    <p>ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
-    <p>Students Database / ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ</p>
+
+<h1>
+ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ
+</h1>
+
+<p>
+ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ
+</p>
+
+<p>
+Students Database / ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ
+</p>
+
 </div>
+
 
 <div class="container">
 
-    <!-- CLASS SELECTION -->
-    <div class="card">
 
-        <div class="title">
-            <h2>ವಿದ್ಯಾರ್ಥಿಗಳ Database</h2>
-            <p>Class & Division Selection</p>
-        </div>
+<!-- =========================
+     CLASS SELECTION
+========================= -->
 
-        <div id="message" class="message"></div>
+<div class="card">
 
-        <div class="grid">
+<div class="title">
 
-            <div class="field">
-                <label>ತರಗತಿ / Class</label>
-                <select id="classSelect">
-                    <option value="">-- ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="8">8ನೇ ತರಗತಿ</option>
-                    <option value="9">9ನೇ ತರಗತಿ</option>
-                    <option value="10">10ನೇ ತರಗತಿ</option>
-                </select>
-            </div>
+<h2>
+ವಿದ್ಯಾರ್ಥಿಗಳ Database
+</h2>
 
-            <div class="field">
-                <label>ವಿಭಾಗ / Division</label>
-                <select id="sectionSelect">
-                    <option value="">-- ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                </select>
-            </div>
-
-            <button class="load-btn" onclick="loadStudents()">
-                🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
-            </button>
-
-            <button class="add-btn" onclick="showAddForm()">
-                ➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
-            </button>
-
-        </div>
-    </div>
-
-
-    <!-- STUDENT FORM -->
-    <div class="card student-form" id="studentForm">
-
-        <div class="title">
-            <h2>ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ</h2>
-        </div>
-
-        <input type="hidden" id="studentId">
-
-        <div class="form-grid">
-
-            <div class="field">
-                <label>Roll No / Reg No</label>
-                <input id="rollNo" type="text">
-            </div>
-
-            <div class="field">
-                <label>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</label>
-                <input id="studentName" type="text">
-            </div>
-
-            <div class="field">
-                <label>ತಂದೆಯ ಹೆಸರು</label>
-                <input id="fatherName" type="text">
-            </div>
-
-            <div class="field">
-                <label>ತಾಯಿಯ ಹೆಸರು</label>
-                <input id="motherName" type="text">
-            </div>
-
-            <div class="field">
-                <label>ಲಿಂಗ / Gender</label>
-                <select id="gender">
-                    <option value="">-- ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="Male">Male / ಗಂಡು</option>
-                    <option value="Female">Female / ಹೆಣ್ಣು</option>
-                </select>
-            </div>
-
-            <div class="field">
-                <label>ಜನ್ಮ ದಿನಾಂಕ</label>
-                <input id="dob" type="date">
-            </div>
-
-            <div class="field">
-                <label>SATS No</label>
-                <input id="satsNo" type="text">
-            </div>
-
-            <div class="field">
-                <label>PEN Number</label>
-                <input id="penNumber" type="text">
-            </div>
-
-            <div class="field">
-                <label>ಜಾತಿ / Caste</label>
-                <input id="caste" type="text">
-            </div>
-
-            <div class="field">
-                <label>ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</label>
-                <input id="mobile" type="text">
-            </div>
-
-        </div>
-
-        <div class="form-actions">
-
-            <button class="save-btn" onclick="saveStudent()">
-                💾 Save Student
-            </button>
-
-            <button class="cancel-btn" onclick="cancelForm()">
-                Cancel
-            </button>
-
-        </div>
-    </div>
-
-
-    <!-- STUDENT LIST -->
-    <div class="card">
-
-        <div class="title">
-            <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
-        </div>
-
-        <div class="table-wrap">
-
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>Sl.No</th>
-                        <th>Roll No</th>
-                        <th>Student Name</th>
-                        <th>Father Name</th>
-                        <th>Mother Name</th>
-                        <th>Gender</th>
-                        <th>DOB</th>
-                        <th>SATS No</th>
-                        <th>PEN</th>
-                        <th>Caste</th>
-                        <th>Mobile</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-
-                <tbody id="studentTableBody">
-                    <tr>
-                        <td colspan="12">
-                            ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
-                        </td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-    </div>
+<p>
+Class & Division Selection
+</p>
 
 </div>
+
+
+<div id="message"
+class="message">
+</div>
+
+
+<div class="grid">
+
+
+<div class="field">
+
+<label>
+ತರಗತಿ / Class
+</label>
+
+<select id="classSelect">
+
+<option value="">
+-- ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ --
+</option>
+
+<option value="8">
+8ನೇ ತರಗತಿ
+</option>
+
+<option value="9">
+9ನೇ ತರಗತಿ
+</option>
+
+<option value="10">
+10ನೇ ತರಗತಿ
+</option>
+
+</select>
+
+</div>
+
+
+<div class="field">
+
+<label>
+ವಿಭಾಗ / Division
+</label>
+
+<select id="sectionSelect">
+
+<option value="">
+-- ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ --
+</option>
+
+<option value="A">
+A
+</option>
+
+<option value="B">
+B
+</option>
+
+<option value="C">
+C
+</option>
+
+</select>
+
+</div>
+
+
+<button
+class="load-btn"
+onclick="loadStudents()">
+
+🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
+
+</button>
+
+
+<button
+class="add-btn"
+onclick="showAddForm()">
+
+➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
+
+</button>
+
+
+</div>
+
+</div>
+
+
+
+<!-- =========================
+     STUDENT FORM
+========================= -->
+
+<div
+class="card student-form"
+id="studentForm">
+
+
+<div class="title">
+
+<h2>
+ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ
+</h2>
+
+</div>
+
+
+<input
+type="hidden"
+id="studentId">
+
+
+<div class="form-grid">
+
+
+<div class="field">
+
+<label>
+Roll No / Reg No
+</label>
+
+<input
+id="rollNo"
+type="text"
+placeholder="ಉದಾ: 01">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು
+</label>
+
+<input
+id="studentName"
+type="text"
+placeholder="ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ತಂದೆಯ ಹೆಸರು
+</label>
+
+<input
+id="fatherName"
+type="text"
+placeholder="ತಂದೆಯ ಹೆಸರು">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ತಾಯಿಯ ಹೆಸರು
+</label>
+
+<input
+id="motherName"
+type="text"
+placeholder="ತಾಯಿಯ ಹೆಸರು">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ಲಿಂಗ / Gender
+</label>
+
+<select id="gender">
+
+<option value="">
+-- ಆಯ್ಕೆ ಮಾಡಿ --
+</option>
+
+<option value="Male">
+Male / ಗಂಡು
+</option>
+
+<option value="Female">
+Female / ಹೆಣ್ಣು
+</option>
+
+</select>
+
+</div>
+
+
+<div class="field">
+
+<label>
+ಜನ್ಮ ದಿನಾಂಕ
+</label>
+
+<input
+id="dob"
+type="date">
+
+</div>
+
+
+<div class="field">
+
+<label>
+SATS No
+</label>
+
+<input
+id="satsNo"
+type="text"
+placeholder="SATS Number">
+
+</div>
+
+
+<div class="field">
+
+<label>
+PEN Number
+</label>
+
+<input
+id="penNumber"
+type="text"
+placeholder="PEN Number">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ಜಾತಿ / Caste
+</label>
+
+<input
+id="caste"
+type="text"
+placeholder="ಜಾತಿ">
+
+</div>
+
+
+<div class="field">
+
+<label>
+ಮೊಬೈಲ್ ಸಂಖ್ಯೆ
+</label>
+
+<input
+id="mobile"
+type="text"
+placeholder="Mobile Number">
+
+</div>
+
+
+</div>
+
+
+<div class="form-actions">
+
+<button
+class="save-btn"
+onclick="saveStudent()">
+
+💾 Save Student
+
+</button>
+
+
+<button
+class="cancel-btn"
+onclick="cancelForm()">
+
+Cancel
+
+</button>
+
+</div>
+
+
+</div>
+
+
+
+<!-- =========================
+     STUDENT LIST
+========================= -->
+
+<div class="card">
+
+
+<div class="title">
+
+<h2>
+ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ
+</h2>
+
+</div>
+
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+Sl.No
+</th>
+
+<th>
+Roll No
+</th>
+
+<th>
+Student Name
+</th>
+
+<th>
+Father Name
+</th>
+
+<th>
+Mother Name
+</th>
+
+<th>
+Gender
+</th>
+
+<th>
+DOB
+</th>
+
+<th>
+SATS No
+</th>
+
+<th>
+PEN
+</th>
+
+<th>
+Caste
+</th>
+
+<th>
+Mobile
+</th>
+
+<th>
+Action
+</th>
+
+</tr>
+
+</thead>
+
+
+<tbody
+id="studentTableBody">
+
+<tr>
+
+<td colspan="12">
+
+ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+
+</div>
+
 
 
 <script>
 
-/* =========================================================
+/* =====================================================
    SUPABASE CONNECTION
-   ========================================================= */
+   ===================================================== */
 
 /*
    IMPORTANT:
-   URL = Supabase Project URL
-   KEY = Publishable API Key
+
+   SUPABASE_URL = ನಿಮ್ಮ Supabase PROJECT URL
+
+   SUPABASE_KEY = Publishable API Key
 
    API KEY ಅನ್ನು URL ಜಾಗದಲ್ಲಿ ಹಾಕಬಾರದು.
 */
 
+
 const SUPABASE_URL =
-    "https://ezmudfrpcvjsqnjibvoq.supabase.co";
+"https://ezmudfrpcvjsqnjibvoq.supabase.co";
+
 
 const SUPABASE_KEY =
-    "sb_publishable__FYyH6NQaqgARaq2dvuovQ_rKmus0js";
+"sb_publishable__FYyH6NQaqgARaq2dvuovQ_rKmus0js";
 
 
 /*
-   ಒಂದೇ Supabase client.
-   window.sbClient ಬಳಸುವುದರಿಂದ
-   "Cannot access sbClient before initialization"
-   ಮತ್ತು
-   "supabaseClient is not defined"
-   ಸಮಸ್ಯೆ ಬರುವುದಿಲ್ಲ.
+   ಒಂದೇ client.
+   ಬೇರೆ supabaseClient / sbClient
+   declaration ಇರಬಾರದು.
 */
 
-window.sbClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+const sb =
+window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 
-/* =========================================================
+/* =====================================================
    MESSAGE
-   ========================================================= */
+===================================================== */
 
-function showMessage(text,type="success"){
+function showMessage(
+    text,
+    type="success"
+){
 
     const box =
-        document.getElementById("message");
+    document.getElementById("message");
 
     box.className =
-        "message " + type;
+    "message " + type;
 
-    box.innerText = text;
+    box.innerText =
+    text;
 
-    setTimeout(function(){
-
-        box.className = "message";
-
-    },5000);
 }
 
 
-/* =========================================================
-   FORM
-   ========================================================= */
+/* =====================================================
+   SHOW ADD FORM
+===================================================== */
 
 function showAddForm(){
 
-    document.getElementById("studentForm").style.display =
-        "block";
+    document.getElementById(
+        "studentForm"
+    ).style.display = "block";
 
-    document.getElementById("studentId").value = "";
 
     clearForm();
 
+
     window.scrollTo({
-        top:document.getElementById("studentForm").offsetTop - 20,
+        top:
+        document.getElementById(
+            "studentForm"
+        ).offsetTop - 20,
+
         behavior:"smooth"
     });
+
 }
 
+
+/* =====================================================
+   CLEAR FORM
+===================================================== */
 
 function clearForm(){
 
-    document.getElementById("studentId").value = "";
-    document.getElementById("rollNo").value = "";
-    document.getElementById("studentName").value = "";
-    document.getElementById("fatherName").value = "";
-    document.getElementById("motherName").value = "";
-    document.getElementById("gender").value = "";
-    document.getElementById("dob").value = "";
-    document.getElementById("satsNo").value = "";
-    document.getElementById("penNumber").value = "";
-    document.getElementById("caste").value = "";
-    document.getElementById("mobile").value = "";
+    document.getElementById(
+        "studentId"
+    ).value = "";
+
+    document.getElementById(
+        "rollNo"
+    ).value = "";
+
+    document.getElementById(
+        "studentName"
+    ).value = "";
+
+    document.getElementById(
+        "fatherName"
+    ).value = "";
+
+    document.getElementById(
+        "motherName"
+    ).value = "";
+
+    document.getElementById(
+        "gender"
+    ).value = "";
+
+    document.getElementById(
+        "dob"
+    ).value = "";
+
+    document.getElementById(
+        "satsNo"
+    ).value = "";
+
+    document.getElementById(
+        "penNumber"
+    ).value = "";
+
+    document.getElementById(
+        "caste"
+    ).value = "";
+
+    document.getElementById(
+        "mobile"
+    ).value = "";
+
 }
 
+
+/* =====================================================
+   CANCEL
+===================================================== */
 
 function cancelForm(){
 
-    document.getElementById("studentForm").style.display =
-        "none";
+    document.getElementById(
+        "studentForm"
+    ).style.display = "none";
 
     clearForm();
+
 }
 
 
-/* =========================================================
+/* =====================================================
    LOAD STUDENTS
-   ========================================================= */
+===================================================== */
 
 async function loadStudents(){
 
     const classValue =
-        document.getElementById("classSelect").value;
+    document.getElementById(
+        "classSelect"
+    ).value;
+
 
     const sectionValue =
-        document.getElementById("sectionSelect").value;
+    document.getElementById(
+        "sectionSelect"
+    ).value;
+
 
     if(!classValue){
 
@@ -533,6 +868,7 @@ async function loadStudents(){
 
         return;
     }
+
 
     if(!sectionValue){
 
@@ -546,185 +882,330 @@ async function loadStudents(){
 
 
     const tbody =
-        document.getElementById("studentTableBody");
+    document.getElementById(
+        "studentTableBody"
+    );
 
-    tbody.innerHTML =
-        `<tr>
-            <td colspan="12">Loading...</td>
-        </tr>`;
+
+    tbody.innerHTML = `
+
+    <tr>
+
+    <td
+    colspan="12"
+    class="loading">
+
+    ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲಾಗುತ್ತಿದೆ...
+
+    </td>
+
+    </tr>
+
+    `;
 
 
     try{
 
-        /*
-          ನಿಮ್ಮ students table ನಲ್ಲಿ
-          class_name ಮತ್ತು section_name
-          ಬಳಸಲಾಗುತ್ತಿದ್ದರೆ ಈ query ಕೆಲಸ ಮಾಡುತ್ತದೆ.
-        */
+        const {
+            data,
+            error
+        } = await sb
 
-        let query =
-            window.sbClient
-            .from("students")
-            .select("*")
-            .eq("class_name",classValue)
-            .eq("section_name",sectionValue)
-            .order("roll_no",{ascending:true});
+        .from("students")
 
+        .select("*")
 
-        const {data,error} =
-            await query;
+        .eq(
+            "class_name",
+            classValue
+        )
+
+        .eq(
+            "section_name",
+            sectionValue
+        )
+
+        .order(
+            "roll_no",
+            {
+                ascending:true
+            }
+        );
 
 
         if(error){
 
-            console.error(error);
+            console.error(
+                "LOAD ERROR:",
+                error
+            );
+
 
             showMessage(
-                "Students Load Error: " + error.message,
+                "Students Load Error: " +
+                error.message,
                 "error"
             );
 
-            tbody.innerHTML =
-                `<tr>
-                    <td colspan="12">
-                        ${escapeHtml(error.message)}
-                    </td>
-                </tr>`;
+
+            tbody.innerHTML = `
+
+            <tr>
+
+            <td colspan="12">
+
+            ${escapeHtml(
+                error.message
+            )}
+
+            </td>
+
+            </tr>
+
+            `;
 
             return;
         }
 
 
-        renderStudents(data || []);
+        renderStudents(
+            data || []
+        );
+
 
     }
+
     catch(error){
 
-        console.error(error);
+        console.error(
+            "SUPABASE ERROR:",
+            error
+        );
+
 
         showMessage(
-            "Supabase server ಸಂಪರ್ಕವಾಗುತ್ತಿಲ್ಲ. URL ಮತ್ತು Internet connection ಪರಿಶೀಲಿಸಿ.",
+            "Supabase ಸಂಪರ್ಕ ಸಮಸ್ಯೆ: " +
+            (error.message || error),
             "error"
         );
 
-        tbody.innerHTML =
-            `<tr>
-                <td colspan="12">
-                    ${escapeHtml(error.message || error)}
-                </td>
-            </tr>`;
+
+        tbody.innerHTML = `
+
+        <tr>
+
+        <td colspan="12">
+
+        ${escapeHtml(
+            error.message || error
+        )}
+
+        </td>
+
+        </tr>
+
+        `;
+
     }
+
 }
 
 
-/* =========================================================
-   RENDER
-   ========================================================= */
+/* =====================================================
+   RENDER STUDENTS
+===================================================== */
 
-function renderStudents(students){
+function renderStudents(
+    students
+){
 
     const tbody =
-        document.getElementById("studentTableBody");
+    document.getElementById(
+        "studentTableBody"
+    );
 
-    if(!students.length){
 
-        tbody.innerHTML =
-            `<tr>
-                <td colspan="12">
-                    ಈ ತರಗತಿ ಮತ್ತು ವಿಭಾಗಕ್ಕೆ ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
-                </td>
-            </tr>`;
+    if(
+        !students ||
+        students.length === 0
+    ){
+
+        tbody.innerHTML = `
+
+        <tr>
+
+        <td colspan="12">
+
+        ಈ ತರಗತಿ ಮತ್ತು ವಿಭಾಗಕ್ಕೆ
+        ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
+
+        </td>
+
+        </tr>
+
+        `;
 
         return;
     }
 
 
     tbody.innerHTML =
-        students.map(function(s,index){
+
+    students.map(
+        function(
+            s,
+            index
+        ){
 
             return `
+
             <tr>
 
-                <td>${index+1}</td>
+            <td>
+            ${index + 1}
+            </td>
 
-                <td>${escapeHtml(
-                    s.roll_no ?? s.reg_no ?? ""
-                )}</td>
 
-                <td>${escapeHtml(
-                    s.student_name ?? s.name ?? ""
-                )}</td>
+            <td>
+            ${escapeHtml(
+                s.roll_no ??
+                s.reg_no ??
+                ""
+            )}
+            </td>
 
-                <td>${escapeHtml(
-                    s.father_name ?? ""
-                )}</td>
 
-                <td>${escapeHtml(
-                    s.mother_name ?? ""
-                )}</td>
+            <td>
+            ${escapeHtml(
+                s.student_name ??
+                s.name ??
+                ""
+            )}
+            </td>
 
-                <td>${escapeHtml(
-                    s.gender ?? ""
-                )}</td>
 
-                <td>${escapeHtml(
-                    s.dob ?? ""
-                )}</td>
+            <td>
+            ${escapeHtml(
+                s.father_name ??
+                ""
+            )}
+            </td>
 
-                <td>${escapeHtml(
-                    s.sats_no ?? ""
-                )}</td>
 
-                <td>${escapeHtml(
-                    s.pen_number ?? ""
-                )}</td>
+            <td>
+            ${escapeHtml(
+                s.mother_name ??
+                ""
+            )}
+            </td>
 
-                <td>${escapeHtml(
-                    s.caste ?? ""
-                )}</td>
 
-                <td>${escapeHtml(
-                    s.mobile ?? s.mobile_number ?? ""
-                )}</td>
+            <td>
+            ${escapeHtml(
+                s.gender ??
+                ""
+            )}
+            </td>
 
-                <td>
 
-                    <div class="action-buttons">
+            <td>
+            ${escapeHtml(
+                s.dob ??
+                ""
+            )}
+            </td>
 
-                        <button
-                            class="save-btn"
-                            onclick='editStudent(${JSON.stringify(s)})'>
-                            Edit
-                        </button>
 
-                        <button
-                            class="delete-btn"
-                            onclick="deleteStudent('${s.id}')">
-                            Delete
-                        </button>
+            <td>
+            ${escapeHtml(
+                s.sats_no ??
+                ""
+            )}
+            </td>
 
-                    </div>
 
-                </td>
+            <td>
+            ${escapeHtml(
+                s.pen_number ??
+                ""
+            )}
+            </td>
+
+
+            <td>
+            ${escapeHtml(
+                s.caste ??
+                ""
+            )}
+            </td>
+
+
+            <td>
+            ${escapeHtml(
+                s.mobile ??
+                s.mobile_number ??
+                ""
+            )}
+            </td>
+
+
+            <td>
+
+            <div
+            class="action-buttons">
+
+
+            <button
+            class="edit-btn"
+            onclick='editStudent(${JSON.stringify(s)})'>
+
+            Edit
+
+            </button>
+
+
+            <button
+            class="delete-btn"
+            onclick="deleteStudent('${s.id}')">
+
+            Delete
+
+            </button>
+
+
+            </div>
+
+            </td>
+
 
             </tr>
+
             `;
 
-        }).join("");
+        }
+
+    ).join("");
+
 }
 
 
-/* =========================================================
+/* =====================================================
    SAVE STUDENT
-   ========================================================= */
+===================================================== */
 
 async function saveStudent(){
 
     const classValue =
-        document.getElementById("classSelect").value;
+    document.getElementById(
+        "classSelect"
+    ).value;
+
 
     const sectionValue =
-        document.getElementById("sectionSelect").value;
+    document.getElementById(
+        "sectionSelect"
+    ).value;
+
 
     if(!classValue){
 
@@ -735,6 +1216,7 @@ async function saveStudent(){
 
         return;
     }
+
 
     if(!sectionValue){
 
@@ -748,7 +1230,10 @@ async function saveStudent(){
 
 
     const studentName =
-        document.getElementById("studentName").value.trim();
+    document.getElementById(
+        "studentName"
+    ).value.trim();
+
 
     if(!studentName){
 
@@ -762,48 +1247,66 @@ async function saveStudent(){
 
 
     const studentId =
-        document.getElementById("studentId").value;
+    document.getElementById(
+        "studentId"
+    ).value;
 
-
-    /*
-      Database record
-    */
 
     const studentData = {
 
-        class_name: classValue,
+        class_name:
+        classValue,
 
-        section_name: sectionValue,
+        section_name:
+        sectionValue,
 
         roll_no:
-            document.getElementById("rollNo").value.trim(),
+        document.getElementById(
+            "rollNo"
+        ).value.trim(),
 
         student_name:
-            studentName,
+        studentName,
 
         father_name:
-            document.getElementById("fatherName").value.trim(),
+        document.getElementById(
+            "fatherName"
+        ).value.trim(),
 
         mother_name:
-            document.getElementById("motherName").value.trim(),
+        document.getElementById(
+            "motherName"
+        ).value.trim(),
 
         gender:
-            document.getElementById("gender").value,
+        document.getElementById(
+            "gender"
+        ).value,
 
         dob:
-            document.getElementById("dob").value || null,
+        document.getElementById(
+            "dob"
+        ).value || null,
 
         sats_no:
-            document.getElementById("satsNo").value.trim(),
+        document.getElementById(
+            "satsNo"
+        ).value.trim(),
 
         pen_number:
-            document.getElementById("penNumber").value.trim(),
+        document.getElementById(
+            "penNumber"
+        ).value.trim(),
 
         caste:
-            document.getElementById("caste").value.trim(),
+        document.getElementById(
+            "caste"
+        ).value.trim(),
 
         mobile:
-            document.getElementById("mobile").value.trim()
+        document.getElementById(
+            "mobile"
+        ).value.trim()
 
     };
 
@@ -813,36 +1316,54 @@ async function saveStudent(){
         let result;
 
 
+        /* =========================
+           UPDATE
+        ========================= */
+
         if(studentId){
 
-            /*
-              UPDATE
-            */
-
             result =
-                await window.sbClient
-                .from("students")
-                .update(studentData)
-                .eq("id",studentId);
+            await sb
+
+            .from("students")
+
+            .update(
+                studentData
+            )
+
+            .eq(
+                "id",
+                studentId
+            );
 
         }
+
+
+        /* =========================
+           INSERT
+        ========================= */
+
         else{
 
-            /*
-              INSERT
-            */
-
             result =
-                await window.sbClient
-                .from("students")
-                .insert([studentData]);
+            await sb
+
+            .from("students")
+
+            .insert([
+                studentData
+            ]);
 
         }
 
 
         if(result.error){
 
-            console.error(result.error);
+            console.error(
+                "SAVE ERROR:",
+                result.error
+            );
+
 
             showMessage(
                 "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
@@ -855,89 +1376,162 @@ async function saveStudent(){
 
 
         showMessage(
+
             studentId
-            ? "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ."
-            : "ವಿದ್ಯಾರ್ಥಿ ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದ್ದಾನೆ.",
+
+            ?
+
+            "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ."
+
+            :
+
+            "ವಿದ್ಯಾರ್ಥಿ ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದ್ದಾನೆ.",
+
             "success"
+
         );
 
 
         cancelForm();
 
+
         await loadStudents();
 
     }
+
+
     catch(error){
 
-        console.error(error);
+        console.error(
+            "SAVE EXCEPTION:",
+            error
+        );
+
 
         showMessage(
             "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
             (error.message || error),
             "error"
         );
+
     }
+
 }
 
 
-/* =========================================================
+/* =====================================================
    EDIT STUDENT
-   ========================================================= */
+===================================================== */
 
-function editStudent(student){
+function editStudent(
+    student
+){
 
-    document.getElementById("studentForm").style.display =
-        "block";
+    document.getElementById(
+        "studentForm"
+    ).style.display = "block";
 
 
-    document.getElementById("studentId").value =
-        student.id || "";
+    document.getElementById(
+        "studentId"
+    ).value =
+    student.id || "";
 
-    document.getElementById("rollNo").value =
-        student.roll_no ?? student.reg_no ?? "";
 
-    document.getElementById("studentName").value =
-        student.student_name ?? student.name ?? "";
+    document.getElementById(
+        "rollNo"
+    ).value =
+    student.roll_no ??
+    student.reg_no ??
+    "";
 
-    document.getElementById("fatherName").value =
-        student.father_name ?? "";
 
-    document.getElementById("motherName").value =
-        student.mother_name ?? "";
+    document.getElementById(
+        "studentName"
+    ).value =
+    student.student_name ??
+    student.name ??
+    "";
 
-    document.getElementById("gender").value =
-        student.gender ?? "";
 
-    document.getElementById("dob").value =
-        student.dob ?? "";
+    document.getElementById(
+        "fatherName"
+    ).value =
+    student.father_name ??
+    "";
 
-    document.getElementById("satsNo").value =
-        student.sats_no ?? "";
 
-    document.getElementById("penNumber").value =
-        student.pen_number ?? "";
+    document.getElementById(
+        "motherName"
+    ).value =
+    student.mother_name ??
+    "";
 
-    document.getElementById("caste").value =
-        student.caste ?? "";
 
-    document.getElementById("mobile").value =
-        student.mobile ??
-        student.mobile_number ??
-        "";
+    document.getElementById(
+        "gender"
+    ).value =
+    student.gender ??
+    "";
+
+
+    document.getElementById(
+        "dob"
+    ).value =
+    student.dob ??
+    "";
+
+
+    document.getElementById(
+        "satsNo"
+    ).value =
+    student.sats_no ??
+    "";
+
+
+    document.getElementById(
+        "penNumber"
+    ).value =
+    student.pen_number ??
+    "";
+
+
+    document.getElementById(
+        "caste"
+    ).value =
+    student.caste ??
+    "";
+
+
+    document.getElementById(
+        "mobile"
+    ).value =
+    student.mobile ??
+    student.mobile_number ??
+    "";
 
 
     window.scrollTo({
-        top:document.getElementById("studentForm").offsetTop - 20,
+
+        top:
+        document.getElementById(
+            "studentForm"
+        ).offsetTop - 20,
+
         behavior:"smooth"
+
     });
+
 }
 
 
-/* =========================================================
-   DELETE
-   ========================================================= */
+/* =====================================================
+   DELETE STUDENT
+===================================================== */
 
-async function deleteStudent(id){
+async function deleteStudent(
+    id
+){
 
     if(!id){
 
@@ -950,27 +1544,38 @@ async function deleteStudent(id){
     }
 
 
-    if(!confirm(
-        "ಈ ವಿದ್ಯಾರ್ಥಿಯನ್ನು Delete ಮಾಡಬೇಕೇ?"
-    )){
+    if(
+        !confirm(
+            "ಈ ವಿದ್ಯಾರ್ಥಿಯನ್ನು Delete ಮಾಡಬೇಕೇ?"
+        )
+    ){
 
         return;
+
     }
 
 
     try{
 
-        const {error} =
-            await window.sbClient
-            .from("students")
-            .delete()
-            .eq("id",id);
+        const {
+            error
+        } = await sb
+
+        .from("students")
+
+        .delete()
+
+        .eq(
+            "id",
+            id
+        );
 
 
         if(error){
 
             showMessage(
-                "Delete Error: " + error.message,
+                "Delete Error: " +
+                error.message,
                 "error"
             );
 
@@ -987,6 +1592,8 @@ async function deleteStudent(id){
         await loadStudents();
 
     }
+
+
     catch(error){
 
         showMessage(
@@ -994,62 +1601,98 @@ async function deleteStudent(id){
             (error.message || error),
             "error"
         );
+
     }
+
 }
 
 
-/* =========================================================
+/* =====================================================
    ESCAPE HTML
-   ========================================================= */
+===================================================== */
 
-function escapeHtml(value){
+function escapeHtml(
+    value
+){
 
-    return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
+    return String(
+        value ?? ""
+    )
+
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+
+    .replace(
+        /</g,
+        "&lt;"
+    )
+
+    .replace(
+        />/g,
+        "&gt;"
+    )
+
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+
+    .replace(
+        /'/g,
+        "&#039;"
+    );
+
 }
 
 
-/* =========================================================
-   SUPABASE CONNECTION TEST
-   ========================================================= */
+/* =====================================================
+   SUPABASE TEST
+===================================================== */
 
 async function testSupabase(){
 
     try{
 
-        const {error} =
-            await window.sbClient
-            .from("students")
-            .select("id")
-            .limit(1);
+        const {
+            data,
+            error
+        } = await sb
+
+        .from("students")
+
+        .select("id")
+
+        .limit(1);
 
 
         if(error){
 
             console.error(
-                "Supabase connection/table error:",
+                "Supabase TEST:",
                 error
             );
 
             showMessage(
-                "Supabase ಸಂಪರ್ಕ ಇದೆ, ಆದರೆ students table/RLS ಪರಿಶೀಲಿಸಬೇಕು.",
+                "Supabase ಸಂಪರ್ಕ ಇದೆ. ಆದರೆ students table / RLS ಪರಿಶೀಲಿಸಬೇಕು: " +
+                error.message,
                 "error"
             );
 
         }
+
         else{
 
             console.log(
-                "Supabase connection successful."
+                "Supabase connection successful.",
+                data
             );
 
         }
 
     }
+
     catch(error){
 
         console.error(
@@ -1058,16 +1701,19 @@ async function testSupabase(){
         );
 
         showMessage(
-            "Supabase server ಸಂಪರ್ಕವಾಗುತ್ತಿಲ್ಲ.",
+            "Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ: " +
+            (error.message || error),
             "error"
         );
+
     }
+
 }
 
 
-/* =========================================================
+/* =====================================================
    START
-   ========================================================= */
+===================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -1089,5 +1735,7 @@ document.addEventListener(
 
 </script>
 
+
 </body>
+
 </html>
