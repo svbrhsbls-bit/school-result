@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Subject Master</title>
+<title>Subject Master - School Result System</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,22 +15,22 @@
 
 body{
     margin:0;
-    font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
+    font-family:"Noto Sans Kannada","Arial",sans-serif;
     background:#eef5fb;
     color:#173b63;
 }
 
 .header{
-    background:linear-gradient(135deg,#1169a5,#258dcc);
+    background:linear-gradient(135deg,#1268a5,#168bc2);
     color:white;
     text-align:center;
-    padding:25px 15px;
-    box-shadow:0 3px 10px #999;
+    padding:28px 15px;
+    box-shadow:0 3px 12px rgba(0,0,0,.15);
 }
 
 .header h1{
     margin:0;
-    font-size:34px;
+    font-size:32px;
 }
 
 .header p{
@@ -39,8 +39,8 @@ body{
 }
 
 .container{
-    max-width:1250px;
-    margin:28px auto;
+    max-width:1200px;
+    margin:25px auto;
     padding:0 15px;
 }
 
@@ -49,166 +49,159 @@ body{
     border-radius:18px;
     padding:25px;
     margin-bottom:25px;
-    box-shadow:0 4px 18px rgba(0,0,0,.10);
+    box-shadow:0 4px 18px rgba(0,0,0,.08);
 }
 
-.card h2{
+.title{
     text-align:center;
-    margin-top:0;
-    color:#174f80;
-    font-size:27px;
-}
-
-.form-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:18px;
-}
-
-label{
-    display:block;
+    font-size:25px;
     font-weight:bold;
-    margin-bottom:7px;
-    font-size:17px;
+    margin-bottom:22px;
 }
 
-input,select{
-    width:100%;
-    padding:13px;
-    border:1px solid #cbd5df;
-    border-radius:9px;
-    font-size:16px;
-    background:white;
-}
-
-input:focus,select:focus{
-    outline:none;
-    border-color:#1976b9;
-    box-shadow:0 0 4px rgba(25,118,185,.3);
-}
-
-.buttons{
-    margin-top:20px;
-    display:flex;
-    gap:12px;
-    flex-wrap:wrap;
-}
-
-button{
-    border:0;
-    padding:12px 22px;
-    border-radius:9px;
-    color:white;
-    font-size:16px;
+.status{
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:20px;
     font-weight:bold;
-    cursor:pointer;
+    text-align:center;
 }
 
-.btn-save{
-    background:#159447;
-}
-
-.btn-clear{
-    background:#68727b;
-}
-
-.btn-edit{
-    background:#ed9410;
-    padding:8px 14px;
-}
-
-.btn-delete{
-    background:#d93636;
-    padding:8px 14px;
-}
-
-button:hover{
-    opacity:.88;
-}
-
-.message{
-    display:none;
-    margin-top:18px;
-    padding:13px;
-    border-radius:8px;
-    font-weight:bold;
+.loading{
+    background:#fff3cd;
+    color:#856404;
 }
 
 .success{
-    display:block;
-    background:#e4f7e9;
-    color:#14732d;
-    border:1px solid #9dd5aa;
+    background:#d1e7dd;
+    color:#0f5132;
 }
 
 .error{
-    display:block;
-    background:#fde8e8;
-    color:#a51f1f;
-    border:1px solid #efaaaa;
+    background:#f8d7da;
+    color:#842029;
 }
 
-.search-grid{
+.info{
+    background:#cff4fc;
+    color:#055160;
+}
+
+.subject-grid{
     display:grid;
-    grid-template-columns:1fr 1fr;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
     gap:15px;
-    margin-bottom:20px;
 }
 
-.table-wrap{
-    overflow-x:auto;
+.subject-card{
+    border:1px solid #d9e5ef;
+    border-radius:14px;
+    padding:18px;
+    background:#f9fcff;
+    transition:.2s;
+}
+
+.subject-card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+}
+
+.class-title{
+    background:#1268a5;
+    color:white;
+    padding:12px;
+    border-radius:10px;
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:15px;
+}
+
+.subject-name{
+    font-size:20px;
+    font-weight:bold;
+    color:#173b63;
+}
+
+.subject-code{
+    color:#777;
+    margin-top:6px;
+}
+
+.max{
+    margin-top:8px;
+    font-weight:bold;
+    color:#0b7d55;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
-    min-width:850px;
+    margin-top:15px;
 }
 
 th{
-    background:#176da8;
+    background:#1268a5;
     color:white;
-    padding:12px 8px;
-    text-align:left;
+    padding:12px;
 }
 
 td{
-    padding:11px 8px;
-    border-bottom:1px solid #e2e2e2;
+    padding:11px;
+    border-bottom:1px solid #ddd;
+    text-align:center;
 }
 
 tr:hover{
-    background:#f3f8fc;
+    background:#f3f9fd;
 }
 
-.actions{
-    display:flex;
-    gap:7px;
+.badge{
+    display:inline-block;
+    padding:5px 10px;
+    border-radius:20px;
+    background:#d1e7dd;
+    color:#0f5132;
+    font-size:13px;
+    font-weight:bold;
 }
 
-.loading{
+.refresh-btn{
+    border:none;
+    background:#1268a5;
+    color:white;
+    padding:12px 22px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.refresh-btn:hover{
+    background:#0d527f;
+}
+
+.footer{
     text-align:center;
     padding:25px;
-    font-size:18px;
+    color:#666;
 }
 
-.empty{
-    text-align:center;
-    padding:25px;
-    color:#777;
-}
-
-@media(max-width:800px){
-    .form-grid{
-        grid-template-columns:1fr;
-    }
-
-    .search-grid{
-        grid-template-columns:1fr;
-    }
+@media(max-width:700px){
 
     .header h1{
-        font-size:27px;
+        font-size:25px;
+    }
+
+    .card{
+        padding:15px;
+    }
+
+    table{
+        font-size:13px;
+    }
+
+    th,td{
+        padding:8px 5px;
     }
 }
 </style>
@@ -223,281 +216,403 @@ tr:hover{
 
 <div class="container">
 
-<div class="card">
+    <div id="status" class="status loading">
+        ⏳ ವಿಷಯಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...
+    </div>
 
-<h2>➕ ವಿಷಯ ಸೇರಿಸಿ / Edit Subject</h2>
+    <div class="card">
 
-<input type="hidden" id="editId">
+        <div class="title">
+            📚 ವಿಷಯಗಳ ಪಟ್ಟಿ
+        </div>
 
-<div class="form-grid">
+        <div id="subjectList">
+            ವಿಷಯಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...
+        </div>
 
-<div>
-<label>ತರಗತಿ / Class</label>
-<select id="className">
-    <option value="8">8ನೇ ತರಗತಿ</option>
-    <option value="9">9ನೇ ತರಗತಿ</option>
-    <option value="10">10ನೇ ತರಗತಿ</option>
-</select>
-</div>
+    </div>
 
-<div>
-<label>ವಿಷಯ ಕೋಡ್ / Subject Code</label>
-<input type="text" id="subjectCode" placeholder="ಉದಾ: 01K">
-</div>
+    <div class="card">
 
-<div>
-<label>ವಿಷಯದ ಹೆಸರು / Subject Name</label>
-<input type="text" id="subjectName" placeholder="ಉದಾ: ಕನ್ನಡ">
-</div>
+        <div class="title">
+            📋 Supabase Subject Database
+        </div>
 
-<div>
-<label>ಗರಿಷ್ಠ ಅಂಕ / Max Marks</label>
-<input type="number" id="maxMarks" value="100" min="1">
-</div>
+        <button class="refresh-btn" onclick="loadSubjects()">
+            🔄 Refresh
+        </button>
 
-<div>
-<label>ಕ್ರಮ ಸಂಖ್ಯೆ / Display Order</label>
-<input type="number" id="displayOrder" value="1" min="1">
-</div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ಕ್ರಮ</th>
+                        <th>ತರಗತಿ</th>
+                        <th>Subject Code</th>
+                        <th>ವಿಷಯ</th>
+                        <th>ಗರಿಷ್ಠ ಅಂಕ</th>
+                        <th>Order</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
 
-<div>
-<label>ಸ್ಥಿತಿ / Status</label>
-<select id="isActive">
-    <option value="true">Active / ಸಕ್ರಿಯ</option>
-    <option value="false">Inactive / ನಿಷ್ಕ್ರಿಯ</option>
-</select>
-</div>
+                <tbody id="subjectTable">
+                </tbody>
+            </table>
+        </div>
 
-</div>
-
-<div class="buttons">
-    <button class="btn-save" onclick="saveSubject()">💾 Save</button>
-    <button class="btn-clear" onclick="clearForm()">✖ Clear</button>
-</div>
-
-<div id="message" class="message"></div>
+    </div>
 
 </div>
 
-
-<div class="card">
-
-<h2>🔎 ವಿಷಯಗಳ ಪಟ್ಟಿ</h2>
-
-<div class="search-grid">
-
-<div>
-<label>ತರಗತಿ ಆಯ್ಕೆ</label>
-<select id="filterClass" onchange="loadSubjects()">
-    <option value="">ಎಲ್ಲಾ ತರಗತಿಗಳು</option>
-    <option value="8">8ನೇ ತರಗತಿ</option>
-    <option value="9">9ನೇ ತರಗತಿ</option>
-    <option value="10">10ನೇ ತರಗತಿ</option>
-</select>
-</div>
-
-<div>
-<label>Search / ಹುಡುಕಿ</label>
-<input
-    type="text"
-    id="search"
-    placeholder="ವಿಷಯ / ಕೋಡ್ ಹುಡುಕಿ..."
-    oninput="displaySubjects()">
-</div>
-
-</div>
-
-<div id="tableArea" class="loading">
-    ವಿಷಯಗಳನ್ನು Loading ಮಾಡಲಾಗುತ್ತಿದೆ...
-</div>
-
-</div>
-
+<div class="footer">
+    ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ ಬಲ್ಲಾಳಸಮುದ್ರ<br>
+    ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ
 </div>
 
 
 <script>
 
 /* =========================================================
-   SUPABASE CONFIGURATION
+   SUPABASE CONNECTION
    ========================================================= */
 
 const SUPABASE_URL =
-"https://sozlvjvqrpaabnvjvxe.supabase.co";
+    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
 
 const SUPABASE_KEY =
-"sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
-const sb = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
-
-
-/* =========================================================
-   GLOBAL DATA
-   ========================================================= */
-
-let subjects = [];
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
 
 
 /* =========================================================
-   MESSAGE
+   DEFAULT SUBJECTS
+   =========================================================
+
+   ಯಾವುದೇ Subject ಅನ್ನು ನೀವು manually Save ಮಾಡಬೇಕಾಗಿಲ್ಲ.
+
+   ಈ list ನಲ್ಲಿರುವ ವಿಷಯಗಳು page open ಆದಾಗ
+   Supabase database ಗೆ automatic ಆಗಿ ಸೇರುತ್ತವೆ.
    ========================================================= */
 
-function showMessage(text,type){
+const DEFAULT_SUBJECTS = [
 
-    const box = document.getElementById("message");
+    /* =========================
+       8ನೇ ತರಗತಿ
+       ========================= */
 
-    box.className = "message " + type;
-    box.textContent = text;
+    {
+        class_name:"8",
+        subject_code:"01K",
+        subject_name:"ಕನ್ನಡ",
+        max_marks:100,
+        display_order:1
+    },
 
+    {
+        class_name:"8",
+        subject_code:"02E",
+        subject_name:"ಇಂಗ್ಲಿಷ್",
+        max_marks:100,
+        display_order:2
+    },
+
+    {
+        class_name:"8",
+        subject_code:"03H",
+        subject_name:"ಹಿಂದಿ",
+        max_marks:100,
+        display_order:3
+    },
+
+    {
+        class_name:"8",
+        subject_code:"04M",
+        subject_name:"ಗಣಿತ",
+        max_marks:100,
+        display_order:4
+    },
+
+    {
+        class_name:"8",
+        subject_code:"05S",
+        subject_name:"ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:5
+    },
+
+    {
+        class_name:"8",
+        subject_code:"06SS",
+        subject_name:"ಸಮಾಜ ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:6
+    },
+
+
+    /* =========================
+       9ನೇ ತರಗತಿ
+       ========================= */
+
+    {
+        class_name:"9",
+        subject_code:"01K",
+        subject_name:"ಕನ್ನಡ",
+        max_marks:125,
+        display_order:1
+    },
+
+    {
+        class_name:"9",
+        subject_code:"02E",
+        subject_name:"ಇಂಗ್ಲಿಷ್",
+        max_marks:100,
+        display_order:2
+    },
+
+    {
+        class_name:"9",
+        subject_code:"03H",
+        subject_name:"ಹಿಂದಿ",
+        max_marks:100,
+        display_order:3
+    },
+
+    {
+        class_name:"9",
+        subject_code:"04M",
+        subject_name:"ಗಣಿತ",
+        max_marks:100,
+        display_order:4
+    },
+
+    {
+        class_name:"9",
+        subject_code:"05S",
+        subject_name:"ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:5
+    },
+
+    {
+        class_name:"9",
+        subject_code:"06SS",
+        subject_name:"ಸಮಾಜ ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:6
+    },
+
+
+    /* =========================
+       10ನೇ ತರಗತಿ
+       ========================= */
+
+    {
+        class_name:"10",
+        subject_code:"01K",
+        subject_name:"ಕನ್ನಡ",
+        max_marks:125,
+        display_order:1
+    },
+
+    {
+        class_name:"10",
+        subject_code:"02E",
+        subject_name:"ಇಂಗ್ಲಿಷ್",
+        max_marks:100,
+        display_order:2
+    },
+
+    {
+        class_name:"10",
+        subject_code:"03H",
+        subject_name:"ಹಿಂದಿ",
+        max_marks:100,
+        display_order:3
+    },
+
+    {
+        class_name:"10",
+        subject_code:"04M",
+        subject_name:"ಗಣಿತ",
+        max_marks:100,
+        display_order:4
+    },
+
+    {
+        class_name:"10",
+        subject_code:"05S",
+        subject_name:"ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:5
+    },
+
+    {
+        class_name:"10",
+        subject_code:"06SS",
+        subject_name:"ಸಮಾಜ ವಿಜ್ಞಾನ",
+        max_marks:100,
+        display_order:6
+    }
+
+];
+
+
+/* =========================================================
+   STATUS MESSAGE
+   ========================================================= */
+
+function showStatus(message,type="info"){
+
+    const box =
+        document.getElementById("status");
+
+    box.className =
+        "status " + type;
+
+    box.innerHTML =
+        message;
 }
 
 
 /* =========================================================
-   CLEAR FORM
+   CHECK CONNECTION
    ========================================================= */
 
-function clearForm(){
-
-    document.getElementById("editId").value = "";
-    document.getElementById("className").value = "8";
-    document.getElementById("subjectCode").value = "";
-    document.getElementById("subjectName").value = "";
-    document.getElementById("maxMarks").value = "100";
-    document.getElementById("displayOrder").value = "1";
-    document.getElementById("isActive").value = "true";
-
-    document.getElementById("message").className = "message";
-    document.getElementById("message").textContent = "";
-
-}
-
-
-/* =========================================================
-   SAVE SUBJECT
-   ========================================================= */
-
-async function saveSubject(){
+async function checkConnection(){
 
     try{
 
-        const editId =
-            document.getElementById("editId").value;
+        const { data, error } =
+            await supabaseClient
+            .from("subjects")
+            .select("id")
+            .limit(1);
 
-        const className =
-            document.getElementById("className").value.trim();
+        if(error){
 
-        const subjectCode =
-            document.getElementById("subjectCode").value.trim();
+            console.error(error);
 
-        const subjectName =
-            document.getElementById("subjectName").value.trim();
-
-        const maxMarks =
-            Number(document.getElementById("maxMarks").value);
-
-        const displayOrder =
-            Number(document.getElementById("displayOrder").value);
-
-        const isActive =
-            document.getElementById("isActive").value === "true";
-
-
-        if(!className){
-            showMessage("ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ","error");
-            return;
-        }
-
-        if(!subjectCode){
-            showMessage("ವಿಷಯ ಕೋಡ್ ನಮೂದಿಸಿ","error");
-            return;
-        }
-
-        if(!subjectName){
-            showMessage("ವಿಷಯದ ಹೆಸರು ನಮೂದಿಸಿ","error");
-            return;
-        }
-
-        if(!maxMarks || maxMarks <= 0){
-            showMessage("ಸರಿಯಾದ Max Marks ನಮೂದಿಸಿ","error");
-            return;
-        }
-
-
-        const data = {
-
-            class_name: className,
-            subject_code: subjectCode,
-            subject_name: subjectName,
-            max_marks: maxMarks,
-            display_order: displayOrder || 1,
-            is_active: isActive
-
-        };
-
-
-        let result;
-
-
-        /* EDIT */
-
-        if(editId){
-
-            result = await sb
-                .from("subjects")
-                .update(data)
-                .eq("id",editId);
-
-        }
-
-        /* INSERT */
-
-        else{
-
-            result = await sb
-                .from("subjects")
-                .insert([data]);
-
-        }
-
-
-        if(result.error){
-
-            console.error(result.error);
-
-            showMessage(
-                "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-                result.error.message,
+            showStatus(
+                "❌ Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ.<br><br>" +
+                error.message,
                 "error"
             );
 
-            return;
+            return false;
+        }
+
+        return true;
+
+    }catch(error){
+
+        console.error(error);
+
+        showStatus(
+            "❌ Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ.<br><br>" +
+            error.message,
+            "error"
+        );
+
+        return false;
+    }
+}
+
+
+/* =========================================================
+   AUTO CREATE SUBJECTS
+   ========================================================= */
+
+async function createDefaultSubjects(){
+
+    showStatus(
+        "⏳ ಎಲ್ಲಾ ವಿಷಯಗಳನ್ನು database ನಲ್ಲಿ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...",
+        "loading"
+    );
+
+    try{
+
+        for(const subject of DEFAULT_SUBJECTS){
+
+            /* Check whether subject already exists */
+
+            const { data, error } =
+                await supabaseClient
+                .from("subjects")
+                .select("id")
+                .eq("class_name",subject.class_name)
+                .eq("subject_code",subject.subject_code)
+                .limit(1);
+
+            if(error){
+
+                throw error;
+            }
+
+
+            /* Already exists → skip */
+
+            if(data && data.length > 0){
+
+                continue;
+            }
+
+
+            /* Insert new subject */
+
+            const { error: insertError } =
+                await supabaseClient
+                .from("subjects")
+                .insert({
+
+                    class_name:subject.class_name,
+
+                    subject_code:subject.subject_code,
+
+                    subject_name:subject.subject_name,
+
+                    max_marks:subject.max_marks,
+
+                    display_order:subject.display_order,
+
+                    is_active:true
+
+                });
+
+            if(insertError){
+
+                throw insertError;
+            }
+
         }
 
 
-        showMessage(
-            editId
-            ? "ವಿಷಯ ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ ✅"
-            : "ವಿಷಯ ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ ✅",
+        showStatus(
+            "✅ 8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಯ ಎಲ್ಲಾ ವಿಷಯಗಳು database ನಲ್ಲಿ ಸಿದ್ಧವಾಗಿವೆ.",
             "success"
         );
 
 
-        clearForm();
-
         await loadSubjects();
 
-    }
 
-    catch(error){
+    }catch(error){
 
-        console.error(error);
+        console.error(
+            "Subject creation error:",
+            error
+        );
 
-        showMessage(
-            "Supabase ಸಂಪರ್ಕ ಸಮಸ್ಯೆ: " +
-            error.message,
+        showStatus(
+            "❌ ವಿಷಯಗಳನ್ನು database ಗೆ ಸೇರಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.<br><br>" +
+            "<b>" +
+            error.message +
+            "</b>",
             "error"
         );
 
@@ -512,67 +627,37 @@ async function saveSubject(){
 
 async function loadSubjects(){
 
-    const tableArea =
-        document.getElementById("tableArea");
-
-    tableArea.innerHTML =
-        '<div class="loading">Loading...</div>';
-
-
     try{
 
-        let query =
-            sb
+        const { data, error } =
+            await supabaseClient
             .from("subjects")
             .select("*")
             .order("class_name",{ascending:true})
             .order("display_order",{ascending:true});
 
 
-        const selectedClass =
-            document.getElementById("filterClass").value;
-
-
-        if(selectedClass){
-
-            query =
-                query.eq("class_name",selectedClass);
-
-        }
-
-
-        const {data,error} = await query;
-
-
         if(error){
 
-            console.error(error);
-
-            tableArea.innerHTML =
-                '<div class="empty">' +
-                "Load Error: " +
-                error.message +
-                "</div>";
-
-            return;
+            throw error;
         }
 
 
-        subjects = data || [];
+        displaySubjects(data || []);
 
-        displaySubjects();
-
-    }
-
-    catch(error){
+    }catch(error){
 
         console.error(error);
 
-        tableArea.innerHTML =
-            '<div class="empty">' +
-            "Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ: " +
-            error.message +
-            "</div>";
+        document.getElementById(
+            "subjectTable"
+        ).innerHTML =
+
+        `<tr>
+            <td colspan="7">
+                ❌ ${escapeHtml(error.message)}
+            </td>
+        </tr>`;
 
     }
 
@@ -583,244 +668,184 @@ async function loadSubjects(){
    DISPLAY SUBJECTS
    ========================================================= */
 
-function displaySubjects(){
+function displaySubjects(subjects){
 
-    const tableArea =
-        document.getElementById("tableArea");
+    const table =
+        document.getElementById(
+            "subjectTable"
+        );
 
-    const search =
-        document
-        .getElementById("search")
-        .value
-        .toLowerCase()
-        .trim();
-
-
-    let filtered =
-        subjects.filter(item => {
-
-            if(!search) return true;
-
-            return (
-
-                String(item.subject_name || "")
-                    .toLowerCase()
-                    .includes(search)
-
-                ||
-
-                String(item.subject_code || "")
-                    .toLowerCase()
-                    .includes(search)
-
-            );
-
-        });
+    const list =
+        document.getElementById(
+            "subjectList"
+        );
 
 
-    if(filtered.length === 0){
+    if(!subjects.length){
 
-        tableArea.innerHTML =
-            '<div class="empty">' +
-            "ಯಾವುದೇ ವಿಷಯಗಳು ಕಂಡುಬಂದಿಲ್ಲ." +
-            "</div>";
+        table.innerHTML =
+        `<tr>
+            <td colspan="7">
+                ಯಾವುದೇ ವಿಷಯಗಳು ಕಂಡುಬಂದಿಲ್ಲ.
+            </td>
+        </tr>`;
+
+        list.innerHTML =
+            "ಯಾವುದೇ ವಿಷಯಗಳು ಇಲ್ಲ.";
 
         return;
     }
 
 
-    let html = `
+    /* =========================
+       TABLE
+       ========================= */
 
-    <div class="table-wrap">
+    table.innerHTML =
+        subjects.map(
+            (s,index) => `
 
-    <table>
+            <tr>
 
-    <thead>
+                <td>${index + 1}</td>
 
-    <tr>
-        <th>ಕ್ರಮ</th>
-        <th>ತರಗತಿ</th>
-        <th>ವಿಷಯ ಕೋಡ್</th>
-        <th>ವಿಷಯದ ಹೆಸರು</th>
-        <th>ಗರಿಷ್ಠ ಅಂಕ</th>
-        <th>ಕ್ರಮ ಸಂಖ್ಯೆ</th>
-        <th>ಸ್ಥಿತಿ</th>
-        <th>Action</th>
-    </tr>
+                <td>
+                    ${getClassName(s.class_name)}
+                </td>
 
-    </thead>
+                <td>
+                    <b>${escapeHtml(s.subject_code || "")}</b>
+                </td>
 
-    <tbody>
-    `;
+                <td>
+                    ${escapeHtml(s.subject_name || "")}
+                </td>
+
+                <td>
+                    ${s.max_marks}
+                </td>
+
+                <td>
+                    ${s.display_order}
+                </td>
+
+                <td>
+                    <span class="badge">
+                        ${s.is_active ? "Active" : "Inactive"}
+                    </span>
+                </td>
+
+            </tr>
+
+        `
+        ).join("");
 
 
-    filtered.forEach((item,index)=>{
+    /* =========================
+       CARD VIEW
+       ========================= */
+
+    let html = "";
+
+    [ "8","9","10" ].forEach(className => {
+
+        const classSubjects =
+            subjects.filter(
+                s => String(s.class_name) === className
+            );
+
+        if(!classSubjects.length){
+
+            return;
+        }
+
 
         html += `
 
-        <tr>
+        <div style="margin-bottom:25px;">
 
-            <td>${index+1}</td>
+            <div class="class-title">
+                ${getClassName(className)}
+            </div>
 
-            <td>${item.class_name || ""}</td>
+            <div class="subject-grid">
 
-            <td>${item.subject_code || ""}</td>
-
-            <td>${item.subject_name || ""}</td>
-
-            <td>${item.max_marks ?? ""}</td>
-
-            <td>${item.display_order ?? ""}</td>
-
-            <td>
                 ${
-                    item.is_active
-                    ? "Active"
-                    : "Inactive"
+                    classSubjects.map(
+                        s => `
+
+                        <div class="subject-card">
+
+                            <div class="subject-name">
+                                ${escapeHtml(s.subject_name)}
+                            </div>
+
+                            <div class="subject-code">
+                                Code:
+                                <b>
+                                    ${escapeHtml(s.subject_code)}
+                                </b>
+                            </div>
+
+                            <div class="max">
+                                ಗರಿಷ್ಠ ಅಂಕ:
+                                ${s.max_marks}
+                            </div>
+
+                        </div>
+
+                        `
+                    ).join("")
                 }
-            </td>
 
-            <td>
+            </div>
 
-                <div class="actions">
-
-                    <button
-                        class="btn-edit"
-                        onclick="editSubject('${item.id}')">
-                        ✏️ Edit
-                    </button>
-
-                    <button
-                        class="btn-delete"
-                        onclick="deleteSubject('${item.id}')">
-                        🗑️ Delete
-                    </button>
-
-                </div>
-
-            </td>
-
-        </tr>
+        </div>
 
         `;
 
     });
 
 
-    html += `
-
-    </tbody>
-
-    </table>
-
-    </div>
-
-    `;
-
-
-    tableArea.innerHTML = html;
+    list.innerHTML = html;
 
 }
 
 
 /* =========================================================
-   EDIT SUBJECT
+   CLASS NAME
    ========================================================= */
 
-function editSubject(id){
+function getClassName(className){
 
-    const item =
-        subjects.find(x => x.id === id);
+    if(String(className) === "8"){
+        return "8ನೇ ತರಗತಿ";
+    }
 
-    if(!item) return;
+    if(String(className) === "9"){
+        return "9ನೇ ತರಗತಿ";
+    }
 
+    if(String(className) === "10"){
+        return "10ನೇ ತರಗತಿ";
+    }
 
-    document.getElementById("editId").value =
-        item.id;
-
-    document.getElementById("className").value =
-        item.class_name || "8";
-
-    document.getElementById("subjectCode").value =
-        item.subject_code || "";
-
-    document.getElementById("subjectName").value =
-        item.subject_name || "";
-
-    document.getElementById("maxMarks").value =
-        item.max_marks || 100;
-
-    document.getElementById("displayOrder").value =
-        item.display_order || 1;
-
-    document.getElementById("isActive").value =
-        item.is_active ? "true" : "false";
-
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-
+    return className;
 }
 
 
 /* =========================================================
-   DELETE SUBJECT
+   HTML ESCAPE
    ========================================================= */
 
-async function deleteSubject(id){
+function escapeHtml(value){
 
-    if(!confirm(
-        "ಈ ವಿಷಯವನ್ನು Delete ಮಾಡಬೇಕೇ?"
-    )){
-        return;
-    }
-
-
-    try{
-
-        const {error} =
-            await sb
-            .from("subjects")
-            .delete()
-            .eq("id",id);
-
-
-        if(error){
-
-            console.error(error);
-
-            showMessage(
-                "Delete ಸಮಸ್ಯೆ: " +
-                error.message,
-                "error"
-            );
-
-            return;
-        }
-
-
-        showMessage(
-            "ವಿಷಯ Delete ಆಗಿದೆ ✅",
-            "success"
-        );
-
-
-        await loadSubjects();
-
-    }
-
-    catch(error){
-
-        showMessage(
-            "Delete ಸಮಸ್ಯೆ: " +
-            error.message,
-            "error"
-        );
-
-    }
-
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
 }
 
 
@@ -828,14 +853,27 @@ async function deleteSubject(id){
    START
    ========================================================= */
 
-window.addEventListener(
-    "DOMContentLoaded",
-    async function(){
+async function start(){
 
-        await loadSubjects();
+    const connected =
+        await checkConnection();
 
+    if(!connected){
+
+        return;
     }
-);
+
+
+    /* Automatically create all subjects */
+
+    await createDefaultSubjects();
+
+}
+
+
+/* Start application */
+
+start();
 
 </script>
 
