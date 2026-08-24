@@ -305,7 +305,113 @@ window.supabase.createClient(
     SUPABASE_KEY
 );
 
+async function loadStudents(){
 
+    const className =
+        document.getElementById("classSelect").value;
+
+    const division =
+        document.getElementById("division").value;
+
+    const exam =
+        document.getElementById("exam").value;
+
+    document.getElementById("showClass").textContent =
+        className + "ನೇ ತರಗತಿ - " + division;
+
+    document.getElementById("showExam").textContent =
+        exam === "half_yearly"
+        ? "ಅರ್ಧವಾರ್ಷಿಕ"
+        : "ವಾರ್ಷಿಕ";
+
+    message(
+        "⏳ Supabase ಸಂಪರ್ಕ ಪರೀಕ್ಷಿಸಲಾಗುತ್ತಿದೆ...",
+        "info"
+    );
+
+    try {
+
+        console.log("SUPABASE URL:", SUPABASE_URL);
+        console.log("CLASS:", className);
+        console.log("DIVISION:", division);
+
+        const { data, error } = await sb
+            .from("students")
+            .select("id,roll_no,student_name,class_name,division")
+            .eq("class_name", className)
+            .eq("division", division)
+            .order("roll_no");
+
+        console.log("DATA:", data);
+        console.log("ERROR:", error);
+
+        if(error){
+
+            message(
+                "❌ Supabase Error:<br><br>" +
+                "<b>" +
+                escapeHtml(error.message) +
+                "</b>",
+                "error"
+            );
+
+            return;
+        }
+
+        students = data || [];
+
+        document.getElementById("studentCount").textContent =
+            students.length;
+
+        if(students.length === 0){
+
+            document.getElementById("marksBody").innerHTML = `
+                <tr>
+                    <td colspan="10">
+                        ❌ 8ನೇ ತರಗತಿ / ${division}
+                        ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಕಂಡುಬಂದಿಲ್ಲ.
+                    </td>
+                </tr>
+            `;
+
+            message(
+                "⚠️ Supabase ಸಂಪರ್ಕ ಯಶಸ್ವಿಯಾಗಿದೆ. ಆದರೆ ಈ Class/Divisionಗೆ Students ಇಲ್ಲ.",
+                "info"
+            );
+
+            return;
+        }
+
+        await loadSubjects();
+        await loadExistingMarks();
+        renderTable();
+
+        message(
+            "✅ " +
+            students.length +
+            " ವಿದ್ಯಾರ್ಥಿಗಳು ಯಶಸ್ವಿಯಾಗಿ Load ಆಗಿದ್ದಾರೆ.",
+            "success"
+        );
+
+    }
+    catch(error){
+
+        console.error("FULL ERROR:", error);
+
+        message(
+            "❌ Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ.<br><br>" +
+            "<b>Type:</b> " +
+            escapeHtml(error.name || "") +
+            "<br>" +
+            "<b>Message:</b> " +
+            escapeHtml(error.message || "") +
+            "<br><br>" +
+            "Browser Consoleನಲ್ಲಿ ಹೆಚ್ಚಿನ ವಿವರ ನೋಡಿ.",
+            "error"
+        );
+    }
+}
+    
 /* =========================================================
    SUBJECTS
    ========================================================= */
