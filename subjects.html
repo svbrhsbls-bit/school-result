@@ -15,154 +15,140 @@
 
 body{
     margin:0;
-    font-family:Arial,"Noto Sans Kannada",sans-serif;
+    font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
     background:#eef5fb;
-    color:#17365d;
+    color:#173b63;
 }
 
 .header{
-    background:linear-gradient(135deg,#1261a0,#2388c9);
+    background:linear-gradient(135deg,#1169a5,#258dcc);
     color:white;
     text-align:center;
-    padding:24px 15px;
-    box-shadow:0 3px 10px rgba(0,0,0,.15);
+    padding:25px 15px;
+    box-shadow:0 3px 10px #999;
 }
 
 .header h1{
     margin:0;
-    font-size:30px;
+    font-size:34px;
 }
 
 .header p{
     margin:8px 0 0;
-    font-size:16px;
+    font-size:18px;
 }
 
 .container{
-    max-width:1200px;
-    margin:25px auto;
+    max-width:1250px;
+    margin:28px auto;
     padding:0 15px;
 }
 
 .card{
     background:white;
-    border-radius:16px;
-    padding:22px;
-    margin-bottom:22px;
-    box-shadow:0 4px 15px rgba(0,0,0,.08);
+    border-radius:18px;
+    padding:25px;
+    margin-bottom:25px;
+    box-shadow:0 4px 18px rgba(0,0,0,.10);
 }
 
 .card h2{
-    margin-top:0;
     text-align:center;
-    color:#123f70;
+    margin-top:0;
+    color:#174f80;
+    font-size:27px;
 }
 
 .form-grid{
     display:grid;
     grid-template-columns:repeat(3,1fr);
-    gap:15px;
+    gap:18px;
 }
 
-.field label{
+label{
     display:block;
     font-weight:bold;
     margin-bottom:7px;
-    color:#234b73;
+    font-size:17px;
 }
 
-.field input,
-.field select{
+input,select{
     width:100%;
-    padding:12px;
-    border:1px solid #cbd8e5;
-    border-radius:8px;
+    padding:13px;
+    border:1px solid #cbd5df;
+    border-radius:9px;
     font-size:16px;
+    background:white;
+}
+
+input:focus,select:focus{
     outline:none;
-}
-
-.field input:focus,
-.field select:focus{
     border-color:#1976b9;
-    box-shadow:0 0 0 2px rgba(25,118,185,.12);
+    box-shadow:0 0 4px rgba(25,118,185,.3);
 }
 
-.button-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
+.buttons{
     margin-top:20px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
 }
 
 button{
-    border:none;
-    border-radius:8px;
-    padding:12px 20px;
+    border:0;
+    padding:12px 22px;
+    border-radius:9px;
+    color:white;
     font-size:16px;
     font-weight:bold;
     cursor:pointer;
 }
 
 .btn-save{
-    background:#168a43;
-    color:white;
+    background:#159447;
 }
 
-.btn-update{
-    background:#e58b00;
-    color:white;
+.btn-clear{
+    background:#68727b;
+}
+
+.btn-edit{
+    background:#ed9410;
+    padding:8px 14px;
 }
 
 .btn-delete{
     background:#d93636;
-    color:white;
-}
-
-.btn-clear{
-    background:#66717c;
-    color:white;
-}
-
-.btn-load{
-    background:#1672ad;
-    color:white;
+    padding:8px 14px;
 }
 
 button:hover{
-    opacity:.9;
-    transform:translateY(-1px);
+    opacity:.88;
 }
 
-.status{
-    margin-top:15px;
-    padding:12px;
-    border-radius:8px;
+.message{
     display:none;
+    margin-top:18px;
+    padding:13px;
+    border-radius:8px;
     font-weight:bold;
 }
 
 .success{
     display:block;
-    background:#e3f7e9;
-    color:#176b35;
-    border:1px solid #a8dfb8;
+    background:#e4f7e9;
+    color:#14732d;
+    border:1px solid #9dd5aa;
 }
 
 .error{
     display:block;
     background:#fde8e8;
-    color:#a32222;
-    border:1px solid #efb0b0;
+    color:#a51f1f;
+    border:1px solid #efaaaa;
 }
 
-.info{
-    display:block;
-    background:#e7f2fb;
-    color:#18527c;
-    border:1px solid #b7d7ef;
-}
-
-.filter-row{
+.search-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:15px;
@@ -179,60 +165,37 @@ table{
     min-width:850px;
 }
 
-thead{
-    background:#176da5;
+th{
+    background:#176da8;
     color:white;
+    padding:12px 8px;
+    text-align:left;
 }
 
-th,td{
-    padding:12px 10px;
-    border-bottom:1px solid #e1e7ed;
+td{
+    padding:11px 8px;
+    border-bottom:1px solid #e2e2e2;
+}
+
+tr:hover{
+    background:#f3f8fc;
+}
+
+.actions{
+    display:flex;
+    gap:7px;
+}
+
+.loading{
     text-align:center;
-}
-
-tbody tr:hover{
-    background:#f1f7fc;
-}
-
-.action-btn{
-    padding:7px 12px;
-    font-size:14px;
-    margin:2px;
-}
-
-.edit-btn{
-    background:#e99400;
-    color:white;
-}
-
-.delete-btn{
-    background:#d93636;
-    color:white;
-}
-
-.badge{
-    display:inline-block;
-    padding:5px 10px;
-    border-radius:20px;
-    font-size:13px;
-    font-weight:bold;
-}
-
-.active{
-    background:#dff5e5;
-    color:#18723a;
-}
-
-.inactive{
-    background:#f8dddd;
-    color:#a52222;
+    padding:25px;
+    font-size:18px;
 }
 
 .empty{
     text-align:center;
-    padding:30px;
+    padding:25px;
     color:#777;
-    font-size:17px;
 }
 
 @media(max-width:800px){
@@ -240,12 +203,12 @@ tbody tr:hover{
         grid-template-columns:1fr;
     }
 
-    .filter-row{
+    .search-grid{
         grid-template-columns:1fr;
     }
 
     .header h1{
-        font-size:24px;
+        font-size:27px;
     }
 }
 </style>
@@ -260,193 +223,95 @@ tbody tr:hover{
 
 <div class="container">
 
-    <!-- SUBJECT FORM -->
-    <div class="card">
+<div class="card">
 
-        <h2>➕ ವಿಷಯ ಸೇರಿಸಿ / Edit Subject</h2>
+<h2>➕ ವಿಷಯ ಸೇರಿಸಿ / Edit Subject</h2>
 
-        <div class="form-grid">
+<input type="hidden" id="editId">
 
-            <div class="field">
-                <label>ತರಗತಿ / Class</label>
-                <select id="className">
-                    <option value="">-- ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="8">8ನೇ ತರಗತಿ</option>
-                    <option value="9">9ನೇ ತರಗತಿ</option>
-                    <option value="10">10ನೇ ತರಗತಿ</option>
-                </select>
-            </div>
+<div class="form-grid">
 
-            <div class="field">
-                <label>ವಿಷಯ ಕೋಡ್ / Subject Code</label>
-                <input
-                    type="text"
-                    id="subjectCode"
-                    placeholder="ಉದಾ: 01K"
-                    maxlength="20"
-                >
-            </div>
+<div>
+<label>ತರಗತಿ / Class</label>
+<select id="className">
+    <option value="8">8ನೇ ತರಗತಿ</option>
+    <option value="9">9ನೇ ತರಗತಿ</option>
+    <option value="10">10ನೇ ತರಗತಿ</option>
+</select>
+</div>
 
-            <div class="field">
-                <label>ವಿಷಯದ ಹೆಸರು / Subject Name</label>
-                <input
-                    type="text"
-                    id="subjectName"
-                    placeholder="ಉದಾ: ಕನ್ನಡ"
-                >
-            </div>
+<div>
+<label>ವಿಷಯ ಕೋಡ್ / Subject Code</label>
+<input type="text" id="subjectCode" placeholder="ಉದಾ: 01K">
+</div>
 
-            <div class="field">
-                <label>ಗರಿಷ್ಠ ಅಂಕ / Max Marks</label>
-                <input
-                    type="number"
-                    id="maxMarks"
-                    min="1"
-                    max="200"
-                    value="100"
-                >
-            </div>
+<div>
+<label>ವಿಷಯದ ಹೆಸರು / Subject Name</label>
+<input type="text" id="subjectName" placeholder="ಉದಾ: ಕನ್ನಡ">
+</div>
 
-            <div class="field">
-                <label>ಕ್ರಮ ಸಂಖ್ಯೆ / Display Order</label>
-                <input
-                    type="number"
-                    id="displayOrder"
-                    min="1"
-                    value="1"
-                >
-            </div>
+<div>
+<label>ಗರಿಷ್ಠ ಅಂಕ / Max Marks</label>
+<input type="number" id="maxMarks" value="100" min="1">
+</div>
 
-            <div class="field">
-                <label>ಸ್ಥಿತಿ / Status</label>
-                <select id="isActive">
-                    <option value="true">Active / ಸಕ್ರಿಯ</option>
-                    <option value="false">Inactive / ನಿಷ್ಕ್ರಿಯ</option>
-                </select>
-            </div>
+<div>
+<label>ಕ್ರಮ ಸಂಖ್ಯೆ / Display Order</label>
+<input type="number" id="displayOrder" value="1" min="1">
+</div>
 
-        </div>
+<div>
+<label>ಸ್ಥಿತಿ / Status</label>
+<select id="isActive">
+    <option value="true">Active / ಸಕ್ರಿಯ</option>
+    <option value="false">Inactive / ನಿಷ್ಕ್ರಿಯ</option>
+</select>
+</div>
 
-        <div class="button-row">
+</div>
 
-            <button class="btn-save" id="saveBtn" onclick="saveSubject()">
-                💾 Save
-            </button>
+<div class="buttons">
+    <button class="btn-save" onclick="saveSubject()">💾 Save</button>
+    <button class="btn-clear" onclick="clearForm()">✖ Clear</button>
+</div>
 
-            <button class="btn-update" id="updateBtn"
-                    onclick="updateSubject()"
-                    style="display:none;">
-                ✏️ Update
-            </button>
+<div id="message" class="message"></div>
 
-            <button class="btn-delete" id="deleteBtn"
-                    onclick="deleteSubject()"
-                    style="display:none;">
-                🗑️ Delete
-            </button>
-
-            <button class="btn-clear" onclick="clearForm()">
-                ✖ Clear
-            </button>
-
-        </div>
-
-        <div id="status" class="status"></div>
-
-    </div>
+</div>
 
 
-    <!-- FILTER -->
-    <div class="card">
+<div class="card">
 
-        <h2>🔎 ವಿಷಯಗಳ ಪಟ್ಟಿ</h2>
+<h2>🔎 ವಿಷಯಗಳ ಪಟ್ಟಿ</h2>
 
-        <div class="filter-row">
+<div class="search-grid">
 
-            <div class="field">
-                <label>ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ</label>
+<div>
+<label>ತರಗತಿ ಆಯ್ಕೆ</label>
+<select id="filterClass" onchange="loadSubjects()">
+    <option value="">ಎಲ್ಲಾ ತರಗತಿಗಳು</option>
+    <option value="8">8ನೇ ತರಗತಿ</option>
+    <option value="9">9ನೇ ತರಗತಿ</option>
+    <option value="10">10ನೇ ತರಗತಿ</option>
+</select>
+</div>
 
-                <select id="filterClass" onchange="loadSubjects()">
+<div>
+<label>Search / ಹುಡುಕಿ</label>
+<input
+    type="text"
+    id="search"
+    placeholder="ವಿಷಯ / ಕೋಡ್ ಹುಡುಕಿ..."
+    oninput="displaySubjects()">
+</div>
 
-                    <option value="">ಎಲ್ಲಾ ತರಗತಿಗಳು</option>
+</div>
 
-                    <option value="8">
-                        8ನೇ ತರಗತಿ
-                    </option>
+<div id="tableArea" class="loading">
+    ವಿಷಯಗಳನ್ನು Loading ಮಾಡಲಾಗುತ್ತಿದೆ...
+</div>
 
-                    <option value="9">
-                        9ನೇ ತರಗತಿ
-                    </option>
-
-                    <option value="10">
-                        10ನೇ ತರಗತಿ
-                    </option>
-
-                </select>
-
-            </div>
-
-            <div class="field">
-
-                <label>Search / ಹುಡುಕಿ</label>
-
-                <input
-                    type="text"
-                    id="searchBox"
-                    placeholder="ವಿಷಯ / ಕೋಡ್ ಹುಡುಕಿ..."
-                    oninput="renderTable()"
-                >
-
-            </div>
-
-        </div>
-
-        <button class="btn-load" onclick="loadSubjects()">
-            🔄 Refresh / Load
-        </button>
-
-    </div>
-
-
-    <!-- TABLE -->
-    <div class="card">
-
-        <h2>📋 Subject List / ವಿಷಯಗಳ ಪಟ್ಟಿ</h2>
-
-        <div class="table-wrap">
-
-            <table>
-
-                <thead>
-
-                    <tr>
-                        <th>ಕ್ರಮ</th>
-                        <th>ತರಗತಿ</th>
-                        <th>ವಿಷಯ ಕೋಡ್</th>
-                        <th>ವಿಷಯದ ಹೆಸರು</th>
-                        <th>ಗರಿಷ್ಠ ಅಂಕ</th>
-                        <th>Display Order</th>
-                        <th>ಸ್ಥಿತಿ</th>
-                        <th>Action</th>
-                    </tr>
-
-                </thead>
-
-                <tbody id="subjectTableBody">
-
-                    <tr>
-                        <td colspan="8" class="empty">
-                            Loading...
-                        </td>
-                    </tr>
-
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </div>
+</div>
 
 </div>
 
@@ -454,333 +319,58 @@ tbody tr:hover{
 <script>
 
 /* =========================================================
-   SUPABASE CONNECTION
+   SUPABASE CONFIGURATION
    ========================================================= */
 
 const SUPABASE_URL =
-    "https://sozlvjvqrpaabnvjvxe.supabase.co";
+"https://sozlvjvqrpaabnvjvxe.supabase.co";
 
-/*
-   ಇಲ್ಲಿ ನಿಮ್ಮ Supabase Publishable Key ಬಳಸಿ.
-   Secret / service_role key ಬಳಸಬೇಡಿ.
-*/
 const SUPABASE_KEY =
-    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+"sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
-
-const sbClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+const sb = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 
 /* =========================================================
-   GLOBAL VARIABLES
+   GLOBAL DATA
    ========================================================= */
 
 let subjects = [];
-let editingId = null;
 
 
 /* =========================================================
-   PAGE LOAD
+   MESSAGE
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", function(){
+function showMessage(text,type){
 
-    console.log("Subject Master loaded.");
+    const box = document.getElementById("message");
 
-    loadSubjects();
-
-});
-
-
-/* =========================================================
-   SHOW MESSAGE
-   ========================================================= */
-
-function showMessage(message,type="info"){
-
-    const box = document.getElementById("status");
-
-    box.className = "status " + type;
-
-    box.textContent = message;
+    box.className = "message " + type;
+    box.textContent = text;
 
 }
 
 
 /* =========================================================
-   CLEAR MESSAGE
+   CLEAR FORM
    ========================================================= */
 
-function clearMessage(){
-
-    const box = document.getElementById("status");
-
-    box.className = "status";
-
-    box.textContent = "";
-
-}
-
-
-/* =========================================================
-   LOAD SUBJECTS
-   ========================================================= */
-
-async function loadSubjects(){
-
-    try{
-
-        showMessage(
-            "ವಿಷಯಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-        const filterClass =
-            document.getElementById("filterClass").value;
-
-
-        let query = sbClient
-            .from("subjects")
-            .select("*")
-            .order("class_name", {ascending:true})
-            .order("display_order", {ascending:true});
-
-
-        if(filterClass){
-
-            query = query.eq(
-                "class_name",
-                filterClass
-            );
-
-        }
-
-
-        const { data,error } = await query;
-
-
-        if(error){
-
-            console.error(error);
-
-            throw error;
-
-        }
-
-
-        subjects = data || [];
-
-        renderTable();
-
-        showMessage(
-            subjects.length +
-            " ವಿಷಯಗಳು Load ಆಗಿವೆ.",
-            "success"
-        );
-
-        setTimeout(clearMessage,3000);
-
-    }
-    catch(error){
-
-        console.error(
-            "Subject load error:",
-            error
-        );
-
-        showMessage(
-            "ವಿಷಯಗಳನ್ನು Load ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ: " +
-            getErrorMessage(error),
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   RENDER TABLE
-   ========================================================= */
-
-function renderTable(){
-
-    const tbody =
-        document.getElementById(
-            "subjectTableBody"
-        );
-
-
-    const search =
-        document.getElementById(
-            "searchBox"
-        ).value
-        .trim()
-        .toLowerCase();
-
-
-    let filtered = subjects.filter(function(subject){
-
-        if(!search){
-
-            return true;
-
-        }
-
-
-        const code =
-            String(
-                subject.subject_code || ""
-            ).toLowerCase();
-
-
-        const name =
-            String(
-                subject.subject_name || ""
-            ).toLowerCase();
-
-
-        return (
-            code.includes(search) ||
-            name.includes(search)
-        );
-
-    });
-
-
-    if(filtered.length === 0){
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="empty">
-                    ಯಾವುದೇ ವಿಷಯಗಳು ಕಂಡುಬಂದಿಲ್ಲ.
-                </td>
-            </tr>
-        `;
-
-        return;
-
-    }
-
-
-    tbody.innerHTML = filtered.map(
-        function(subject,index){
-
-            const classText =
-                getClassText(
-                    subject.class_name
-                );
-
-
-            const active =
-                subject.is_active !== false;
-
-
-            return `
-                <tr>
-
-                    <td>${index + 1}</td>
-
-                    <td>
-                        ${escapeHtml(classText)}
-                    </td>
-
-                    <td>
-                        <strong>
-                            ${escapeHtml(
-                                subject.subject_code || ""
-                            )}
-                        </strong>
-                    </td>
-
-                    <td>
-                        ${escapeHtml(
-                            subject.subject_name || ""
-                        )}
-                    </td>
-
-                    <td>
-                        ${subject.max_marks ?? ""}
-                    </td>
-
-                    <td>
-                        ${subject.display_order ?? ""}
-                    </td>
-
-                    <td>
-
-                        ${
-                            active
-                            ?
-                            `<span class="badge active">
-                                Active
-                             </span>`
-                            :
-                            `<span class="badge inactive">
-                                Inactive
-                             </span>`
-                        }
-
-                    </td>
-
-                    <td>
-
-                        <button
-                            class="action-btn edit-btn"
-                            onclick="editSubject('${subject.id}')">
-                            ✏️ Edit
-                        </button>
-
-                        <button
-                            class="action-btn delete-btn"
-                            onclick="deleteSubjectById('${subject.id}')">
-                            🗑️ Delete
-                        </button>
-
-                    </td>
-
-                </tr>
-            `;
-
-        }
-    ).join("");
-
-}
-
-
-/* =========================================================
-   CLASS TEXT
-   ========================================================= */
-
-function getClassText(value){
-
-    const v = String(value || "").trim();
-
-
-    if(v === "8"){
-
-        return "8ನೇ ತರಗತಿ";
-
-    }
-
-    if(v === "9"){
-
-        return "9ನೇ ತರಗತಿ";
-
-    }
-
-    if(v === "10"){
-
-        return "10ನೇ ತರಗತಿ";
-
-    }
-
-
-    return v;
+function clearForm(){
+
+    document.getElementById("editId").value = "";
+    document.getElementById("className").value = "8";
+    document.getElementById("subjectCode").value = "";
+    document.getElementById("subjectName").value = "";
+    document.getElementById("maxMarks").value = "100";
+    document.getElementById("displayOrder").value = "1";
+    document.getElementById("isActive").value = "true";
+
+    document.getElementById("message").className = "message";
+    document.getElementById("message").textContent = "";
 
 }
 
@@ -793,167 +383,104 @@ async function saveSubject(){
 
     try{
 
-        const className =
-            document.getElementById(
-                "className"
-            ).value.trim();
+        const editId =
+            document.getElementById("editId").value;
 
+        const className =
+            document.getElementById("className").value.trim();
 
         const subjectCode =
-            document.getElementById(
-                "subjectCode"
-            ).value.trim();
-
+            document.getElementById("subjectCode").value.trim();
 
         const subjectName =
-            document.getElementById(
-                "subjectName"
-            ).value.trim();
-
+            document.getElementById("subjectName").value.trim();
 
         const maxMarks =
-            Number(
-                document.getElementById(
-                    "maxMarks"
-                ).value
-            );
-
+            Number(document.getElementById("maxMarks").value);
 
         const displayOrder =
-            Number(
-                document.getElementById(
-                    "displayOrder"
-                ).value
-            );
-
+            Number(document.getElementById("displayOrder").value);
 
         const isActive =
-            document.getElementById(
-                "isActive"
-            ).value === "true";
+            document.getElementById("isActive").value === "true";
 
-
-        /* VALIDATION */
 
         if(!className){
-
-            alert("ದಯವಿಟ್ಟು ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.");
-
+            showMessage("ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ","error");
             return;
-
         }
-
 
         if(!subjectCode){
-
-            alert("ದಯವಿಟ್ಟು Subject Code ನಮೂದಿಸಿ.");
-
+            showMessage("ವಿಷಯ ಕೋಡ್ ನಮೂದಿಸಿ","error");
             return;
-
         }
-
 
         if(!subjectName){
-
-            alert("ದಯವಿಟ್ಟು Subject Name ನಮೂದಿಸಿ.");
-
+            showMessage("ವಿಷಯದ ಹೆಸರು ನಮೂದಿಸಿ","error");
             return;
-
         }
-
 
         if(!maxMarks || maxMarks <= 0){
-
-            alert("ಸರಿಯಾದ Max Marks ನಮೂದಿಸಿ.");
-
+            showMessage("ಸರಿಯಾದ Max Marks ನಮೂದಿಸಿ","error");
             return;
-
         }
 
 
-        if(!displayOrder || displayOrder <= 0){
-
-            alert("ಸರಿಯಾದ Display Order ನಮೂದಿಸಿ.");
-
-            return;
-
-        }
-
-
-        /* DUPLICATE CHECK */
-
-        const duplicate =
-            subjects.find(function(s){
-
-                return (
-                    String(s.class_name) ===
-                    String(className) &&
-
-                    String(s.subject_code)
-                        .trim()
-                        .toLowerCase() ===
-                    subjectCode
-                        .trim()
-                        .toLowerCase() &&
-
-                    s.id !== editingId
-                );
-
-            });
-
-
-        if(duplicate){
-
-            alert(
-                "ಈ ತರಗತಿಗೆ ಈ Subject Code ಈಗಾಗಲೇ ಇದೆ."
-            );
-
-            return;
-
-        }
-
-
-        showMessage(
-            "Subject Save ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-
-        const payload = {
+        const data = {
 
             class_name: className,
-
             subject_code: subjectCode,
-
             subject_name: subjectName,
-
             max_marks: maxMarks,
-
-            display_order: displayOrder,
-
+            display_order: displayOrder || 1,
             is_active: isActive
 
         };
 
 
-        const { data,error } =
-            await sbClient
-            .from("subjects")
-            .insert([payload])
-            .select();
+        let result;
 
 
-        if(error){
+        /* EDIT */
 
-            console.error(error);
+        if(editId){
 
-            throw error;
+            result = await sb
+                .from("subjects")
+                .update(data)
+                .eq("id",editId);
+
+        }
+
+        /* INSERT */
+
+        else{
+
+            result = await sb
+                .from("subjects")
+                .insert([data]);
 
         }
 
 
+        if(result.error){
+
+            console.error(result.error);
+
+            showMessage(
+                "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
+                result.error.message,
+                "error"
+            );
+
+            return;
+        }
+
+
         showMessage(
-            "✅ Subject ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ.",
+            editId
+            ? "ವಿಷಯ ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ ✅"
+            : "ವಿಷಯ ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ ✅",
             "success"
         );
 
@@ -962,25 +489,236 @@ async function saveSubject(){
 
         await loadSubjects();
 
-
-        setTimeout(clearMessage,3000);
-
     }
+
     catch(error){
 
-        console.error(
-            "Save subject error:",
-            error
-        );
-
+        console.error(error);
 
         showMessage(
-            "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getErrorMessage(error),
+            "Supabase ಸಂಪರ್ಕ ಸಮಸ್ಯೆ: " +
+            error.message,
             "error"
         );
 
     }
+
+}
+
+
+/* =========================================================
+   LOAD SUBJECTS
+   ========================================================= */
+
+async function loadSubjects(){
+
+    const tableArea =
+        document.getElementById("tableArea");
+
+    tableArea.innerHTML =
+        '<div class="loading">Loading...</div>';
+
+
+    try{
+
+        let query =
+            sb
+            .from("subjects")
+            .select("*")
+            .order("class_name",{ascending:true})
+            .order("display_order",{ascending:true});
+
+
+        const selectedClass =
+            document.getElementById("filterClass").value;
+
+
+        if(selectedClass){
+
+            query =
+                query.eq("class_name",selectedClass);
+
+        }
+
+
+        const {data,error} = await query;
+
+
+        if(error){
+
+            console.error(error);
+
+            tableArea.innerHTML =
+                '<div class="empty">' +
+                "Load Error: " +
+                error.message +
+                "</div>";
+
+            return;
+        }
+
+
+        subjects = data || [];
+
+        displaySubjects();
+
+    }
+
+    catch(error){
+
+        console.error(error);
+
+        tableArea.innerHTML =
+            '<div class="empty">' +
+            "Supabase ಸಂಪರ್ಕ ವಿಫಲವಾಗಿದೆ: " +
+            error.message +
+            "</div>";
+
+    }
+
+}
+
+
+/* =========================================================
+   DISPLAY SUBJECTS
+   ========================================================= */
+
+function displaySubjects(){
+
+    const tableArea =
+        document.getElementById("tableArea");
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase()
+        .trim();
+
+
+    let filtered =
+        subjects.filter(item => {
+
+            if(!search) return true;
+
+            return (
+
+                String(item.subject_name || "")
+                    .toLowerCase()
+                    .includes(search)
+
+                ||
+
+                String(item.subject_code || "")
+                    .toLowerCase()
+                    .includes(search)
+
+            );
+
+        });
+
+
+    if(filtered.length === 0){
+
+        tableArea.innerHTML =
+            '<div class="empty">' +
+            "ಯಾವುದೇ ವಿಷಯಗಳು ಕಂಡುಬಂದಿಲ್ಲ." +
+            "</div>";
+
+        return;
+    }
+
+
+    let html = `
+
+    <div class="table-wrap">
+
+    <table>
+
+    <thead>
+
+    <tr>
+        <th>ಕ್ರಮ</th>
+        <th>ತರಗತಿ</th>
+        <th>ವಿಷಯ ಕೋಡ್</th>
+        <th>ವಿಷಯದ ಹೆಸರು</th>
+        <th>ಗರಿಷ್ಠ ಅಂಕ</th>
+        <th>ಕ್ರಮ ಸಂಖ್ಯೆ</th>
+        <th>ಸ್ಥಿತಿ</th>
+        <th>Action</th>
+    </tr>
+
+    </thead>
+
+    <tbody>
+    `;
+
+
+    filtered.forEach((item,index)=>{
+
+        html += `
+
+        <tr>
+
+            <td>${index+1}</td>
+
+            <td>${item.class_name || ""}</td>
+
+            <td>${item.subject_code || ""}</td>
+
+            <td>${item.subject_name || ""}</td>
+
+            <td>${item.max_marks ?? ""}</td>
+
+            <td>${item.display_order ?? ""}</td>
+
+            <td>
+                ${
+                    item.is_active
+                    ? "Active"
+                    : "Inactive"
+                }
+            </td>
+
+            <td>
+
+                <div class="actions">
+
+                    <button
+                        class="btn-edit"
+                        onclick="editSubject('${item.id}')">
+                        ✏️ Edit
+                    </button>
+
+                    <button
+                        class="btn-delete"
+                        onclick="deleteSubject('${item.id}')">
+                        🗑️ Delete
+                    </button>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+
+    html += `
+
+    </tbody>
+
+    </table>
+
+    </div>
+
+    `;
+
+
+    tableArea.innerHTML = html;
 
 }
 
@@ -991,80 +729,32 @@ async function saveSubject(){
 
 function editSubject(id){
 
-    const subject =
-        subjects.find(
-            function(s){
-                return s.id === id;
-            }
-        );
+    const item =
+        subjects.find(x => x.id === id);
+
+    if(!item) return;
 
 
-    if(!subject){
+    document.getElementById("editId").value =
+        item.id;
 
-        alert("Subject ಕಂಡುಬಂದಿಲ್ಲ.");
+    document.getElementById("className").value =
+        item.class_name || "8";
 
-        return;
+    document.getElementById("subjectCode").value =
+        item.subject_code || "";
 
-    }
+    document.getElementById("subjectName").value =
+        item.subject_name || "";
 
+    document.getElementById("maxMarks").value =
+        item.max_marks || 100;
 
-    editingId = id;
+    document.getElementById("displayOrder").value =
+        item.display_order || 1;
 
-
-    document.getElementById(
-        "className"
-    ).value =
-        subject.class_name || "";
-
-
-    document.getElementById(
-        "subjectCode"
-    ).value =
-        subject.subject_code || "";
-
-
-    document.getElementById(
-        "subjectName"
-    ).value =
-        subject.subject_name || "";
-
-
-    document.getElementById(
-        "maxMarks"
-    ).value =
-        subject.max_marks || 100;
-
-
-    document.getElementById(
-        "displayOrder"
-    ).value =
-        subject.display_order || 1;
-
-
-    document.getElementById(
-        "isActive"
-    ).value =
-        subject.is_active === false
-        ? "false"
-        : "true";
-
-
-    document.getElementById(
-        "saveBtn"
-    ).style.display =
-        "none";
-
-
-    document.getElementById(
-        "updateBtn"
-    ).style.display =
-        "inline-block";
-
-
-    document.getElementById(
-        "deleteBtn"
-    ).style.display =
-        "inline-block";
+    document.getElementById("isActive").value =
+        item.is_active ? "true" : "false";
 
 
     window.scrollTo({
@@ -1072,242 +762,26 @@ function editSubject(id){
         behavior:"smooth"
     });
 
-
-    showMessage(
-        "Edit ಮಾಡಲು Subject ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆ.",
-        "info"
-    );
-
 }
 
 
 /* =========================================================
-   UPDATE SUBJECT
+   DELETE SUBJECT
    ========================================================= */
 
-async function updateSubject(){
+async function deleteSubject(id){
 
-    if(!editingId){
-
-        alert(
-            "ಮೊದಲು Edit ಆಯ್ಕೆ ಮಾಡಿ."
-        );
-
+    if(!confirm(
+        "ಈ ವಿಷಯವನ್ನು Delete ಮಾಡಬೇಕೇ?"
+    )){
         return;
-
     }
 
 
     try{
 
-        const className =
-            document.getElementById(
-                "className"
-            ).value.trim();
-
-
-        const subjectCode =
-            document.getElementById(
-                "subjectCode"
-            ).value.trim();
-
-
-        const subjectName =
-            document.getElementById(
-                "subjectName"
-            ).value.trim();
-
-
-        const maxMarks =
-            Number(
-                document.getElementById(
-                    "maxMarks"
-                ).value
-            );
-
-
-        const displayOrder =
-            Number(
-                document.getElementById(
-                    "displayOrder"
-                ).value
-            );
-
-
-        const isActive =
-            document.getElementById(
-                "isActive"
-            ).value === "true";
-
-
-        if(!className){
-
-            alert("ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.");
-
-            return;
-
-        }
-
-
-        if(!subjectCode){
-
-            alert("Subject Code ನಮೂದಿಸಿ.");
-
-            return;
-
-        }
-
-
-        if(!subjectName){
-
-            alert("Subject Name ನಮೂದಿಸಿ.");
-
-            return;
-
-        }
-
-
-        showMessage(
-            "Subject Update ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-
-        const payload = {
-
-            class_name: className,
-
-            subject_code: subjectCode,
-
-            subject_name: subjectName,
-
-            max_marks: maxMarks,
-
-            display_order: displayOrder,
-
-            is_active: isActive
-
-        };
-
-
-        const { error } =
-            await sbClient
-            .from("subjects")
-            .update(payload)
-            .eq("id",editingId);
-
-
-        if(error){
-
-            console.error(error);
-
-            throw error;
-
-        }
-
-
-        showMessage(
-            "✅ Subject ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ.",
-            "success"
-        );
-
-
-        clearForm();
-
-        await loadSubjects();
-
-
-        setTimeout(clearMessage,3000);
-
-    }
-    catch(error){
-
-        console.error(
-            "Update subject error:",
-            error
-        );
-
-
-        showMessage(
-            "Update ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getErrorMessage(error),
-            "error"
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   DELETE FROM TABLE
-   ========================================================= */
-
-async function deleteSubject(){
-
-    if(!editingId){
-
-        alert(
-            "ಮೊದಲು Delete ಮಾಡಲು Subject ಆಯ್ಕೆ ಮಾಡಿ."
-        );
-
-        return;
-
-    }
-
-
-    await deleteSubjectById(editingId);
-
-}
-
-
-/* =========================================================
-   DELETE BY ID
-   ========================================================= */
-
-async function deleteSubjectById(id){
-
-    const subject =
-        subjects.find(
-            function(s){
-                return s.id === id;
-            }
-        );
-
-
-    if(!subject){
-
-        alert("Subject ಕಂಡುಬಂದಿಲ್ಲ.");
-
-        return;
-
-    }
-
-
-    const ok =
-        confirm(
-            "ಈ Subject ಅನ್ನು Delete ಮಾಡಬೇಕೇ?\n\n" +
-            subject.subject_name
-        );
-
-
-    if(!ok){
-
-        return;
-
-    }
-
-
-    try{
-
-        showMessage(
-            "Subject Delete ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-
-        const { error } =
-            await sbClient
+        const {error} =
+            await sb
             .from("subjects")
             .delete()
             .eq("id",id);
@@ -1317,41 +791,31 @@ async function deleteSubjectById(id){
 
             console.error(error);
 
-            throw error;
+            showMessage(
+                "Delete ಸಮಸ್ಯೆ: " +
+                error.message,
+                "error"
+            );
 
-        }
-
-
-        if(editingId === id){
-
-            clearForm();
-
+            return;
         }
 
 
         showMessage(
-            "✅ Subject Delete ಆಗಿದೆ.",
+            "ವಿಷಯ Delete ಆಗಿದೆ ✅",
             "success"
         );
 
 
         await loadSubjects();
 
-
-        setTimeout(clearMessage,3000);
-
     }
+
     catch(error){
 
-        console.error(
-            "Delete subject error:",
-            error
-        );
-
-
         showMessage(
-            "Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getErrorMessage(error),
+            "Delete ಸಮಸ್ಯೆ: " +
+            error.message,
             "error"
         );
 
@@ -1361,119 +825,17 @@ async function deleteSubjectById(id){
 
 
 /* =========================================================
-   CLEAR FORM
+   START
    ========================================================= */
 
-function clearForm(){
+window.addEventListener(
+    "DOMContentLoaded",
+    async function(){
 
-    editingId = null;
-
-
-    document.getElementById(
-        "className"
-    ).value = "";
-
-
-    document.getElementById(
-        "subjectCode"
-    ).value = "";
-
-
-    document.getElementById(
-        "subjectName"
-    ).value = "";
-
-
-    document.getElementById(
-        "maxMarks"
-    ).value = "100";
-
-
-    document.getElementById(
-        "displayOrder"
-    ).value = "1";
-
-
-    document.getElementById(
-        "isActive"
-    ).value = "true";
-
-
-    document.getElementById(
-        "saveBtn"
-    ).style.display =
-        "inline-block";
-
-
-    document.getElementById(
-        "updateBtn"
-    ).style.display =
-        "none";
-
-
-    document.getElementById(
-        "deleteBtn"
-    ).style.display =
-        "none";
-
-}
-
-
-/* =========================================================
-   ERROR MESSAGE
-   ========================================================= */
-
-function getErrorMessage(error){
-
-    if(!error){
-
-        return "Unknown error";
+        await loadSubjects();
 
     }
-
-
-    if(error.message){
-
-        return error.message;
-
-    }
-
-
-    if(typeof error === "string"){
-
-        return error;
-
-    }
-
-
-    try{
-
-        return JSON.stringify(error);
-
-    }
-    catch(e){
-
-        return "Unknown error";
-
-    }
-
-}
-
-
-/* =========================================================
-   HTML ESCAPE
-   ========================================================= */
-
-function escapeHtml(value){
-
-    return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-
-}
+);
 
 </script>
 
