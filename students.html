@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Students Database - School Result System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:Arial,"Noto Sans Kannada",sans-serif;
+    background:#f3f7fc;
+    color:#172033;
+}
+
+.header{
+    background:linear-gradient(135deg,#123b78,#1769aa);
+    color:white;
+    text-align:center;
+    padding:25px 15px;
+}
+
+.header h1{
+    font-size:28px;
+    margin-bottom:7px;
+}
+
+.header h2{
+    font-size:18px;
+    font-weight:500;
+}
+
+.container{
+    width:96%;
+    max-width:1500px;
+    margin:25px auto;
+}
+
+.card{
+    background:white;
+    border-radius:15px;
+    padding:22px;
+    box-shadow:0 5px 25px rgba(0,0,0,.08);
+    margin-bottom:20px;
+}
+
+.title{
+    text-align:center;
+    color:#123b78;
+    margin-bottom:20px;
+}
+
+.controls{
+    display:grid;
+    grid-template-columns:1fr 1fr auto auto;
+    gap:15px;
+    align-items:end;
+}
+
+.form-group label{
+    display:block;
+    font-weight:bold;
+    margin-bottom:7px;
+}
+
+select,
+input{
+    width:100%;
+    padding:11px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    font-size:15px;
+    background:white;
+}
+
+button{
+    border:none;
+    border-radius:8px;
+    padding:11px 18px;
+    font-size:15px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.load-btn{
+    background:#1769aa;
+    color:white;
+}
+
+.add-btn{
+    background:#16803c;
+    color:white;
+}
+
+.excel-btn{
+    background:#107c41;
+    color:white;
+}
+
+.template-btn{
+    background:#64748b;
+    color:white;
+}
+
+.save-btn{
+    background:#123b78;
+    color:white;
+}
+
+.delete-btn{
+    background:#b42318;
+    color:white;
+    padding:7px 12px;
+}
+
+.edit-btn{
+    background:#f59e0b;
+    color:white;
+    padding:7px 12px;
+}
+
+.message{
+    display:none;
+    margin-top:15px;
+    padding:13px;
+    border-radius:8px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.success{
+    display:block;
+    background:#ecfdf3;
+    color:#067647;
+    border:1px solid #a7f3d0;
+}
+
+.error{
+    display:block;
+    background:#fff1f2;
+    color:#b42318;
+    border:1px solid #fecdd3;
+}
+
+.info{
+    margin-top:15px;
+    padding:12px;
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    border-radius:8px;
+    color:#1d4ed8;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:15px;
+}
+
+.form-grid .full{
+    grid-column:1/-1;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1300px;
+}
+
+th,
+td{
+    border:1px solid #d7dee8;
+    padding:9px;
+    text-align:center;
+}
+
+th{
+    background:#123b78;
+    color:white;
+    white-space:nowrap;
+}
+
+td{
+    background:white;
+}
+
+.student-name{
+    text-align:left;
+    font-weight:bold;
+}
+
+.roll{
+    font-weight:bold;
+    color:#1769aa;
+}
+
+.action-buttons{
+    display:flex;
+    gap:5px;
+    justify-content:center;
+}
+
+.empty{
+    text-align:center;
+    padding:40px;
+    color:#64748b;
+    font-size:18px;
+}
+
+.loading{
+    text-align:center;
+    padding:30px;
+    color:#1769aa;
+    font-weight:bold;
+}
+
+.file-box{
+    border:2px dashed #94a3b8;
+    border-radius:10px;
+    padding:18px;
+    text-align:center;
+    margin-top:10px;
+}
+
+.hidden{
+    display:none;
+}
+
+@media(max-width:900px){
+
+    .controls{
+        grid-template-columns:1fr;
+    }
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
+
+    .header h1{
+        font-size:22px;
+    }
+
+    .card{
+        padding:15px;
+    }
+}
+
+</style>
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+    <h1>
+        ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ
+    </h1>
+
+    <h2>
+        ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ
+    </h2>
+
+    <p style="margin-top:8px;">
+        Students Database / ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ
+    </p>
+
+</div>
+
+
+
+<div class="container">
+
+
+<!-- CLASS SELECTION -->
+
+<div class="card">
+
+    <div class="title">
+
+        <h2>
+            ವಿದ್ಯಾರ್ಥಿಗಳ Database
+        </h2>
+
+        <p>
+            Class & Division Selection
+        </p>
+
+    </div>
+
+
+    <div class="controls">
+
+
+        <div class="form-group">
+
+            <label>
+                ತರಗತಿ / Class
+            </label>
+
+            <select id="classSelect">
+
+                <option value="">
+                    -- ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ --
+                </option>
+
+                <option value="8">
+                    8ನೇ ತರಗತಿ
+                </option>
+
+                <option value="9">
+                    9ನೇ ತರಗತಿ
+                </option>
+
+                <option value="10">
+                    10ನೇ ತರಗತಿ
+                </option>
+
+            </select>
+
+        </div>
+
+
+
+        <div class="form-group">
+
+            <label>
+                ವಿಭಾಗ / Division
+            </label>
+
+            <select id="divisionSelect">
+
+                <option value="A">
+                    A
+                </option>
+
+                <option value="B">
+                    B
+                </option>
+
+                <option value="C">
+                    C
+                </option>
+
+            </select>
+
+        </div>
+
+
+
+        <button
+            class="load-btn"
+            onclick="loadStudents()"
+        >
+            🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
+        </button>
+
+
+
+        <button
+            class="add-btn"
+            onclick="showAddForm()"
+        >
+            ➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
+        </button>
+
+
+    </div>
+
+
+    <div id="message" class="message"></div>
+
+</div>
+
+
+
+<!-- ADD STUDENT -->
+
+<div
+    class="card hidden"
+    id="studentFormCard"
+>
+
+    <div class="title">
+
+        <h2>
+            ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ
+        </h2>
+
+    </div>
+
+
+    <input
+        type="hidden"
+        id="editId"
+    >
+
+
+    <div class="form-grid">
+
+
+        <div>
+            <label>Roll No / Reg No</label>
+
+            <input
+                type="text"
+                id="rollNo"
+                placeholder="ಉದಾ: 1"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</label>
+
+            <input
+                type="text"
+                id="studentName"
+                placeholder="ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ತಂದೆಯ ಹೆಸರು</label>
+
+            <input
+                type="text"
+                id="fatherName"
+                placeholder="ತಂದೆಯ ಹೆಸರು"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ತಾಯಿಯ ಹೆಸರು</label>
+
+            <input
+                type="text"
+                id="motherName"
+                placeholder="ತಾಯಿಯ ಹೆಸರು"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ಲಿಂಗ / Gender</label>
+
+            <select id="gender">
+
+                <option value="">
+                    ಆಯ್ಕೆಮಾಡಿ
+                </option>
+
+                <option value="Male">
+                    Male / ಗಂಡು
+                </option>
+
+                <option value="Female">
+                    Female / ಹೆಣ್ಣು
+                </option>
+
+            </select>
+
+        </div>
+
+
+
+        <div>
+            <label>ಜನ್ಮ ದಿನಾಂಕ</label>
+
+            <input
+                type="date"
+                id="dob"
+            >
+        </div>
+
+
+
+        <div>
+            <label>SATS No</label>
+
+            <input
+                type="text"
+                id="satsNo"
+                placeholder="SATS Number"
+            >
+        </div>
+
+
+
+        <div>
+            <label>PEN Number</label>
+
+            <input
+                type="text"
+                id="penNo"
+                placeholder="PEN Number"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ಜಾತಿ / Caste</label>
+
+            <input
+                type="text"
+                id="caste"
+                placeholder="ಜಾತಿ"
+            >
+        </div>
+
+
+
+        <div>
+            <label>ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</label>
+
+            <input
+                type="text"
+                id="mobile"
+                placeholder="Mobile Number"
+            >
+        </div>
+
+
+    </div>
+
+
+    <div
+        style="
+        display:flex;
+        gap:10px;
+        margin-top:20px;
+        flex-wrap:wrap;
+        "
+    >
+
+        <button
+            class="save-btn"
+            onclick="saveStudent()"
+        >
+            💾 Save Student
+        </button>
+
+
+        <button
+            class="template-btn"
+            onclick="hideAddForm()"
+        >
+            Cancel
+        </button>
+
+    </div>
+
+</div>
+
+
+
+<!-- EXCEL IMPORT -->
+
+<div class="card">
+
+    <div class="title">
+
+        <h2>
+            📊 Excel Import
+        </h2>
+
+        <p>
+            Excel ಮೂಲಕ ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Upload ಮಾಡಿ
+        </p>
+
+    </div>
+
+
+    <div
+        style="
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        "
+    >
+
+        <button
+            class="template-btn"
+            onclick="downloadTemplate()"
+        >
+            📥 Excel Template Download
+        </button>
+
+
+        <label class="excel-btn"
+            style="
+            display:inline-block;
+            padding:11px 18px;
+            border-radius:8px;
+            cursor:pointer;
+            "
+        >
+
+            📤 Excel Upload
+
+            <input
+                type="file"
+                id="excelFile"
+                accept=".xlsx,.xls,.csv"
+                style="display:none"
+                onchange="importExcel(event)"
+            >
+
+        </label>
+
+    </div>
+
+
+    <div class="info">
+
+        <b>Excel Columns:</b>
+
+        Roll No, Student Name, Father Name,
+        Mother Name, Gender, Date of Birth,
+        SATS No, PEN Number, Caste, Mobile
+
+        <br><br>
+
+        Excel Upload ಮಾಡುವ ಮೊದಲು ಮೇಲಿನ
+        <b>Excel Template</b> Download ಮಾಡಿ.
+
+    </div>
+
+</div>
+
+
+
+<!-- STUDENTS LIST -->
+
+<div class="card">
+
+    <div
+        style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-bottom:15px;
+        "
+    >
+
+        <h2 id="listTitle">
+            ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ
+        </h2>
+
+
+        <div>
+
+            <span
+                id="studentCount"
+                style="
+                font-weight:bold;
+                color:#1769aa;
+                "
+            >
+                0 ವಿದ್ಯಾರ್ಥಿಗಳು
+            </span>
+
+        </div>
+
+    </div>
+
+
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Sl.No</th>
+
+                    <th>Roll No</th>
+
+                    <th>Student Name</th>
+
+                    <th>Father Name</th>
+
+                    <th>Mother Name</th>
+
+                    <th>Gender</th>
+
+                    <th>Date of Birth</th>
+
+                    <th>SATS No</th>
+
+                    <th>PEN No</th>
+
+                    <th>Caste</th>
+
+                    <th>Mobile</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="studentTableBody">
+
+                <tr>
+
+                    <td
+                        colspan="12"
+                        class="empty"
+                    >
+                        ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ
+                        <br>
+                        ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ.
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+</div>
+
+
+
+<script>
+
+
+/* =====================================================
+   SUPABASE CONNECTION
+===================================================== */
+
+
+const SUPABASE_URL =
+"https://ezmudfrpcvjsngjibvoq.supabase.co";
+
+
+const SUPABASE_KEY =
+"sb_publishable__FYyH6NQaqgARaq2dvuovQ_rKmus0js";
+
+
+const supabaseClient =
+window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
+
+
+
+/* =====================================================
+   GLOBAL
+===================================================== */
+
+
+let students = [];
+
+
+
+/* =====================================================
+   MESSAGE
+===================================================== */
+
+
+function showMessage(text,type){
+
+    const message =
+        document.getElementById("message");
+
+    message.textContent = text;
+
+    message.className =
+        "message " + type;
+
+    message.style.display = "block";
+
+
+    setTimeout(()=>{
+
+        message.style.display = "none";
+
+    },5000);
+
+}
+
+
+
+/* =====================================================
+   SHOW FORM
+===================================================== */
+
+
+function showAddForm(){
+
+    const className =
+        document.getElementById("classSelect").value;
+
+    if(!className){
+
+        showMessage(
+            "ಮೊದಲು ತರಗತಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "studentFormCard"
+    ).classList.remove("hidden");
+
+
+
+    clearForm();
+
+}
+
+
+
+/* =====================================================
+   HIDE FORM
+===================================================== */
+
+
+function hideAddForm(){
+
+    document.getElementById(
+        "studentFormCard"
+    ).classList.add("hidden");
+
+}
+
+
+
+/* =====================================================
+   CLEAR FORM
+===================================================== */
+
+
+function clearForm(){
+
+    document.getElementById("editId").value = "";
+
+    document.getElementById("rollNo").value = "";
+
+    document.getElementById("studentName").value = "";
+
+    document.getElementById("fatherName").value = "";
+
+    document.getElementById("motherName").value = "";
+
+    document.getElementById("gender").value = "";
+
+    document.getElementById("dob").value = "";
+
+    document.getElementById("satsNo").value = "";
+
+    document.getElementById("penNo").value = "";
+
+    document.getElementById("caste").value = "";
+
+    document.getElementById("mobile").value = "";
+
+}
+
+
+
+/* =====================================================
+   LOAD STUDENTS
+===================================================== */
+
+
+async function loadStudents(){
+
+    const className =
+        document.getElementById(
+            "classSelect"
+        ).value;
+
+
+    const division =
+        document.getElementById(
+            "divisionSelect"
+        ).value;
+
+
+    if(!className){
+
+        showMessage(
+            "ದಯವಿಟ್ಟು ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const tbody =
+        document.getElementById(
+            "studentTableBody"
+        );
+
+
+    tbody.innerHTML = `
+
+        <tr>
+
+            <td
+                colspan="12"
+                class="loading"
+            >
+                ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ Loading...
+            </td>
+
+        </tr>
+
+    `;
+
+
+    try{
+
+
+        const {
+            data,
+            error
+        } = await supabaseClient
+
+            .from("students")
+
+            .select("*")
+
+            .eq("class_name",className)
+
+            .eq("division",division)
+
+            .eq("is_active",true)
+
+            .order(
+                "roll_no",
+                {
+                    ascending:true
+                }
+            );
+
+
+        if(error)
+            throw error;
+
+
+        students = data || [];
+
+
+        displayStudents();
+
+
+        document.getElementById(
+            "listTitle"
+        ).textContent =
+            `${className}ನೇ ತರಗತಿ - ${division} ವಿಭಾಗ`;
+
+
+        showMessage(
+            `${students.length} ವಿದ್ಯಾರ್ಥಿಗಳು Load ಆಗಿದ್ದಾರೆ.`,
+            "success"
+        );
+
+
+    }
+    catch(error){
+
+        console.error(error);
+
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="12"
+                    class="empty"
+                >
+                    Data Load Error:
+                    ${escapeHtml(error.message)}
+                </td>
+
+            </tr>
+
+        `;
+
+
+        showMessage(
+            "ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ Load ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   DISPLAY STUDENTS
+===================================================== */
+
+
+function displayStudents(){
+
+    const tbody =
+        document.getElementById(
+            "studentTableBody"
+        );
+
+
+    document.getElementById(
+        "studentCount"
+    ).textContent =
+        `${students.length} ವಿದ್ಯಾರ್ಥಿಗಳು`;
+
+
+    if(students.length === 0){
+
+        tbody.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="12"
+                    class="empty"
+                >
+                    ಈ ತರಗತಿ / ವಿಭಾಗದಲ್ಲಿ
+                    ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
+                    <br><br>
+                    ➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
+                    ಅಥವಾ Excel Upload ಮಾಡಿ.
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+
+    let html = "";
+
+
+    students.forEach(
+        (student,index)=>{
+
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${index+1}
+                    </td>
+
+
+                    <td class="roll">
+                        ${escapeHtml(
+                            student.roll_no || ""
+                        )}
+                    </td>
+
+
+                    <td class="student-name">
+                        ${escapeHtml(
+                            student.student_name || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.father_name || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.mother_name || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.gender || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${formatDate(
+                            student.date_of_birth
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.sats_no || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.pen_number || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.caste || ""
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            student.mobile_number || ""
+                        )}
+                    </td>
+
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="edit-btn"
+                                onclick="editStudent('${student.id}')"
+                            >
+                                ✏️
+                            </button>
+
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteStudent('${student.id}')"
+                            >
+                                🗑️
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+
+    tbody.innerHTML = html;
+
+}
+
+
+
+/* =====================================================
+   SAVE STUDENT
+===================================================== */
+
+
+async function saveStudent(){
+
+    const className =
+        document.getElementById(
+            "classSelect"
+        ).value;
+
+
+    const division =
+        document.getElementById(
+            "divisionSelect"
+        ).value;
+
+
+    const editId =
+        document.getElementById(
+            "editId"
+        ).value;
+
+
+    const studentName =
+        document.getElementById(
+            "studentName"
+        ).value.trim();
+
+
+    const rollNo =
+        document.getElementById(
+            "rollNo"
+        ).value.trim();
+
+
+    if(!className){
+
+        showMessage(
+            "ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if(!studentName){
+
+        showMessage(
+            "ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    if(!rollNo){
+
+        showMessage(
+            "Roll No ನಮೂದಿಸಿ.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+
+    const studentData = {
+
+        class_name:
+            className,
+
+        division:
+            division,
+
+        roll_no:
+            rollNo,
+
+        student_name:
+            studentName,
+
+        father_name:
+            document.getElementById(
+                "fatherName"
+            ).value.trim(),
+
+        mother_name:
+            document.getElementById(
+                "motherName"
+            ).value.trim(),
+
+        gender:
+            document.getElementById(
+                "gender"
+            ).value,
+
+        date_of_birth:
+            document.getElementById(
+                "dob"
+            ).value || null,
+
+        sats_no:
+            document.getElementById(
+                "satsNo"
+            ).value.trim(),
+
+        pen_number:
+            document.getElementById(
+                "penNo"
+            ).value.trim(),
+
+        caste:
+            document.getElementById(
+                "caste"
+            ).value.trim(),
+
+        mobile_number:
+            document.getElementById(
+                "mobile"
+            ).value.trim(),
+
+        is_active:
+            true
+
+    };
+
+
+
+    try{
+
+
+        let result;
+
+
+        if(editId){
+
+            result =
+                await supabaseClient
+
+                    .from("students")
+
+                    .update(studentData)
+
+                    .eq("id",editId);
+
+
+        }
+        else{
+
+            result =
+                await supabaseClient
+
+                    .from("students")
+
+                    .insert(
+                        [studentData]
+                    );
+
+        }
+
+
+        if(result.error)
+            throw result.error;
+
+
+        showMessage(
+            editId
+                ? "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ Update ಆಗಿದೆ."
+                : "ವಿದ್ಯಾರ್ಥಿ ಯಶಸ್ವಿಯಾಗಿ ಸೇರಿಸಲಾಗಿದೆ.",
+            "success"
+        );
+
+
+        hideAddForm();
+
+
+        clearForm();
+
+
+        await loadStudents();
+
+
+    }
+    catch(error){
+
+        console.error(error);
+
+
+        showMessage(
+            "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   EDIT
+===================================================== */
+
+
+function editStudent(id){
+
+    const student =
+        students.find(
+            s => s.id === id
+        );
+
+
+    if(!student)
+        return;
+
+
+    document.getElementById(
+        "editId"
+    ).value =
+        student.id;
+
+
+    document.getElementById(
+        "rollNo"
+    ).value =
+        student.roll_no || "";
+
+
+    document.getElementById(
+        "studentName"
+    ).value =
+        student.student_name || "";
+
+
+    document.getElementById(
+        "fatherName"
+    ).value =
+        student.father_name || "";
+
+
+    document.getElementById(
+        "motherName"
+    ).value =
+        student.mother_name || "";
+
+
+    document.getElementById(
+        "gender"
+    ).value =
+        student.gender || "";
+
+
+    document.getElementById(
+        "dob"
+    ).value =
+        student.date_of_birth || "";
+
+
+    document.getElementById(
+        "satsNo"
+    ).value =
+        student.sats_no || "";
+
+
+    document.getElementById(
+        "penNo"
+    ).value =
+        student.pen_number || "";
+
+
+    document.getElementById(
+        "caste"
+    ).value =
+        student.caste || "";
+
+
+    document.getElementById(
+        "mobile"
+    ).value =
+        student.mobile_number || "";
+
+
+    document.getElementById(
+        "studentFormCard"
+    ).classList.remove("hidden");
+
+
+    window.scrollTo({
+        top:300,
+        behavior:"smooth"
+    });
+
+}
+
+
+
+/* =====================================================
+   DELETE
+===================================================== */
+
+
+async function deleteStudent(id){
+
+    const student =
+        students.find(
+            s => s.id === id
+        );
+
+
+    if(!student)
+        return;
+
+
+    const ok =
+        confirm(
+            `${student.student_name} ಅವರನ್ನು Delete ಮಾಡಬೇಕೇ?`
+        );
+
+
+    if(!ok)
+        return;
+
+
+    try{
+
+
+        /*
+          Hard delete ಬದಲು
+          is_active=false
+        */
+
+
+        const {
+            error
+        } = await supabaseClient
+
+            .from("students")
+
+            .update({
+                is_active:false
+            })
+
+            .eq("id",id);
+
+
+        if(error)
+            throw error;
+
+
+        showMessage(
+            "ವಿದ್ಯಾರ್ಥಿಯನ್ನು ಪಟ್ಟಿಯಿಂದ ತೆಗೆದುಹಾಕಲಾಗಿದೆ.",
+            "success"
+        );
+
+
+        await loadStudents();
+
+
+    }
+    catch(error){
+
+        showMessage(
+            "Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
+            error.message,
+            "error"
+        );
+
+    }
+
+}
+
+
+
+/* =====================================================
+   EXCEL TEMPLATE
+===================================================== */
+
+
+function downloadTemplate(){
+
+    const data = [
+
+        {
+
+            "Roll No":"1",
+
+            "Student Name":"",
+
+            "Father Name":"",
+
+            "Mother Name":"",
+
+            "Gender":"Male",
+
+            "Date of Birth":"",
+
+            "SATS No":"",
+
+            "PEN Number":"",
+
+            "Caste":"",
+
+            "Mobile":""
+
+        },
+
+        {
+
+            "Roll No":"2",
+
+            "Student Name":"",
+
+            "Father Name":"",
+
+            "Mother Name":"",
+
+            "Gender":"Female",
+
+            "Date of Birth":"",
+
+            "SATS No":"",
+
+            "PEN Number":"",
+
+            "Caste":"",
+
+            "Mobile":""
+
+        }
+
+    ];
+
+
+    const worksheet =
+        XLSX.utils.json_to_sheet(data);
+
+
+    const workbook =
+        XLSX.utils.book_new();
+
+
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        "Students"
+    );
+
+
+    XLSX.writeFile(
+        workbook,
+        "Students_Import_Template.xlsx"
+    );
+
+}
+
+
+
+/* =====================================================
+   EXCEL IMPORT
+===================================================== */
+
+
+async function importExcel(event){
+
+    const file =
+        event.target.files[0];
+
+
+    if(!file)
+        return;
+
+
+    const className =
+        document.getElementById(
+            "classSelect"
+        ).value;
+
+
+    const division =
+        document.getElementById(
+            "divisionSelect"
+        ).value;
+
+
+    if(!className){
+
+        showMessage(
+            "Excel Upload ಮಾಡುವ ಮೊದಲು ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.",
+            "error"
+        );
+
+        event.target.value = "";
+
+        return;
+
+    }
+
+
+    try{
+
+
+        const arrayBuffer =
+            await file.arrayBuffer();
+
+
+        const workbook =
+            XLSX.read(
+                arrayBuffer,
+                {
+                    type:"array"
+                }
+            );
+
+
+        const sheet =
+            workbook.Sheets[
+                workbook.SheetNames[0]
+            ];
+
+
+        const rows =
+            XLSX.utils.sheet_to_json(
+                sheet,
+                {
+                    defval:""
+                }
+            );
+
+
+        if(rows.length === 0){
+
+            throw new Error(
+                "Excelನಲ್ಲಿ ಯಾವುದೇ data ಇಲ್ಲ."
+            );
+
+        }
+
+
+
+        const records =
+            rows.map(row => ({
+
+
+                class_name:
+                    className,
+
+
+                division:
+                    division,
+
+
+                roll_no:
+                    String(
+                        row["Roll No"] || ""
+                    ).trim(),
+
+
+                student_name:
+                    String(
+                        row["Student Name"] || ""
+                    ).trim(),
+
+
+                father_name:
+                    String(
+                        row["Father Name"] || ""
+                    ).trim(),
+
+
+                mother_name:
+                    String(
+                        row["Mother Name"] || ""
+                    ).trim(),
+
+
+                gender:
+                    String(
+                        row["Gender"] || ""
+                    ).trim(),
+
+
+                date_of_birth:
+                    convertExcelDate(
+                        row["Date of Birth"]
+                    ),
+
+
+                sats_no:
+                    String(
+                        row["SATS No"] || ""
+                    ).trim(),
+
+
+                pen_number:
+                    String(
+                        row["PEN Number"] || ""
+                    ).trim(),
+
+
+                caste:
+                    String(
+                        row["Caste"] || ""
+                    ).trim(),
+
+
+                mobile_number:
+                    String(
+                        row["Mobile"] || ""
+                    ).trim(),
+
+
+                is_active:
+                    true
+
+
+            }));
+
+
+
+        const validRecords =
+            records.filter(
+                r =>
+                    r.roll_no &&
+                    r.student_name
+            );
+
+
+        if(validRecords.length === 0){
+
+            throw new Error(
+                "Roll No ಮತ್ತು Student Name ಇರುವ rows ಕಂಡುಬಂದಿಲ್ಲ."
+            );
+
+        }
+
+
+
+        showMessage(
+            `${validRecords.length} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Upload ಮಾಡಲಾಗುತ್ತಿದೆ...`,
+            "success"
+        );
+
+
+
+        const {
+            error
+        } = await supabaseClient
+
+            .from("students")
+
+            .insert(
+                validRecords
+            );
+
+
+        if(error)
+            throw error;
+
+
+        showMessage(
+            `${validRecords.length} ವಿದ್ಯಾರ್ಥಿಗಳು ಯಶಸ್ವಿಯಾಗಿ Upload ಆಗಿದ್ದಾರೆ.`,
+            "success"
+        );
+
+
+        event.target.value = "";
+
+
+        await loadStudents();
+
+
+    }
+    catch(error){
+
+        console.error(error);
+
+
+        showMessage(
+            "Excel Upload Error: " +
+            error.message,
+            "error"
+        );
+
+
+        event.target.value = "";
+
+    }
+
+}
+
+
+
+/* =====================================================
+   EXCEL DATE
+===================================================== */
+
+
+function convertExcelDate(value){
+
+    if(!value)
+        return null;
+
+
+    if(
+        typeof value === "string"
+    ){
+
+        const d =
+            new Date(value);
+
+
+        if(!isNaN(d.getTime())){
+
+            return d
+                .toISOString()
+                .split("T")[0];
+
+        }
+
+
+        return value;
+
+    }
+
+
+    if(
+        typeof value === "number"
+    ){
+
+        const date =
+            XLSX.SSF.parse_date_code(
+                value
+            );
+
+
+        if(date){
+
+            const y =
+                date.y;
+
+            const m =
+                String(
+                    date.m
+                ).padStart(2,"0");
+
+            const d =
+                String(
+                    date.d
+                ).padStart(2,"0");
+
+
+            return `${y}-${m}-${d}`;
+
+        }
+
+    }
+
+
+    return null;
+
+}
+
+
+
+/* =====================================================
+   DATE DISPLAY
+===================================================== */
+
+
+function formatDate(value){
+
+    if(!value)
+        return "";
+
+
+    const parts =
+        String(value).split("-");
+
+
+    if(parts.length === 3){
+
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+    }
+
+
+    return value;
+
+}
+
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+
+function escapeHtml(value){
+
+    return String(value ?? "")
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+</script>
+
+
+</body>
+</html>
