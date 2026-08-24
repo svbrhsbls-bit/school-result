@@ -6,8 +6,10 @@
 
 <title>Students Database - School Result System</title>
 
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<!-- Excel -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -23,6 +25,8 @@ body{
     background:#f3f7fc;
     color:#172033;
 }
+
+/* HEADER */
 
 .header{
     background:linear-gradient(135deg,#123b78,#1769aa);
@@ -40,6 +44,8 @@ body{
     font-size:18px;
     font-weight:500;
 }
+
+/* CONTAINER */
 
 .container{
     width:96%;
@@ -61,6 +67,8 @@ body{
     margin-bottom:20px;
 }
 
+/* CONTROLS */
+
 .controls{
     display:grid;
     grid-template-columns:1fr 1fr auto auto;
@@ -68,7 +76,8 @@ body{
     align-items:end;
 }
 
-.form-group label{
+.form-group label,
+.form-grid label{
     display:block;
     font-weight:bold;
     margin-bottom:7px;
@@ -91,6 +100,10 @@ button{
     font-size:15px;
     font-weight:bold;
     cursor:pointer;
+}
+
+button:hover{
+    opacity:.9;
 }
 
 .load-btn{
@@ -130,6 +143,8 @@ button{
     padding:7px 12px;
 }
 
+/* MESSAGE */
+
 .message{
     display:none;
     margin-top:15px;
@@ -162,15 +177,15 @@ button{
     color:#1d4ed8;
 }
 
+/* FORM */
+
 .form-grid{
     display:grid;
     grid-template-columns:repeat(4,1fr);
     gap:15px;
 }
 
-.form-grid .full{
-    grid-column:1/-1;
-}
+/* TABLE */
 
 .table-wrapper{
     overflow-x:auto;
@@ -229,6 +244,12 @@ td{
     font-weight:bold;
 }
 
+.hidden{
+    display:none;
+}
+
+/* EXCEL */
+
 .file-box{
     border:2px dashed #94a3b8;
     border-radius:10px;
@@ -237,9 +258,7 @@ td{
     margin-top:10px;
 }
 
-.hidden{
-    display:none;
-}
+/* MOBILE */
 
 @media(max-width:900px){
 
@@ -263,9 +282,11 @@ td{
 </style>
 </head>
 
-
 <body>
 
+<!-- =====================================================
+     HEADER
+===================================================== -->
 
 <div class="header">
 
@@ -284,11 +305,12 @@ td{
 </div>
 
 
-
 <div class="container">
 
 
-<!-- CLASS SELECTION -->
+<!-- =====================================================
+     CLASS SELECTION
+===================================================== -->
 
 <div class="card">
 
@@ -337,7 +359,6 @@ td{
         </div>
 
 
-
         <div class="form-group">
 
             <label>
@@ -363,39 +384,44 @@ td{
         </div>
 
 
-
         <button
             class="load-btn"
-            onclick="loadStudents()"
-        >
-            🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
-        </button>
+            onclick="loadStudents()">
 
+            🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
+
+        </button>
 
 
         <button
             class="add-btn"
-            onclick="showAddForm()"
-        >
+            onclick="showAddForm()">
+
             ➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
+
         </button>
 
 
     </div>
 
 
-    <div id="message" class="message"></div>
+    <div
+        id="message"
+        class="message">
+    </div>
 
 </div>
 
 
 
-<!-- ADD STUDENT -->
+<!-- =====================================================
+     STUDENT FORM
+===================================================== -->
 
 <div
     class="card hidden"
-    id="studentFormCard"
->
+    id="studentFormCard">
+
 
     <div class="title">
 
@@ -416,55 +442,70 @@ td{
 
 
         <div>
-            <label>Roll No / Reg No</label>
+
+            <label>
+                Roll No / Reg No
+            </label>
 
             <input
                 type="text"
                 id="rollNo"
-                placeholder="ಉದಾ: 1"
+                placeholder="ಉದಾ: 01"
             >
+
         </div>
 
 
-
         <div>
-            <label>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</label>
+
+            <label>
+                ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು
+            </label>
 
             <input
                 type="text"
                 id="studentName"
                 placeholder="ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು"
             >
+
         </div>
 
 
-
         <div>
-            <label>ತಂದೆಯ ಹೆಸರು</label>
+
+            <label>
+                ತಂದೆಯ ಹೆಸರು
+            </label>
 
             <input
                 type="text"
                 id="fatherName"
                 placeholder="ತಂದೆಯ ಹೆಸರು"
             >
+
         </div>
 
 
-
         <div>
-            <label>ತಾಯಿಯ ಹೆಸರು</label>
+
+            <label>
+                ತಾಯಿಯ ಹೆಸರು
+            </label>
 
             <input
                 type="text"
                 id="motherName"
                 placeholder="ತಾಯಿಯ ಹೆಸರು"
             >
+
         </div>
 
 
-
         <div>
-            <label>ಲಿಂಗ / Gender</label>
+
+            <label>
+                ಲಿಂಗ / Gender
+            </label>
 
             <select id="gender">
 
@@ -485,62 +526,77 @@ td{
         </div>
 
 
-
         <div>
-            <label>ಜನ್ಮ ದಿನಾಂಕ</label>
+
+            <label>
+                ಜನ್ಮ ದಿನಾಂಕ
+            </label>
 
             <input
                 type="date"
                 id="dob"
             >
+
         </div>
 
 
-
         <div>
-            <label>SATS No</label>
+
+            <label>
+                SATS No
+            </label>
 
             <input
                 type="text"
                 id="satsNo"
                 placeholder="SATS Number"
             >
+
         </div>
 
 
-
         <div>
-            <label>PEN Number</label>
+
+            <label>
+                PEN Number
+            </label>
 
             <input
                 type="text"
                 id="penNo"
                 placeholder="PEN Number"
             >
+
         </div>
 
 
-
         <div>
-            <label>ಜಾತಿ / Caste</label>
+
+            <label>
+                ಜಾತಿ / Caste
+            </label>
 
             <input
                 type="text"
                 id="caste"
                 placeholder="ಜಾತಿ"
             >
+
         </div>
 
 
-
         <div>
-            <label>ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</label>
+
+            <label>
+                ಮೊಬೈಲ್ ಸಂಖ್ಯೆ
+            </label>
 
             <input
                 type="text"
                 id="mobile"
                 placeholder="Mobile Number"
             >
+
         </div>
 
 
@@ -553,23 +609,26 @@ td{
         gap:10px;
         margin-top:20px;
         flex-wrap:wrap;
-        "
-    >
+        ">
+
 
         <button
             class="save-btn"
-            onclick="saveStudent()"
-        >
+            onclick="saveStudent()">
+
             💾 Save Student
+
         </button>
 
 
         <button
             class="template-btn"
-            onclick="hideAddForm()"
-        >
+            onclick="hideAddForm()">
+
             Cancel
+
         </button>
+
 
     </div>
 
@@ -577,9 +636,12 @@ td{
 
 
 
-<!-- EXCEL IMPORT -->
+<!-- =====================================================
+     EXCEL IMPORT
+===================================================== -->
 
 <div class="card">
+
 
     <div class="title">
 
@@ -599,25 +661,26 @@ td{
         display:flex;
         gap:10px;
         flex-wrap:wrap;
-        "
-    >
+        ">
+
 
         <button
             class="template-btn"
-            onclick="downloadTemplate()"
-        >
+            onclick="downloadTemplate()">
+
             📥 Excel Template Download
+
         </button>
 
 
-        <label class="excel-btn"
+        <label
+            class="excel-btn"
             style="
             display:inline-block;
             padding:11px 18px;
             border-radius:8px;
             cursor:pointer;
-            "
-        >
+            ">
 
             📤 Excel Upload
 
@@ -630,6 +693,7 @@ td{
             >
 
         </label>
+
 
     </div>
 
@@ -645,7 +709,8 @@ td{
         <br><br>
 
         Excel Upload ಮಾಡುವ ಮೊದಲು ಮೇಲಿನ
-        <b>Excel Template</b> Download ಮಾಡಿ.
+        <b>Excel Template</b>
+        Download ಮಾಡಿ.
 
     </div>
 
@@ -653,9 +718,12 @@ td{
 
 
 
-<!-- STUDENTS LIST -->
+<!-- =====================================================
+     STUDENTS LIST
+===================================================== -->
 
 <div class="card">
+
 
     <div
         style="
@@ -665,35 +733,34 @@ td{
         gap:10px;
         flex-wrap:wrap;
         margin-bottom:15px;
-        "
-    >
+        ">
+
 
         <h2 id="listTitle">
             ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ
         </h2>
 
 
-        <div>
+        <span
+            id="studentCount"
+            style="
+            font-weight:bold;
+            color:#1769aa;
+            ">
 
-            <span
-                id="studentCount"
-                style="
-                font-weight:bold;
-                color:#1769aa;
-                "
-            >
-                0 ವಿದ್ಯಾರ್ಥಿಗಳು
-            </span>
+            0 ವಿದ್ಯಾರ್ಥಿಗಳು
 
-        </div>
+        </span>
+
 
     </div>
 
 
-
     <div class="table-wrapper">
 
+
         <table>
+
 
             <thead>
 
@@ -734,16 +801,20 @@ td{
 
                     <td
                         colspan="12"
-                        class="empty"
-                    >
+                        class="empty">
+
                         ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ
+
                         <br>
+
                         ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ.
+
                     </td>
 
                 </tr>
 
             </tbody>
+
 
         </table>
 
@@ -755,12 +826,19 @@ td{
 </div>
 
 
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
 
 <script>
 
 
 /* =====================================================
    SUPABASE CONNECTION
+
+   IMPORTANT:
+   supabaseClient ಎಂಬ ಹೆಸರಿನ ಬದಲು
+   sbClient ಬಳಸಲಾಗಿದೆ.
 ===================================================== */
 
 
@@ -771,6 +849,10 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
 "sb_publishable__FYyH6NQaqgARaq2dvuovQ_rKmus0js";
 
+
+/*
+   IMPORTANT FIX
+*/
 
 const sbClient =
 window.supabase.createClient(
@@ -784,7 +866,6 @@ window.supabase.createClient(
    GLOBAL
 ===================================================== */
 
-
 let students = [];
 
 
@@ -792,7 +873,6 @@ let students = [];
 /* =====================================================
    MESSAGE
 ===================================================== */
-
 
 function showMessage(text,type){
 
@@ -807,7 +887,7 @@ function showMessage(text,type){
     message.style.display = "block";
 
 
-    setTimeout(()=>{
+    setTimeout(function(){
 
         message.style.display = "none";
 
@@ -821,11 +901,11 @@ function showMessage(text,type){
    SHOW FORM
 ===================================================== */
 
-
 function showAddForm(){
 
     const className =
         document.getElementById("classSelect").value;
+
 
     if(!className){
 
@@ -839,10 +919,10 @@ function showAddForm(){
     }
 
 
-    document.getElementById(
-        "studentFormCard"
-    ).classList.remove("hidden");
-
+    document
+        .getElementById("studentFormCard")
+        .classList
+        .remove("hidden");
 
 
     clearForm();
@@ -855,12 +935,12 @@ function showAddForm(){
    HIDE FORM
 ===================================================== */
 
-
 function hideAddForm(){
 
-    document.getElementById(
-        "studentFormCard"
-    ).classList.add("hidden");
+    document
+        .getElementById("studentFormCard")
+        .classList
+        .add("hidden");
 
 }
 
@@ -869,7 +949,6 @@ function hideAddForm(){
 /* =====================================================
    CLEAR FORM
 ===================================================== */
-
 
 function clearForm(){
 
@@ -902,7 +981,6 @@ function clearForm(){
 /* =====================================================
    LOAD STUDENTS
 ===================================================== */
-
 
 async function loadStudents(){
 
@@ -942,9 +1020,10 @@ async function loadStudents(){
 
             <td
                 colspan="12"
-                class="loading"
-            >
+                class="loading">
+
                 ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ Loading...
+
             </td>
 
         </tr>
@@ -958,17 +1037,26 @@ async function loadStudents(){
         const {
             data,
             error
-        } = await supabaseClient
+        } = await sbClient
 
             .from("students")
 
             .select("*")
 
-            .eq("class_name",className)
+            .eq(
+                "class_name",
+                className
+            )
 
-            .eq("division",division)
+            .eq(
+                "division",
+                division
+            )
 
-            .eq("is_active",true)
+            .eq(
+                "is_active",
+                true
+            )
 
             .order(
                 "roll_no",
@@ -1001,6 +1089,7 @@ async function loadStudents(){
 
 
     }
+
     catch(error){
 
         console.error(error);
@@ -1012,10 +1101,12 @@ async function loadStudents(){
 
                 <td
                     colspan="12"
-                    class="empty"
-                >
+                    class="empty">
+
                     Data Load Error:
+
                     ${escapeHtml(error.message)}
+
                 </td>
 
             </tr>
@@ -1039,7 +1130,6 @@ async function loadStudents(){
    DISPLAY STUDENTS
 ===================================================== */
 
-
 function displayStudents(){
 
     const tbody =
@@ -1062,13 +1152,16 @@ function displayStudents(){
 
                 <td
                     colspan="12"
-                    class="empty"
-                >
+                    class="empty">
+
                     ಈ ತರಗತಿ / ವಿಭಾಗದಲ್ಲಿ
                     ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
+
                     <br><br>
+
                     ➕ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
                     ಅಥವಾ Excel Upload ಮಾಡಿ.
+
                 </td>
 
             </tr>
@@ -1080,20 +1173,18 @@ function displayStudents(){
     }
 
 
-
     let html = "";
 
 
     students.forEach(
-        (student,index)=>{
-
+        function(student,index){
 
             html += `
 
                 <tr>
 
                     <td>
-                        ${index+1}
+                        ${index + 1}
                     </td>
 
 
@@ -1171,20 +1262,24 @@ function displayStudents(){
 
                         <div class="action-buttons">
 
+
                             <button
                                 class="edit-btn"
-                                onclick="editStudent('${student.id}')"
-                            >
+                                onclick="editStudent('${student.id}')">
+
                                 ✏️
+
                             </button>
 
 
                             <button
                                 class="delete-btn"
-                                onclick="deleteStudent('${student.id}')"
-                            >
+                                onclick="deleteStudent('${student.id}')">
+
                                 🗑️
+
                             </button>
+
 
                         </div>
 
@@ -1207,7 +1302,6 @@ function displayStudents(){
 /* =====================================================
    SAVE STUDENT
 ===================================================== */
-
 
 async function saveStudent(){
 
@@ -1278,6 +1372,10 @@ async function saveStudent(){
 
 
 
+    /* ===============================================
+       STUDENT DATA
+    =============================================== */
+
     const studentData = {
 
         class_name:
@@ -1339,8 +1437,11 @@ async function saveStudent(){
 
 
 
-    try{
+    /* ===============================================
+       SAVE
+    =============================================== */
 
+    try{
 
         let result;
 
@@ -1348,26 +1449,31 @@ async function saveStudent(){
         if(editId){
 
             result =
-                await supabaseClient
+                await sbClient
 
                     .from("students")
 
-                    .update(studentData)
+                    .update(
+                        studentData
+                    )
 
-                    .eq("id",editId);
-
+                    .eq(
+                        "id",
+                        editId
+                    );
 
         }
+
         else{
 
             result =
-                await supabaseClient
+                await sbClient
 
                     .from("students")
 
-                    .insert(
-                        [studentData]
-                    );
+                    .insert([
+                        studentData
+                    ]);
 
         }
 
@@ -1377,23 +1483,28 @@ async function saveStudent(){
 
 
         showMessage(
+
             editId
+
                 ? "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ Update ಆಗಿದೆ."
+
                 : "ವಿದ್ಯಾರ್ಥಿ ಯಶಸ್ವಿಯಾಗಿ ಸೇರಿಸಲಾಗಿದೆ.",
+
             "success"
+
         );
 
 
         hideAddForm();
-
 
         clearForm();
 
 
         await loadStudents();
 
-
     }
+
+
     catch(error){
 
         console.error(error);
@@ -1412,15 +1523,16 @@ async function saveStudent(){
 
 
 /* =====================================================
-   EDIT
+   EDIT STUDENT
 ===================================================== */
-
 
 function editStudent(id){
 
     const student =
         students.find(
-            s => s.id === id
+            function(s){
+                return s.id === id;
+            }
         );
 
 
@@ -1494,9 +1606,10 @@ function editStudent(id){
         student.mobile_number || "";
 
 
-    document.getElementById(
-        "studentFormCard"
-    ).classList.remove("hidden");
+    document
+        .getElementById("studentFormCard")
+        .classList
+        .remove("hidden");
 
 
     window.scrollTo({
@@ -1509,15 +1622,16 @@ function editStudent(id){
 
 
 /* =====================================================
-   DELETE
+   DELETE STUDENT
 ===================================================== */
-
 
 async function deleteStudent(id){
 
     const student =
         students.find(
-            s => s.id === id
+            function(s){
+                return s.id === id;
+            }
         );
 
 
@@ -1538,15 +1652,9 @@ async function deleteStudent(id){
     try{
 
 
-        /*
-          Hard delete ಬದಲು
-          is_active=false
-        */
-
-
         const {
             error
-        } = await supabaseClient
+        } = await sbClient
 
             .from("students")
 
@@ -1554,7 +1662,10 @@ async function deleteStudent(id){
                 is_active:false
             })
 
-            .eq("id",id);
+            .eq(
+                "id",
+                id
+            );
 
 
         if(error)
@@ -1569,9 +1680,13 @@ async function deleteStudent(id){
 
         await loadStudents();
 
-
     }
+
+
     catch(error){
+
+        console.error(error);
+
 
         showMessage(
             "Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
@@ -1588,7 +1703,6 @@ async function deleteStudent(id){
 /* =====================================================
    EXCEL TEMPLATE
 ===================================================== */
-
 
 function downloadTemplate(){
 
@@ -1673,7 +1787,6 @@ function downloadTemplate(){
    EXCEL IMPORT
 ===================================================== */
 
-
 async function importExcel(event){
 
     const file =
@@ -1751,91 +1864,92 @@ async function importExcel(event){
 
 
 
+        /* ============================================
+           CREATE RECORDS
+        ============================================ */
+
         const records =
-            rows.map(row => ({
+            rows.map(
+                function(row){
 
+                    return {
 
-                class_name:
-                    className,
+                        class_name:
+                            className,
 
+                        division:
+                            division,
 
-                division:
-                    division,
+                        roll_no:
+                            String(
+                                row["Roll No"] || ""
+                            ).trim(),
 
+                        student_name:
+                            String(
+                                row["Student Name"] || ""
+                            ).trim(),
 
-                roll_no:
-                    String(
-                        row["Roll No"] || ""
-                    ).trim(),
+                        father_name:
+                            String(
+                                row["Father Name"] || ""
+                            ).trim(),
 
+                        mother_name:
+                            String(
+                                row["Mother Name"] || ""
+                            ).trim(),
 
-                student_name:
-                    String(
-                        row["Student Name"] || ""
-                    ).trim(),
+                        gender:
+                            String(
+                                row["Gender"] || ""
+                            ).trim(),
 
+                        date_of_birth:
+                            convertExcelDate(
+                                row["Date of Birth"]
+                            ),
 
-                father_name:
-                    String(
-                        row["Father Name"] || ""
-                    ).trim(),
+                        sats_no:
+                            String(
+                                row["SATS No"] || ""
+                            ).trim(),
 
+                        pen_number:
+                            String(
+                                row["PEN Number"] || ""
+                            ).trim(),
 
-                mother_name:
-                    String(
-                        row["Mother Name"] || ""
-                    ).trim(),
+                        caste:
+                            String(
+                                row["Caste"] || ""
+                            ).trim(),
 
+                        mobile_number:
+                            String(
+                                row["Mobile"] || ""
+                            ).trim(),
 
-                gender:
-                    String(
-                        row["Gender"] || ""
-                    ).trim(),
+                        is_active:
+                            true
 
+                    };
 
-                date_of_birth:
-                    convertExcelDate(
-                        row["Date of Birth"]
-                    ),
-
-
-                sats_no:
-                    String(
-                        row["SATS No"] || ""
-                    ).trim(),
-
-
-                pen_number:
-                    String(
-                        row["PEN Number"] || ""
-                    ).trim(),
-
-
-                caste:
-                    String(
-                        row["Caste"] || ""
-                    ).trim(),
-
-
-                mobile_number:
-                    String(
-                        row["Mobile"] || ""
-                    ).trim(),
-
-
-                is_active:
-                    true
-
-
-            }));
+                }
+            );
 
 
 
         const validRecords =
             records.filter(
-                r =>
-                    r.roll_no &&
-                    r.student_name
+                function(r){
+
+                    return (
+                        r.roll_no &&
+                        r.student_name
+                    );
+
+                }
             );
 
 
@@ -1848,7 +1962,6 @@ async function importExcel(event){
         }
 
 
-
         showMessage(
             `${validRecords.length} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Upload ಮಾಡಲಾಗುತ್ತಿದೆ...`,
             "success"
@@ -1856,9 +1969,13 @@ async function importExcel(event){
 
 
 
+        /* ============================================
+           INSERT EXCEL DATA
+        ============================================ */
+
         const {
             error
-        } = await supabaseClient
+        } = await sbClient
 
             .from("students")
 
@@ -1882,8 +1999,9 @@ async function importExcel(event){
 
         await loadStudents();
 
-
     }
+
+
     catch(error){
 
         console.error(error);
@@ -1908,16 +2026,13 @@ async function importExcel(event){
    EXCEL DATE
 ===================================================== */
 
-
 function convertExcelDate(value){
 
     if(!value)
         return null;
 
 
-    if(
-        typeof value === "string"
-    ){
+    if(typeof value === "string"){
 
         const d =
             new Date(value);
@@ -1937,9 +2052,7 @@ function convertExcelDate(value){
     }
 
 
-    if(
-        typeof value === "number"
-    ){
+    if(typeof value === "number"){
 
         const date =
             XLSX.SSF.parse_date_code(
@@ -1952,15 +2065,23 @@ function convertExcelDate(value){
             const y =
                 date.y;
 
+
             const m =
                 String(
                     date.m
-                ).padStart(2,"0");
+                ).padStart(
+                    2,
+                    "0"
+                );
+
 
             const d =
                 String(
                     date.d
-                ).padStart(2,"0");
+                ).padStart(
+                    2,
+                    "0"
+                );
 
 
             return `${y}-${m}-${d}`;
@@ -1979,7 +2100,6 @@ function convertExcelDate(value){
 /* =====================================================
    DATE DISPLAY
 ===================================================== */
-
 
 function formatDate(value){
 
@@ -2008,40 +2128,41 @@ function formatDate(value){
    ESCAPE HTML
 ===================================================== */
 
-
 function escapeHtml(value){
 
-    return String(value ?? "")
+    return String(
+        value ?? ""
+    )
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
+    .replace(
+        /&/g,
+        "&amp;"
+    )
 
-        .replace(
-            /</g,
-            "&lt;"
-        )
+    .replace(
+        /</g,
+        "&lt;"
+    )
 
-        .replace(
-            />/g,
-            "&gt;"
-        )
+    .replace(
+        />/g,
+        "&gt;"
+    )
 
-        .replace(
-            /"/g,
-            "&quot;"
-        )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
 
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+    .replace(
+        /'/g,
+        "&#039;"
+    );
 
 }
 
-</script>
 
+</script>
 
 </body>
 </html>
