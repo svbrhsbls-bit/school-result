@@ -573,37 +573,7 @@ function maximumMarks(subject){
    8TH GRADE
 ===================================================== */
 
-function grade8(mark,max){
 
-    const m = Number(mark);
-
-    if(!Number.isFinite(m)){
-        return "";
-    }
-
-
-    /* 50 marks */
-
-    if(max === 50){
-
-        if(m >= 45) return "A+";
-        if(m >= 35) return "A";
-        if(m >= 25) return "B+";
-        if(m >= 15) return "B";
-
-        return "C";
-    }
-
-
-    /* 100 marks */
-
-    if(m >= 90) return "A+";
-    if(m >= 70) return "A";
-    if(m >= 50) return "B+";
-    if(m >= 30) return "B";
-
-    return "C";
-}
 
 
 /* =====================================================
@@ -626,7 +596,58 @@ function grade910(mark,subject){
     /* ---------------------------------------------
        HALF YEARLY
     --------------------------------------------- */
+function grade8(mark,max){
 
+    const m = Number(mark);
+
+    if(!Number.isFinite(m)){
+        return "";
+    }
+
+    /*
+    ==========================================
+    8ನೇ ತರಗತಿ - ಅರ್ಧವಾರ್ಷಿಕ
+    50 Marks
+    ==========================================
+    */
+
+    if(
+        currentExam === "HALF_YEARLY" &&
+        max === 50
+    ){
+
+        if(m >= 45) return "A+";
+        if(m >= 35) return "A";
+        if(m >= 25) return "B+";
+        if(m >= 15) return "B";
+
+        return "C";
+    }
+
+
+    /*
+    ==========================================
+    8ನೇ ತರಗತಿ - ವಾರ್ಷಿಕ
+    100 Marks
+    ==========================================
+    */
+
+    if(
+        currentExam === "ANNUAL" &&
+        max === 100
+    ){
+
+        if(m >= 90) return "A+";
+        if(m >= 70) return "A";
+        if(m >= 50) return "B+";
+        if(m >= 30) return "B";
+
+        return "C";
+    }
+
+
+    return "";
+}
     if(currentExam === "HALF_YEARLY"){
 
         /* Kannada - 100 */
