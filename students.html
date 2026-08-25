@@ -274,7 +274,7 @@ tr:hover{
                 🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
             </button>
 
-            <button class="btn-load" onclick="document.getElementById("excelFile").click()">
+            <button type="button" class="btn-load" onclick="document.getElementById('excelFile').click()">
                 📤 Excel Upload
             </button>
 
@@ -1439,41 +1439,104 @@ async function handleExcelUpload(event){
 }
 
 function downloadStudentExcelTemplate(){
-    if(typeof XLSX === "undefined"){
-        showMessage("Excel library Load ಆಗಿಲ್ಲ.", "error");
-        return;
+
+    const headers = [
+        "Roll No","Student Name","Father Name","Mother Name",
+        "Gender","DOB","SATS No","Caste","Mobile"
+    ];
+
+    const sample = [
+        "1","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತಂದೆಯ ಹೆಸರು","ತಾಯಿಯ ಹೆಸರು",
+        "ಗಂಡು","2013-05-10","123456789","2A","9876543210"
+    ];
+
+    try {
+
+        if(typeof XLSX === "undefined"){
+            showMessage("Excel library Load ಆಗಿಲ್ಲ. Page ಅನ್ನು Ctrl+F5 ಮಾಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.", "error");
+            return;
+        }
+
+        const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+
+        // Keep SATS and Mobile as text so leading zeros are not lost.
+        ws["G2"] = { t:"s", v:"123456789" };
+        ws["I2"] = { t:"s", v:"9876543210" };
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Students");
+
+        // Create XLSX bytes in browser memory.
+        const xlsxArray = XLSX.write(wb, {
+            bookType: "xlsx",
+            type: "array"
+        });
+
+        const blob = new Blob(
+            [xlsxArray],
+            {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+        );
+
+        const url = URL.createObjectURL(blob);
+
+        // Real download link.
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Students-Excel-Template.xlsx";
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+
+        // Do NOT revoke immediately; some browsers cancel the download.
+        setTimeout(function(){
+            URL.revokeObjectURL(url);
+            a.remove();
+        }, 10000);
+
+        showMessage("✅ Excel Template Download ಪ್ರಾರಂಭವಾಗಿದೆ.", "success");
+
+    } catch(error) {
+
+        console.error("TEMPLATE DOWNLOAD ERROR:", error);
+
+        // Guaranteed fallback to CSV.
+        const csvRows = [
+            headers,
+            sample
+        ];
+
+        const csvEscape = function(value){
+            return '"' + String(value ?? "").replace(/"/g, '""') + '"';
+        };
+
+        const csv = csvRows
+            .map(row => row.map(csvEscape).join(","))
+            .join("\r\n");
+
+        const blob = new Blob(
+            ["\\uFEFF" + csv],
+            {type:"text/csv;charset=utf-8;"}
+        );
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = "Students-Excel-Template.csv";
+        a.style.display = "none";
+
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(function(){
+            URL.revokeObjectURL(url);
+            a.remove();
+        }, 10000);
+
+        showMessage("Excel download ಆಗದ ಕಾರಣ CSV Template download ಮಾಡಲಾಗಿದೆ. Excelನಲ್ಲಿ ತೆರೆಯಬಹುದು.", "info");
     }
-
-    const data = [[
-        "Roll No",
-        "Student Name",
-        "Father Name",
-        "Mother Name",
-        "Gender",
-        "DOB",
-        "SATS No",
-        "Caste",
-        "Mobile"
-    ],[
-        "1",
-        "ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು",
-        "ತಂದೆಯ ಹೆಸರು",
-        "ತಾಯಿಯ ಹೆಸರು",
-        "ಗಂಡು",
-        "2013-05-10",
-        "123456789",
-        "2A",
-        "9876543210"
-    ]];
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Students");
-
-    XLSX.writeFile(wb, "Students-Excel-Template.xlsx");
 }
-
 
 /* =========================================================
    CONNECTION TEST
