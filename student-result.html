@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Student Result</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
+    background:#eef6fb;
+    color:#17324d;
+}
+.header{
+    background:#0b82b8;
+    color:#fff;
+    text-align:center;
+    padding:22px 12px;
+}
+.header h1{margin:0;font-size:28px}
+.header p{margin:7px 0 0;font-size:16px}
+.container{max-width:1200px;margin:22px auto;padding:0 14px}
+.card{
+    background:#fff;
+    border-radius:14px;
+    box-shadow:0 3px 15px rgba(0,0,0,.10);
+    padding:20px;
+    margin-bottom:20px;
+}
+.search-card h2{margin-top:0}
+.search-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+}
+label{display:block;font-weight:700;margin-bottom:7px}
+input{
+    width:100%;
+    padding:12px;
+    border:1px solid #b9c8d4;
+    border-radius:8px;
+    font-size:16px;
+}
+.button-row{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+button{
+    border:0;
+    border-radius:8px;
+    padding:12px 20px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+}
+.btn-blue{background:#087fba;color:white}
+.btn-gray{background:#5d6870;color:white}
+.btn-print{background:#168a55;color:white}
+.message{
+    margin-top:15px;
+    padding:11px 14px;
+    border-radius:8px;
+    display:none;
+    background:#fff3cd;
+    color:#765600;
+}
+.message.show{display:block}
+.message.error{background:#fde2e2;color:#9b1c1c}
+.message.success{background:#dff5e7;color:#126b38}
+
+.result-head{
+    text-align:center;
+    border-bottom:2px solid #0b82b8;
+    padding-bottom:12px;
+    margin-bottom:15px;
+}
+.result-head h2{margin:0 0 6px}
+.student-info{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    background:#f4f9fc;
+    border-radius:10px;
+    padding:13px;
+    margin-bottom:18px;
+}
+.info-item{font-size:15px}
+.info-item b{color:#075f89}
+
+.exam-title{
+    background:#0b82b8;
+    color:#fff;
+    padding:11px 14px;
+    border-radius:8px 8px 0 0;
+    font-size:19px;
+    font-weight:800;
+    margin-top:22px;
+}
+.exam-status{
+    padding:10px 14px;
+    background:#fff8e1;
+    color:#795b00;
+    border:1px solid #f0df9b;
+    border-top:0;
+}
+.table-wrap{overflow-x:auto}
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:700px;
+}
+th,td{
+    border:1px solid #ccd8df;
+    padding:9px 8px;
+    text-align:center;
+}
+th{
+    background:#087fb5;
+    color:#fff;
+}
+td.subject{text-align:left;font-weight:700}
+.summary{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin-top:14px;
+}
+.summary-box{
+    background:#f3f8fb;
+    border:1px solid #d5e3ea;
+    border-radius:8px;
+    padding:10px;
+    text-align:center;
+}
+.summary-box b{display:block;font-size:18px}
+.pass{color:#118044;font-weight:800}
+.fail{color:#c02020;font-weight:800}
+.pending{color:#a16a00;font-weight:800}
+
+.no-result{
+    text-align:center;
+    padding:30px;
+    color:#666;
+}
+.loading{text-align:center;padding:25px}
+
+@media(max-width:700px){
+    .search-grid,.student-info{grid-template-columns:1fr}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .header h1{font-size:22px}
+}
+@media print{
+    body{background:#fff}
+    .no-print{display:none!important}
+    .container{max-width:none;margin:0;padding:0}
+    .card{box-shadow:none;padding:0}
+    .exam-title{break-after:avoid}
+    .table-wrap{overflow:visible}
+    table{min-width:0;font-size:11px}
+    th,td{padding:5px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
+    <p>ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
+</div>
+
+<div class="container">
+
+    <div class="card search-card no-print">
+        <h2>📘 ವಿದ್ಯಾರ್ಥಿ ಫಲಿತಾಂಶ</h2>
+        <p>Roll Number ಮತ್ತು Date of Birth ನಮೂದಿಸಿ ಫಲಿತಾಂಶ ವೀಕ್ಷಿಸಿ.</p>
+
+        <div class="search-grid">
+            <div>
+                <label for="rollNumber">Roll Number</label>
+                <input id="rollNumber" type="text"
+                       autocomplete="off"
+                       placeholder="Roll Number ನಮೂದಿಸಿ">
+            </div>
+
+            <div>
+                <label for="dob">Date of Birth</label>
+                <input id="dob" type="date">
+            </div>
+        </div>
+
+        <div class="button-row">
+            <button class="btn-blue" onclick="viewResult()">🔍 View Result</button>
+            <button class="btn-gray" onclick="clearResult()">Clear</button>
+        </div>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <div id="resultArea"></div>
+</div>
+
+<script>
+/* =========================================================
+   SUPABASE CONNECTION
+   Same working connection as Students Database / Marks Entry
+========================================================= */
+const SUPABASE_URL =
+    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+
+const db =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+/* =========================================================
+   HELPERS
+========================================================= */
+function $(id){
+    return document.getElementById(id);
+}
+
+function esc(value){
+    return String(value ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function normalizeDate(value){
+    if(!value) return "";
+
+    const s=String(value).trim();
+
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s))
+        return s;
+
+    const d=new Date(s);
+
+    if(isNaN(d.getTime()))
+        return s.substring(0,10);
+
+    return [
+        d.getFullYear(),
+        String(d.getMonth()+1).padStart(2,"0"),
+        String(d.getDate()).padStart(2,"0")
+    ].join("-");
+}
+
+function formatDate(value){
+    const s=normalizeDate(value);
+    if(!s) return "-";
+
+    const p=s.split("-");
+    if(p.length===3)
+        return `${p[2]}-${p[1]}-${p[0]}`;
+
+    return s;
+}
+
+function normalizeClass(value){
+    let v=String(value ?? "")
+        .trim()
+        .toLowerCase();
+
+    v=v.replace(/೧೦/g,"10")
+        .replace(/೯/g,"9")
+        .replace(/೮/g,"8");
+
+    if(v.includes("10")) return "10";
+    if(v.includes("9")) return "9";
+    if(v.includes("8")) return "8";
+
+    return v;
+}
+
+function getClass(student){
+    return normalizeClass(
+        student.class_name ??
+        student.class ??
+        ""
+    );
+}
+
+function getStudentName(student){
+    return student.student_name ??
+           student.name ??
+           "";
+}
+
+function getDivision(student){
+    return String(
+        student.division ??
+        student.section_name ??
+        student.section ??
+        ""
+    ).trim().toUpperCase();
+}
+
+/* Current Marks Entry rules */
+function getMaxMarks(student, examType, subject){
+    const cls=getClass(student);
+
+    if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
+        if(cls==="8") return 50;
+
+        if(cls==="9" || cls==="10")
+            return subject.subject_code==="01K" ? 100 : 80;
+    }
+
+    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
+        if(cls==="8") return 100;
+
+        if(cls==="9" || cls==="10")
+            return subject.subject_code==="01K" ? 125 : 100;
+    }
+
+    return Number(subject.max_marks || 100);
+}
+
+function grade(mark,max){
+    if(mark===null || mark===undefined || mark==="")
+        return "-";
+
+    const n=Number(mark);
+
+    if(!Number.isFinite(n) || !max)
+        return "-";
+
+    const p=n/max*100;
+
+    if(p>=90) return "A+";
+    if(p>=70) return "A";
+    if(p>=50) return "B+";
+    if(p>=30) return "B";
+    return "C";
+}
+
+function overallGrade(percent){
+    if(percent>=90) return "A+";
+    if(percent>=70) return "A";
+    if(percent>=50) return "B+";
+    if(percent>=30) return "B";
+    return "C";
+}
+
+function passMark(student,percent){
+    return getClass(student)==="8"
+        ? percent>=30
+        : percent>=35;
+}
+
+function showMessage(text,type="info"){
+    const box=$("message");
+    box.textContent=text;
+    box.className="message show "+type;
+}
+
+function hideMessage(){
+    $("message").className="message";
+    $("message").textContent="";
+}
+
+function clearResult(){
+    $("rollNumber").value="";
+    $("dob").value="";
+    $("resultArea").innerHTML="";
+    hideMessage();
+}
+
+/* =========================================================
+   VIEW RESULT
+========================================================= */
+async function viewResult(){
+
+    hideMessage();
+
+    const roll=$("rollNumber").value.trim();
+    const dob=$("dob").value;
+
+    if(!roll){
+        showMessage("Roll Number ನಮೂದಿಸಿ.","error");
+        $("rollNumber").focus();
+        return;
+    }
+
+    if(!dob){
+        showMessage("Date of Birth ಆಯ್ಕೆ ಮಾಡಿ.","error");
+        $("dob").focus();
+        return;
+    }
+
+    $("resultArea").innerHTML =
+        `<div class="card loading">⏳ ಫಲಿತಾಂಶ ಹುಡುಕಲಾಗುತ್ತಿದೆ...</div>`;
+
+    try{
+
+        /* ---------------------------------------------
+           1. Find student
+           Mobile field is NOT selected/displayed.
+        --------------------------------------------- */
+        const {data:students,error:studentError}=await db
+            .from("students")
+            .select("*")
+            .eq("roll_no",roll);
+
+        if(studentError)
+            throw studentError;
+
+        const wantedDob=normalizeDate(dob);
+
+        const matches=(students || []).filter(s =>
+            normalizeDate(s.dob)===wantedDob
+        );
+
+        if(!matches.length){
+            $("resultArea").innerHTML="";
+            showMessage(
+                "ಈ Roll Number ಮತ್ತು Date of Birthಗೆ ವಿದ್ಯಾರ್ಥಿ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.",
+                "error"
+            );
+            return;
+        }
+
+        if(matches.length>1){
+            $("resultArea").innerHTML="";
+            showMessage(
+                "ಈ Roll Number + DOBಗೆ ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು ದಾಖಲೆಗಳಿವೆ. Students Database ಪರಿಶೀಲಿಸಿ.",
+                "error"
+            );
+            return;
+        }
+
+        const student=matches[0];
+
+        /* ---------------------------------------------
+           2. Load subjects for student's class
+        --------------------------------------------- */
+        const className=student.class_name;
+
+        const {data:subjects,error:subjectError}=await db
+            .from("subjects")
+            .select("*")
+            .eq("class_name",className)
+            .eq("is_active",true)
+            .order("display_order",{ascending:true});
+
+        if(subjectError)
+            throw subjectError;
+
+        if(!subjects || !subjects.length)
+            throw new Error(
+                `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
+            );
+
+        /* ---------------------------------------------
+           3. Load only published results
+           Existing database uses exam_results.exam_type
+           and exam_results.published.
+        --------------------------------------------- */
+        const examTypes=[
+            "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+            "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+        ];
+
+        const {data:results,error:resultError}=await db
+            .from("exam_results")
+            .select("id,student_id,exam_type,published")
+            .eq("student_id",student.id)
+            .in("exam_type",examTypes)
+            .eq("published",true)
+            .order("id",{ascending:true});
+
+        if(resultError)
+            throw resultError;
+
+        /* ---------------------------------------------
+           4. Load marks for published results
+        --------------------------------------------- */
+        const resultIds=(results || []).map(r=>r.id);
+
+        let marks=[];
+
+        if(resultIds.length){
+
+            const {data:markRows,error:markError}=await db
+                .from("result_marks")
+                .select("exam_result_id,subject_id,marks")
+                .in("exam_result_id",resultIds);
+
+            if(markError)
+                throw markError;
+
+            marks=markRows || [];
+        }
+
+        const marksMap={};
+
+        marks.forEach(m=>{
+            marksMap[
+                `${m.exam_result_id}_${m.subject_id}`
+            ]=m.marks;
+        });
+
+        /* ---------------------------------------------
+           5. Render
+        --------------------------------------------- */
+        renderResult(
+            student,
+            subjects,
+            results || [],
+            marksMap
+        );
+
+    }catch(error){
+
+        console.error("Student Result Error:",error);
+
+        $("resultArea").innerHTML="";
+
+        showMessage(
+            "Result Load Error: " +
+            (error.message || String(error)),
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   RENDER RESULT
+========================================================= */
+function renderResult(student,subjects,results,marksMap){
+
+    let html=`
+    <div class="card">
+
+        <div class="result-head">
+            <h2>📘 ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ</h2>
+            <div>ಶೈಕ್ಷಣಿಕ ಫಲಿತಾಂಶ</div>
+        </div>
+
+        <div class="student-info">
+
+            <div class="info-item">
+                <b>Roll No:</b>
+                ${esc(student.roll_no)}
+            </div>
+
+            <div class="info-item">
+                <b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:</b>
+                ${esc(getStudentName(student))}
+            </div>
+
+            <div class="info-item">
+                <b>ತರಗತಿ:</b>
+                ${esc(student.class_name)}
+            </div>
+
+            <div class="info-item">
+                <b>ವಿಭಾಗ:</b>
+                ${esc(getDivision(student))}
+            </div>
+
+            <div class="info-item">
+                <b>DOB:</b>
+                ${esc(formatDate(student.dob))}
+            </div>
+
+            <div class="info-item">
+                <b>SATS No:</b>
+                ${esc(student.sats_no)}
+            </div>
+
+        </div>
+    `;
+
+    if(!results.length){
+
+        html+=`
+        <div class="no-result">
+            <h3>📢 ಫಲಿತಾಂಶ ಇನ್ನೂ ಪ್ರಕಟಿಸಲಾಗಿಲ್ಲ</h3>
+            <p>ಶಾಲೆಯಿಂದ ಫಲಿತಾಂಶ ಪ್ರಕಟಿಸಿದ ನಂತರ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.</p>
+        </div>
+        `;
+
+    }else{
+
+        results.forEach(result=>{
+            html+=renderExam(
+                student,
+                subjects,
+                result,
+                marksMap
+            );
+        });
+
+    }
+
+    html+=`
+        <div class="button-row no-print">
+            <button class="btn-print"
+                    onclick="window.print()">
+                🖨️ Print Result
+            </button>
+        </div>
+    </div>
+    `;
+
+    $("resultArea").innerHTML=html;
+}
+
+/* =========================================================
+   RENDER ONE EXAM
+========================================================= */
+function renderExam(student,subjects,result,marksMap){
+
+    let total=0;
+    let maximum=0;
+    let entered=0;
+
+    let rows="";
+
+    subjects.forEach(subject=>{
+
+        const key=
+            `${result.id}_${subject.id}`;
+
+        const value=
+            marksMap[key];
+
+        const max=
+            getMaxMarks(
+                student,
+                result.exam_type,
+                subject
+            );
+
+        maximum+=max;
+
+        const hasMark=
+            value!==null &&
+            value!==undefined &&
+            value!=="";
+
+        if(hasMark){
+            total+=Number(value);
+            entered++;
+        }
+
+        rows+=`
+        <tr>
+            <td class="subject">
+                ${esc(subject.subject_name)}
+            </td>
+
+            <td>
+                ${esc(subject.subject_code)}
+            </td>
+
+            <td>
+                ${hasMark ? esc(value) : "-"}
+            </td>
+
+            <td>${max}</td>
+
+            <td>
+                ${hasMark ? grade(value,max) : "-"}
+            </td>
+        </tr>
+        `;
+    });
+
+    const percentage=
+        maximum ? total/maximum*100 : 0;
+
+    const finalGrade=
+        entered
+        ? overallGrade(percentage)
+        : "-";
+
+    const resultText=
+        entered===0
+        ? "PENDING"
+        : passMark(student,percentage)
+            ? "PASS"
+            : "FAIL";
+
+    const resultClass=
+        resultText==="PASS"
+        ? "pass"
+        : resultText==="FAIL"
+            ? "fail"
+            : "pending";
+
+    return `
+        <div class="exam-title">
+            📝 ${esc(result.exam_type)}
+        </div>
+
+        <div class="exam-status">
+            ಫಲಿತಾಂಶ: <b class="${resultClass}">
+                ${resultText}
+            </b>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ವಿಷಯ</th>
+                        <th>Subject Code</th>
+                        <th>ಅಂಕ</th>
+                        <th>ಗರಿಷ್ಠ</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary">
+
+            <div class="summary-box">
+                ಒಟ್ಟು ಅಂಕ
+                <b>${total.toFixed(2)}</b>
+            </div>
+
+            <div class="summary-box">
+                ಗರಿಷ್ಠ ಅಂಕ
+                <b>${maximum.toFixed(2)}</b>
+            </div>
+
+            <div class="summary-box">
+                Percentage
+                <b>${percentage.toFixed(2)}%</b>
+            </div>
+
+            <div class="summary-box">
+                Overall Grade
+                <b>${finalGrade}</b>
+            </div>
+
+            <div class="summary-box">
+                Result
+                <b class="${resultClass}">
+                    ${resultText}
+                </b>
+            </div>
+
+        </div>
+    `;
+}
+
+/* Enter key support */
+$("rollNumber").addEventListener("keydown",function(e){
+    if(e.key==="Enter") viewResult();
+});
+
+$("dob").addEventListener("keydown",function(e){
+    if(e.key==="Enter") viewResult();
+});
+</script>
+
+</body>
+</html>
