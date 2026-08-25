@@ -145,23 +145,25 @@ td.subject{text-align:left;font-weight:700}
 }
 .loading{text-align:center;padding:25px}
 
-/* Settings-based Result Card heading and signature area */
-.result-school-name{
+.result-settings-head{
+    text-align:center;
+}
+.result-settings-head .school-name{
     margin:0 0 5px;
     font-size:26px;
     font-weight:800;
 }
-.result-exam-name{
+.result-settings-head .exam-name{
     margin:0 0 4px;
     font-size:21px;
     font-weight:800;
 }
-.result-academic-year{
+.result-settings-head .academic-year{
     margin:0;
     font-size:16px;
     font-weight:700;
 }
-.result-footer{
+.teacher-footer{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:20px;
@@ -169,17 +171,17 @@ td.subject{text-align:left;font-weight:700}
     padding-top:25px;
     page-break-inside:avoid;
 }
-.teacher-sign{
+.teacher-block{
     text-align:center;
     min-height:70px;
     font-weight:700;
 }
-.teacher-sign .role{
+.teacher-block .role{
     display:block;
-    font-size:16px;
     margin-bottom:10px;
+    font-size:16px;
 }
-.teacher-sign .name{
+.teacher-block .name{
     display:block;
     font-size:16px;
     font-weight:800;
@@ -226,9 +228,7 @@ td.subject{text-align:left;font-weight:700}
         padding:5px;
     }
 }
-    .result-footer{
-        margin-top:35px;
-    }
+    .teacher-footer{margin-top:35px}
 }
 
 @media(max-width:700px){
@@ -252,8 +252,8 @@ td.subject{text-align:left;font-weight:700}
 <body>
 
 <div class="header">
-    <h1 id="schoolHeaderName">ಶಾಲೆಯ ಹೆಸರು</h1>
-    <p id="schoolHeaderAddress">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
+    <h1 id="schoolNameHeader">ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
+    <p id="schoolAddressHeader">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
 </div>
 
 <div class="container">
@@ -462,12 +462,13 @@ function clearResult(){
 }
 
 /* =========================================================
-   LOAD CENTRAL SETTINGS
-   School name, academic year, Head Teacher and Class Teacher
-   are read from the single public.settings record (id = 1).
+   SETTINGS
+   Only presentation/header/footer values are loaded here.
+   Existing result/marks logic is unchanged.
 ========================================================= */
-let schoolSettings = {
+let appSettings = {
     school_name: "",
+    school_address: "",
     head_teacher_name: "",
     class_teacher_8: "",
     class_teacher_9: "",
@@ -475,72 +476,83 @@ let schoolSettings = {
     academic_year: "2026-27"
 };
 
-async function loadSchoolSettings(){
-
+async function loadAppSettings(){
     try{
-
+        /*
+         * Settings page saves ONE record with id = 1.
+         * We intentionally select the complete row and use the first
+         * available record, so the Result page does not fail silently
+         * if the id value was changed/recreated.
+         */
         const {data,error} = await db
             .from("settings")
-            .select(
-                "school_name,head_teacher_name,class_teacher_8,class_teacher_9,class_teacher_10,academic_year"
-            )
-            .eq("id",1)
+            .select("*")
+            .order("id",{ascending:true})
+            .limit(1)
             .maybeSingle();
 
         if(error) throw error;
 
         if(data){
-            schoolSettings = {
-                school_name: data.school_name || "",
-                head_teacher_name: data.head_teacher_name || "",
-                class_teacher_8: data.class_teacher_8 || "",
-                class_teacher_9: data.class_teacher_9 || "",
-                class_teacher_10: data.class_teacher_10 || "",
-                academic_year: data.academic_year || "2026-27"
+            appSettings = {
+                school_name: String(data.school_name ?? "").trim(),
+                school_address: String(data.school_address ?? "").trim(),
+                head_teacher_name: String(data.head_teacher_name ?? "").trim(),
+                class_teacher_8: String(data.class_teacher_8 ?? "").trim(),
+                class_teacher_9: String(data.class_teacher_9 ?? "").trim(),
+                class_teacher_10: String(data.class_teacher_10 ?? "").trim(),
+                academic_year: String(data.academic_year ?? "2026-27").trim()
             };
 
-            const headerName = $("schoolHeaderName");
-            if(headerName){
-                headerName.textContent =
-                    schoolSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು";
-            }
+            const school = $("schoolNameHeader");
+            const address = $("schoolAddressHeader");
+
+            if(school)
+                school.textContent =
+                    appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು";
+
+            if(address && appSettings.school_address)
+                address.textContent = appSettings.school_address;
+
+            console.log("Settings loaded:", appSettings);
+        }else{
+            console.warn("Settings record not found.");
         }
 
     }catch(error){
-
         console.error("Settings Load Error:",error);
-
-        /* Result can still load if Settings is temporarily unavailable. */
-        schoolSettings = {
-            school_name: "",
-            head_teacher_name: "",
-            class_teacher_8: "",
-            class_teacher_9: "",
-            class_teacher_10: "",
-            academic_year: "2026-27"
-        };
     }
 }
 
-function getClassTeacherName(student){
+function getClassTeacherForStudent(student){
+    /*
+     * The Students table may store class as 8, 8th, 8ನೇ ತರಗತಿ,
+     * etc. getClass() already normalizes the value.
+     */
+    const cls = String(getClass(student) || "")
+        .trim()
+        .toLowerCase();
 
-    const cls = getClass(student);
+    if(cls.includes("8"))
+        return appSettings.class_teacher_8;
 
-    if(cls === "8")
-        return schoolSettings.class_teacher_8 || "";
+    if(cls.includes("9"))
+        return appSettings.class_teacher_9;
 
-    if(cls === "9")
-        return schoolSettings.class_teacher_9 || "";
-
-    if(cls === "10")
-        return schoolSettings.class_teacher_10 || "";
+    if(cls.includes("10"))
+        return appSettings.class_teacher_10;
 
     return "";
 }
 
-async function ensureSettingsLoaded(){
+function getHeadTeacherName(){
+    return String(appSettings.head_teacher_name || "").trim();
+}
 
-    await loadSchoolSettings();
+function examDisplayName(examType){
+    if(examType === "HALF_YEARLY") return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    if(examType === "ANNUAL") return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    return examType || "";
 }
 
 /* =========================================================
@@ -550,7 +562,7 @@ async function viewResult(){
 
     hideMessage();
 
-    await ensureSettingsLoaded();
+    await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
     const dob=$("dob").value;
@@ -671,7 +683,17 @@ async function viewResult(){
                        Number(b.display_order || 999);
             });
 
-            uniqueSubjects.push(group[0]);
+            /*
+               Keep ALL duplicate subject IDs internally.
+               Marks Entry may have saved marks against the old
+               subject ID (for example KAN) while the preferred
+               Subject Master record is the new ID (01K).
+               The result page must still display only one subject,
+               but it must be able to find marks from either ID.
+            */
+            const chosen = {...group[0]};
+            chosen._allSubjectIds = group.map(x => x.id);
+            uniqueSubjects.push(chosen);
         });
 
         uniqueSubjects.sort((a,b) =>
@@ -683,58 +705,28 @@ async function viewResult(){
         const subjectsForResult = uniqueSubjects.slice(0, 6);
 
         /* ---------------------------------------------
-           3. Load the LATEST exam result for this student.
-
-           Publish Results page also works with the latest
-           exam_results record for the selected exam.  The old
-           version loaded every published row, which could pick
-           an older published row that had no marks and show
-           PENDING even though the current result had marks.
+           3. Load only published results
+           Existing database uses exam_results.exam_type
+           and exam_results.published.
         --------------------------------------------- */
+        const examTypes=[
+            "HALF_YEARLY",
+            "ANNUAL"
+        ];
 
-        const {data:allResults,error:resultError}=await db
+        const {data:results,error:resultError}=await db
             .from("exam_results")
-            .select("id,student_id,exam_type,published,created_at,updated_at")
-            .eq("student_id",student.id);
+            .select("id,student_id,exam_type,published")
+            .eq("student_id",student.id)
+            .in("exam_type",examTypes)
+            .eq("published",true)
+            .order("id",{ascending:true});
 
         if(resultError)
             throw resultError;
 
-        /*
-           IMPORTANT:
-           A student must see the latest RESULT THAT HAS ACTUALLY
-           BEEN PUBLISHED.  Do NOT select the latest unpublished row,
-           because an unpublished Annual row can otherwise hide a
-           published Half-Yearly result and incorrectly show PENDING.
-
-           We also support both the old English exam codes and the
-           Kannada exam names used by this project.
-        */
-        const validExam = r => {
-            const t = String(r.exam_type || "").trim();
-            return [
-                "HALF_YEARLY",
-                "ANNUAL",
-                "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
-                "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-            ].includes(t);
-        };
-
-        const publishedResults = (allResults || [])
-            .filter(r => r.published === true && validExam(r))
-            .sort((a,b) => {
-                const ad = new Date(a.updated_at || a.created_at || 0).getTime();
-                const bd = new Date(b.updated_at || b.created_at || 0).getTime();
-                return bd - ad;
-            });
-
-        /* Show ONE latest published exam only. */
-        const results = publishedResults.length
-            ? [publishedResults[0]]
-            : [];
-
         /* ---------------------------------------------
-           4. Load marks for the selected published result
+           4. Load marks for published results
         --------------------------------------------- */
         const resultIds=(results || []).map(r=>r.id);
 
@@ -785,32 +777,6 @@ async function viewResult(){
     }
 }
 
-function resultTypeLabel(examType){
-    const value=String(examType || "").trim();
-
-    if(value === "HALF_YEARLY" || value === "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ")
-        return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
-
-    if(value === "ANNUAL" || value === "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ")
-        return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
-
-    return value;
-}
-
-function resultTypesForHeader(results){
-
-    const labels = [];
-
-    (results || []).forEach(r => {
-        const label = resultTypeLabel(r.exam_type);
-
-        if(label && !labels.includes(label))
-            labels.push(label);
-    });
-
-    return labels.join(" / ");
-}
-
 /* =========================================================
    RENDER RESULT
 ========================================================= */
@@ -819,17 +785,19 @@ function renderResult(student,subjects,results,marksMap){
     let html=`
     <div class="card">
 
-        <div class="result-head">
-            <h2 class="result-school-name">
-                ${esc(schoolSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
+        <div class="result-head result-settings-head">
+            <h2 class="school-name">
+                ${esc(appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
             </h2>
-            <div class="result-exam-name">
+            <div class="exam-name">
                 ${esc(
-                    resultTypesForHeader(results)
+                    results.length === 1
+                        ? examDisplayName(results[0].exam_type)
+                        : results.map(r => examDisplayName(r.exam_type)).filter(Boolean).join(" / ")
                 )}
             </div>
-            <div class="result-academic-year">
-                ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(schoolSettings.academic_year || "2026-27")}
+            <div class="academic-year">
+                ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year || "2026-27")}
             </div>
         </div>
 
@@ -891,19 +859,14 @@ function renderResult(student,subjects,results,marksMap){
     }
 
     html+=`
-        <div class="result-footer">
-            <div class="teacher-sign">
+        <div class="teacher-footer">
+            <div class="teacher-block">
                 <span class="role">Class Teacher</span>
-                <span class="name">
-                    ${esc(getClassTeacherName(student))}
-                </span>
+                <span class="name">${esc(getClassTeacherForStudent(student) || " ")}</span>
             </div>
-
-            <div class="teacher-sign">
+            <div class="teacher-block">
                 <span class="role">Head Teacher</span>
-                <span class="name">
-                    ${esc(schoolSettings.head_teacher_name || "")}
-                </span>
+                <span class="name">${esc(getHeadTeacherName() || " ")}</span>
             </div>
         </div>
 
@@ -932,11 +895,25 @@ function renderExam(student,subjects,result,marksMap){
 
     subjects.forEach(subject=>{
 
-        const key=
-            `${result.id}_${subject.id}`;
+        /*
+           Find marks using the selected subject ID first, then
+           fall back to any duplicate/legacy subject IDs belonging
+           to the same subject name. This keeps the display at one
+           subject while preserving marks already entered earlier.
+        */
+        const subjectIds =
+            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
+                ? subject._allSubjectIds
+                : [subject.id];
 
-        const value=
-            marksMap[key];
+        let value;
+        for(const subjectId of subjectIds){
+            const candidate = marksMap[`${result.id}_${subjectId}`];
+            if(candidate !== null && candidate !== undefined && candidate !== ""){
+                value = candidate;
+                break;
+            }
+        }
 
         const max=
             getMaxMarks(
@@ -1004,7 +981,7 @@ function renderExam(student,subjects,result,marksMap){
 
     return `
         <div class="exam-title">
-            📝 ${esc(resultTypeLabel(result.exam_type))}
+            📝 ${esc(result.exam_type==="HALF_YEARLY" ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type==="ANNUAL" ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type)}
         </div>
 
         <div class="exam-status">
