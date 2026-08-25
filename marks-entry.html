@@ -8,12 +8,10 @@
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
-<title>Marks Entry</title>
+<title>Marks Entry - ಶಾಲಾ ಫಲಿತಾಂಶ ವ್ಯವಸ್ಥೆ</title>
 
-<!-- SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- EXCEL -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -24,9 +22,7 @@
 
 body{
     margin:0;
-    font-family:Arial,
-                 "Noto Sans Kannada",
-                 sans-serif;
+    font-family:Arial,"Noto Sans Kannada",sans-serif;
     background:#eef5fb;
     color:#173b63;
 }
@@ -34,30 +30,27 @@ body{
 /* HEADER */
 
 .header{
-    background:linear-gradient(
-        135deg,
-        #0878b9,
-        #145da0
-    );
+    background:linear-gradient(135deg,#0878b9,#145da0);
     color:white;
     text-align:center;
-    padding:22px 15px;
+    padding:24px 15px;
 }
 
 .header h1{
     margin:0;
-    font-size:30px;
+    font-size:32px;
 }
 
 .header p{
     margin:8px 0 0;
+    font-size:18px;
 }
 
 /* CONTAINER */
 
 .container{
-    width:96%;
-    max-width:1500px;
+    width:97%;
+    max-width:1600px;
     margin:20px auto;
 }
 
@@ -67,17 +60,15 @@ body{
     background:white;
     padding:20px;
     margin-bottom:20px;
-    border-radius:14px;
-    box-shadow:
-        0 4px 15px rgba(0,0,0,.10);
+    border-radius:15px;
+    box-shadow:0 4px 15px rgba(0,0,0,.10);
 }
 
 /* CONTROLS */
 
 .controls{
     display:grid;
-    grid-template-columns:
-        1fr 1fr 1fr;
+    grid-template-columns:1fr 1fr 1fr;
     gap:15px;
 }
 
@@ -106,7 +97,7 @@ input{
 }
 
 button{
-    padding:11px 17px;
+    padding:12px 18px;
     margin:5px;
     border:0;
     border-radius:7px;
@@ -145,7 +136,7 @@ button{
 .message{
     display:none;
     margin-top:15px;
-    padding:12px;
+    padding:13px;
     border-radius:7px;
     font-weight:bold;
 }
@@ -171,7 +162,7 @@ button{
 /* COUNT */
 
 .count{
-    font-size:18px;
+    font-size:19px;
     font-weight:bold;
     margin-bottom:15px;
 }
@@ -185,7 +176,7 @@ button{
 table{
     width:100%;
     border-collapse:collapse;
-    min-width:1100px;
+    min-width:1450px;
 }
 
 th{
@@ -232,7 +223,65 @@ td{
     margin-top:3px;
 }
 
-/* DATABASE INFO */
+/* TOTAL COLUMNS */
+
+.total-cell{
+    background:#e8f4ff;
+    font-weight:bold;
+    font-size:16px;
+}
+
+.percent-cell{
+    background:#fff8df;
+    font-weight:bold;
+}
+
+.overall-grade{
+    background:#e8ffe8;
+    font-weight:bold;
+    font-size:18px;
+}
+
+.result-pass{
+    background:#d4edda;
+    color:#155724;
+    font-weight:bold;
+}
+
+.result-fail{
+    background:#f8d7da;
+    color:#721c24;
+    font-weight:bold;
+}
+
+/* SUMMARY */
+
+.summary{
+    margin-top:20px;
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+}
+
+.summary-box{
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+    font-weight:bold;
+    border:1px solid #ddd;
+}
+
+.summary-title{
+    font-size:14px;
+    color:#555;
+}
+
+.summary-value{
+    font-size:22px;
+    margin-top:5px;
+}
+
+/* INFO */
 
 .db-info{
     background:#fff3cd;
@@ -254,10 +303,14 @@ td{
 
 /* MOBILE */
 
-@media(max-width:800px){
+@media(max-width:900px){
 
     .controls{
         grid-template-columns:1fr;
+    }
+
+    .summary{
+        grid-template-columns:1fr 1fr;
     }
 
 }
@@ -283,6 +336,10 @@ td{
         color:black;
     }
 
+    table{
+        min-width:100%;
+    }
+
 }
 
 </style>
@@ -293,9 +350,7 @@ td{
 <body>
 
 
-<!-- =====================================================
-     HEADER
-===================================================== -->
+<!-- HEADER -->
 
 <div class="header">
 
@@ -313,14 +368,11 @@ td{
 <div class="container">
 
 
-<!-- =====================================================
-     CONTROL CARD
-===================================================== -->
+<!-- CONTROL CARD -->
 
 <div class="card no-print">
 
     <div class="controls">
-
 
         <!-- CLASS -->
 
@@ -434,11 +486,7 @@ td{
 
         <button
             class="btn-purple"
-            onclick="
-                document
-                .getElementById('excelFile')
-                .click()
-            ">
+            onclick="document.getElementById('excelFile').click()">
 
             📤 Excel Upload
 
@@ -482,9 +530,7 @@ td{
 </div>
 
 
-<!-- =====================================================
-     STUDENTS / MARKS
-===================================================== -->
+<!-- STUDENTS CARD -->
 
 <div class="card">
 
@@ -520,25 +566,25 @@ td{
 
 
 /* =====================================================
-   SUPABASE CONFIG
+   SUPABASE
 ===================================================== */
 
 const SUPABASE_URL =
-    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+"https://sozlvjvqrgpaabnvjvxe.supabase.co";
 
 const SUPABASE_KEY =
-    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+"sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
 
 const supabaseClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
 
 /* =====================================================
-   SUBJECT MASTER
+   SUBJECTS
 ===================================================== */
 
 const SUBJECTS = [
@@ -577,7 +623,7 @@ const SUBJECTS = [
 
 
 /* =====================================================
-   GLOBAL STUDENTS
+   GLOBAL
 ===================================================== */
 
 let students = [];
@@ -600,6 +646,32 @@ function showMessage(text,type){
 
     box.style.display =
         "block";
+
+}
+
+
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
+
+function escapeHtml(value){
+
+    if(
+        value === null ||
+        value === undefined
+    ){
+
+        return "";
+
+    }
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
 }
 
 
@@ -613,8 +685,11 @@ function normalizeClass(value){
         value === null ||
         value === undefined
     ){
+
         return "";
+
     }
+
 
     let v =
         String(value)
@@ -622,57 +697,46 @@ function normalizeClass(value){
         .toLowerCase();
 
 
-    /*
-       Kannada digits
-       ೮ = 8
-       ೯ = 9
-       ೧೦ = 10
-    */
+    /* Kannada digits */
 
     v = v
+        .replace(/೦/g,"0")
+        .replace(/೧/g,"1")
+        .replace(/೨/g,"2")
+        .replace(/೩/g,"3")
+        .replace(/೪/g,"4")
+        .replace(/೫/g,"5")
+        .replace(/೬/g,"6")
+        .replace(/೭/g,"7")
         .replace(/೮/g,"8")
-        .replace(/೯/g,"9")
-        .replace(/೧೦/g,"10");
+        .replace(/೯/g,"9");
 
 
-    /*
-       Remove common words
-    */
+    /* Kannada words */
 
-    v = v
-        .replace(/ನೇ/g,"")
-        .replace(/ತರಗತಿ/g,"")
-        .replace(/th/g,"")
-        .replace(/class/g,"")
-        .replace(/\s/g,"");
+    v =
+        v.replace(/ನೇ/g,"")
+         .replace(/ತರಗತಿ/g,"")
+         .replace(/ತರಗತಿಯ/g,"")
+         .replace(/th/g,"")
+         .replace(/class/g,"")
+         .replace(/\s/g,"");
 
 
-    /*
-       If value contains 8/9/10
-    */
-
-    if(
-        v === "8" ||
-        v.includes("8")
-    ){
-        return "8";
-    }
-
-    if(
-        v === "9" ||
-        v.includes("9")
-    ){
-        return "9";
-    }
-
-    if(
-        v === "10" ||
-        v.includes("10")
-    ){
+    if(v.includes("10")){
         return "10";
     }
 
+    if(v.includes("9")){
+        return "9";
+    }
+
+    if(v.includes("8")){
+        return "8";
+    }
+
     return v;
+
 }
 
 
@@ -686,17 +750,20 @@ function normalizeDivision(value){
         value === null ||
         value === undefined
     ){
+
         return "";
+
     }
 
     return String(value)
         .trim()
         .toUpperCase();
+
 }
 
 
 /* =====================================================
-   MAX MARKS
+   GET MAX MARKS
 ===================================================== */
 
 function getMaxMarks(subject){
@@ -713,28 +780,35 @@ function getMaxMarks(subject){
         ).value;
 
 
-    /* 8TH */
+    /* ==============================
+       8ನೇ ತರಗತಿ
+    ============================== */
 
     if(cls === "8"){
 
         if(
-            exam ===
-            "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            exam === "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
         ){
+
             return 50;
+
         }
 
+
         if(
-            exam ===
-            "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            exam === "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
         ){
+
             return 100;
+
         }
 
     }
 
 
-    /* 9TH / 10TH */
+    /* ==============================
+       9ನೇ / 10ನೇ
+    ============================== */
 
     if(
         cls === "9" ||
@@ -742,14 +816,15 @@ function getMaxMarks(subject){
     ){
 
         if(
-            exam ===
-            "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            exam === "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
         ){
 
             if(
                 subject.code === "01K"
             ){
+
                 return 100;
+
             }
 
             return 80;
@@ -758,14 +833,15 @@ function getMaxMarks(subject){
 
 
         if(
-            exam ===
-            "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            exam === "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
         ){
 
             if(
                 subject.code === "01K"
             ){
+
                 return 125;
+
             }
 
             return 100;
@@ -776,24 +852,24 @@ function getMaxMarks(subject){
 
 
     return 100;
+
 }
 
 
 /* =====================================================
-   GRADE
+   SUBJECT GRADE
 ===================================================== */
 
-function calculateGrade(
-    mark,
-    max
-){
+function calculateGrade(mark,max){
 
     if(
         mark === "" ||
         mark === null ||
         mark === undefined
     ){
+
         return "";
+
     }
 
 
@@ -802,9 +878,12 @@ function calculateGrade(
 
 
     if(
-        isNaN(n)
+        isNaN(n) ||
+        max <= 0
     ){
+
         return "";
+
     }
 
 
@@ -812,35 +891,123 @@ function calculateGrade(
         (n / max) * 100;
 
 
-    if(
-        percentage >= 90
-    ){
+    if(percentage >= 90){
+
         return "A+";
+
     }
 
+    if(percentage >= 70){
 
-    if(
-        percentage >= 70
-    ){
         return "A";
+
     }
 
+    if(percentage >= 50){
 
-    if(
-        percentage >= 50
-    ){
         return "B+";
+
     }
 
+    if(percentage >= 30){
 
-    if(
-        percentage >= 30
-    ){
         return "B";
-    }
 
+    }
 
     return "C";
+
+}
+
+
+/* =====================================================
+   OVERALL GRADE
+===================================================== */
+
+function calculateOverallGrade(
+    total,
+    maxTotal
+){
+
+    if(
+        maxTotal <= 0
+    ){
+
+        return "";
+
+    }
+
+
+    const percentage =
+        (total / maxTotal) * 100;
+
+
+    if(percentage >= 90){
+
+        return "A+";
+
+    }
+
+    if(percentage >= 70){
+
+        return "A";
+
+    }
+
+    if(percentage >= 50){
+
+        return "B+";
+
+    }
+
+    if(percentage >= 30){
+
+        return "B";
+
+    }
+
+    return "C";
+
+}
+
+
+/* =====================================================
+   RESULT
+===================================================== */
+
+function calculateResult(
+    total,
+    maxTotal,
+    enteredCount
+){
+
+    if(
+        enteredCount === 0
+    ){
+
+        return "";
+
+    }
+
+
+    const percentage =
+        (total / maxTotal) * 100;
+
+
+    /*
+       PASS = 35% ಅಥವಾ ಹೆಚ್ಚು
+    */
+
+    if(
+        percentage >= 35
+    ){
+
+        return "PASS";
+
+    }
+
+    return "FAIL";
+
 }
 
 
@@ -876,6 +1043,7 @@ async function loadStudents(){
         );
 
         return;
+
     }
 
 
@@ -887,6 +1055,7 @@ async function loadStudents(){
         );
 
         return;
+
     }
 
 
@@ -897,25 +1066,6 @@ async function loadStudents(){
 
 
     try{
-
-        /*
-           IMPORTANT:
-           ಇಲ್ಲಿ class/division filter
-           Supabase queryನಲ್ಲಿ ಹಾಕಿಲ್ಲ.
-
-           ಮೊದಲು ಎಲ್ಲಾ students ತೆಗೆದುಕೊಳ್ಳುತ್ತೇವೆ.
-           ನಂತರ JavaScriptನಲ್ಲಿ actual
-           class_name / division value normalize
-           ಮಾಡಿ filter ಮಾಡುತ್ತೇವೆ.
-
-           ಇದರಿಂದ:
-           8
-           8th
-           8ನೇ
-           8ನೇ ತರಗತಿ
-
-           ಇತ್ಯಾದಿ values ಕೆಲಸ ಮಾಡುತ್ತವೆ.
-        */
 
         const {
             data,
@@ -935,11 +1085,11 @@ async function loadStudents(){
         if(error){
 
             console.error(
-                "SUPABASE ERROR:",
                 error
             );
 
             throw error;
+
         }
 
 
@@ -948,42 +1098,15 @@ async function loadStudents(){
             data.length === 0
         ){
 
-            document.getElementById(
-                "studentCount"
-            ).innerText =
-                "Students ಸಿಗಲಿಲ್ಲ.";
-
-
-            document.getElementById(
-                "marksArea"
-            ).innerHTML = `
-
-                <div style="
-                    padding:30px;
-                    text-align:center;
-                    color:#c00;
-                ">
-
-                    ❌ students tableನಲ್ಲಿ
-                    ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿ data ಇಲ್ಲ.
-
-                </div>
-
-            `;
-
-
             showMessage(
-                "students tableನಲ್ಲಿ ಯಾವುದೇ data ಸಿಗಲಿಲ್ಲ.",
+                "students tableನಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿ data ಇಲ್ಲ.",
                 "error"
             );
 
             return;
+
         }
 
-
-        /*
-           Console Debug
-        */
 
         console.log(
             "ALL STUDENTS:",
@@ -996,8 +1119,7 @@ async function loadStudents(){
             [
                 ...new Set(
                     data.map(
-                        s =>
-                        s.class_name
+                        s => s.class_name
                     )
                 )
             ]
@@ -1009,8 +1131,7 @@ async function loadStudents(){
             [
                 ...new Set(
                     data.map(
-                        s =>
-                        s.division
+                        s => s.division
                     )
                 )
             ]
@@ -1018,7 +1139,7 @@ async function loadStudents(){
 
 
         /*
-           Filter
+           Class + Division Filter
         */
 
         students =
@@ -1038,13 +1159,14 @@ async function loadStudents(){
 
 
                     const classMatch =
-                        dbClass ===
-                        selectedClass;
+                        dbClass === selectedClass;
 
 
                     const divisionMatch =
                         dbDivision ===
-                        "A";
+                        normalizeDivision(
+                            division
+                        );
 
 
                     return (
@@ -1062,10 +1184,6 @@ async function loadStudents(){
         );
 
 
-        /*
-           No students
-        */
-
         if(
             students.length === 0
         ){
@@ -1074,8 +1192,7 @@ async function loadStudents(){
                 [
                     ...new Set(
                         data.map(
-                            s =>
-                            s.class_name
+                            s => s.class_name
                         )
                     )
                 ];
@@ -1085,8 +1202,7 @@ async function loadStudents(){
                 [
                     ...new Set(
                         data.map(
-                            s =>
-                            s.division
+                            s => s.division
                         )
                     )
                 ];
@@ -1105,7 +1221,7 @@ async function loadStudents(){
                 <div class="db-info">
 
                     <h3>
-                        ⚠️ Students ಸಿಗಲಿಲ್ಲ
+                        ⚠️ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ
                     </h3>
 
                     <b>
@@ -1115,18 +1231,16 @@ async function loadStudents(){
                     <br>
 
                     ${
-                        classValues.map(
-                            value => `
-                                <span
-                                    class="value-box">
-                                    ${
-                                        escapeHtml(
-                                            value
-                                        )
-                                    }
-                                </span>
+                        classValues
+                        .map(
+                            value =>
                             `
-                        ).join("")
+                            <span class="value-box">
+                                ${escapeHtml(value)}
+                            </span>
+                            `
+                        )
+                        .join("")
                     }
 
                     <br><br>
@@ -1138,18 +1252,16 @@ async function loadStudents(){
                     <br>
 
                     ${
-                        divisionValues.map(
-                            value => `
-                                <span
-                                    class="value-box">
-                                    ${
-                                        escapeHtml(
-                                            value
-                                        )
-                                    }
-                                </span>
+                        divisionValues
+                        .map(
+                            value =>
                             `
-                        ).join("")
+                            <span class="value-box">
+                                ${escapeHtml(value)}
+                            </span>
+                            `
+                        )
+                        .join("")
                     }
 
                     <br><br>
@@ -1157,7 +1269,7 @@ async function loadStudents(){
                     ಆಯ್ಕೆ:
 
                     <b>
-                        ${selectedClass} - A
+                        ${selectedClass} - ${division}
                     </b>
 
                 </div>
@@ -1166,17 +1278,14 @@ async function loadStudents(){
 
 
             showMessage(
-                "ಆಯ್ಕೆ ಮಾಡಿದ ತರಗತಿ - A ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.",
+                `${selectedClass}ನೇ ತರಗತಿ - ${division} ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.`,
                 "error"
             );
 
             return;
+
         }
 
-
-        /*
-           Create marks table
-        */
 
         createMarksTable();
 
@@ -1193,39 +1302,17 @@ async function loadStudents(){
         );
 
     }
+
     catch(error){
 
         console.error(
-            "Students Load:",
+            "Students Load Error:",
             error
         );
 
 
-        document.getElementById(
-            "marksArea"
-        ).innerHTML = `
-
-            <div style="
-                padding:30px;
-                text-align:center;
-                color:#c00;
-            ">
-
-                ❌ Students Load Error
-
-                <br><br>
-
-                ${escapeHtml(
-                    error.message
-                )}
-
-            </div>
-
-        `;
-
-
         showMessage(
-            "Students Load: " +
+            "Students Load Error: " +
             error.message,
             "error"
         );
@@ -1266,6 +1353,8 @@ function createMarksTable(){
     `;
 
 
+    /* SUBJECT HEADINGS */
+
     SUBJECTS.forEach(
         subject => {
 
@@ -1279,7 +1368,7 @@ function createMarksTable(){
 
                 <th colspan="2">
 
-                    ${subject.name}
+                    ${escapeHtml(subject.name)}
 
                     <div class="subject-code">
                         ${subject.code}
@@ -1297,11 +1386,32 @@ function createMarksTable(){
     );
 
 
+    /*
+       TOTAL
+    */
+
     html += `
+
+            <th rowspan="2">
+                ಒಟ್ಟು
+            </th>
+
+            <th rowspan="2">
+                ಶೇಕಡ
+            </th>
+
+            <th rowspan="2">
+                ಒಟ್ಟು ಗ್ರೇಡ್
+            </th>
+
+            <th rowspan="2">
+                ಫಲಿತಾಂಶ
+            </th>
 
         </tr>
 
         <tr>
+
     `;
 
 
@@ -1335,42 +1445,38 @@ function createMarksTable(){
     `;
 
 
+    /* STUDENTS */
+
     students.forEach(
         (student,index) => {
+
 
             html += `
 
                 <tr>
 
                     <td>
-                        ${
-                            escapeHtml(
-                                student.roll_no
-                                || ""
-                            )
-                        }
+                        ${escapeHtml(
+                            student.roll_no || ""
+                        )}
                     </td>
 
                     <td class="name">
-                        ${
-                            escapeHtml(
-                                student.student_name
-                                || ""
-                            )
-                        }
+                        ${escapeHtml(
+                            student.student_name || ""
+                        )}
                     </td>
 
                     <td class="sats">
-                        ${
-                            escapeHtml(
-                                student.sats_no
-                                || ""
-                            )
-                        }
+                        ${escapeHtml(
+                            student.sats_no || ""
+                        )}
                     </td>
 
             `;
 
+
+            /* SUBJECTS */
 
             SUBJECTS.forEach(
                 (subject,sIndex) => {
@@ -1391,9 +1497,7 @@ function createMarksTable(){
 
                                 class="mark"
 
-                                id="
-                                    mark_${index}_${sIndex}
-                                "
+                                id="mark_${index}_${sIndex}"
 
                                 min="0"
 
@@ -1416,12 +1520,12 @@ function createMarksTable(){
                         <td>
 
                             <span
+
                                 class="grade"
-                                id="
-                                    grade_${index}_${sIndex}
-                                "
-                            >
-                            </span>
+
+                                id="grade_${index}_${sIndex}"
+
+                            ></span>
 
                         </td>
 
@@ -1431,7 +1535,33 @@ function createMarksTable(){
             );
 
 
+            /* TOTAL */
+
             html += `
+
+                    <td
+                        class="total-cell"
+                        id="total_${index}">
+                        0 / 0
+                    </td>
+
+
+                    <td
+                        class="percent-cell"
+                        id="percent_${index}">
+                        0%
+                    </td>
+
+
+                    <td
+                        class="overall-grade"
+                        id="overall_${index}">
+                    </td>
+
+
+                    <td
+                        id="result_${index}">
+                    </td>
 
                 </tr>
 
@@ -1452,10 +1582,100 @@ function createMarksTable(){
     `;
 
 
+    /*
+       SUMMARY AREA
+    */
+
+    html += `
+
+        <div class="summary">
+
+            <div class="summary-box">
+
+                <div class="summary-title">
+                    ವಿದ್ಯಾರ್ಥಿಗಳು
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="summaryStudents">
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <div class="summary-title">
+                    ನಮೂದಿಸಿದ Marks
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="summaryEntries">
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <div class="summary-title">
+                    ಒಟ್ಟು Marks
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="summaryTotal">
+                    0
+                </div>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <div class="summary-title">
+                    ಸರಾಸರಿ %
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="summaryPercent">
+                    0%
+                </div>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <div class="summary-title">
+                    Result
+                </div>
+
+                <div
+                    class="summary-value"
+                    id="summaryResult">
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
     document.getElementById(
         "marksArea"
     ).innerHTML =
         html;
+
+
+    updateAllTotals();
 
 }
 
@@ -1497,6 +1717,8 @@ function updateGrade(
         input.value;
 
 
+    /* LIMIT */
+
     if(
         value !== "" &&
         Number(value) > max
@@ -1525,11 +1747,431 @@ function updateGrade(
     }
 
 
+    /* GRADE */
+
     grade.innerText =
         calculateGrade(
             value,
             max
         );
+
+
+    /* TOTAL */
+
+    updateStudentTotal(
+        studentIndex
+    );
+
+}
+
+
+/* =====================================================
+   UPDATE STUDENT TOTAL
+===================================================== */
+
+function updateStudentTotal(
+    studentIndex
+){
+
+    let total =
+        0;
+
+    let maxTotal =
+        0;
+
+    let enteredCount =
+        0;
+
+
+    SUBJECTS.forEach(
+        (subject,sIndex) => {
+
+            const input =
+                document.getElementById(
+                    `mark_${studentIndex}_${sIndex}`
+                );
+
+
+            const max =
+                getMaxMarks(
+                    subject
+                );
+
+
+            maxTotal +=
+                max;
+
+
+            if(
+                input &&
+                input.value !== ""
+            ){
+
+                const value =
+                    Number(
+                        input.value
+                    );
+
+
+                if(
+                    !isNaN(value)
+                ){
+
+                    total +=
+                        value;
+
+                    enteredCount++;
+
+                }
+
+            }
+
+        }
+    );
+
+
+    const percentage =
+        maxTotal > 0
+        ? (total / maxTotal) * 100
+        : 0;
+
+
+    const overallGrade =
+        enteredCount > 0
+        ? calculateOverallGrade(
+            total,
+            maxTotal
+        )
+        : "";
+
+
+    const result =
+        calculateResult(
+            total,
+            maxTotal,
+            enteredCount
+        );
+
+
+    /* TOTAL */
+
+    const totalBox =
+        document.getElementById(
+            `total_${studentIndex}`
+        );
+
+
+    if(totalBox){
+
+        totalBox.innerText =
+            `${formatNumber(total)} / ${formatNumber(maxTotal)}`;
+
+    }
+
+
+    /* PERCENTAGE */
+
+    const percentBox =
+        document.getElementById(
+            `percent_${studentIndex}`
+        );
+
+
+    if(percentBox){
+
+        percentBox.innerText =
+            `${percentage.toFixed(2)}%`;
+
+    }
+
+
+    /* OVERALL GRADE */
+
+    const overallBox =
+        document.getElementById(
+            `overall_${studentIndex}`
+        );
+
+
+    if(overallBox){
+
+        overallBox.innerText =
+            overallGrade;
+
+    }
+
+
+    /* RESULT */
+
+    const resultBox =
+        document.getElementById(
+            `result_${studentIndex}`
+        );
+
+
+    if(resultBox){
+
+        resultBox.innerText =
+            result;
+
+
+        resultBox.className =
+            "";
+
+
+        if(result === "PASS"){
+
+            resultBox.className =
+                "result-pass";
+
+        }
+
+
+        if(result === "FAIL"){
+
+            resultBox.className =
+                "result-fail";
+
+        }
+
+    }
+
+
+    updateSummary();
+
+}
+
+
+/* =====================================================
+   FORMAT NUMBER
+===================================================== */
+
+function formatNumber(value){
+
+    if(
+        Number.isInteger(value)
+    ){
+
+        return String(value);
+
+    }
+
+    return Number(value).toFixed(2);
+
+}
+
+
+/* =====================================================
+   UPDATE ALL TOTALS
+===================================================== */
+
+function updateAllTotals(){
+
+    students.forEach(
+        (student,index) => {
+
+            updateStudentTotal(
+                index
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+function updateSummary(){
+
+    let totalEntries =
+        0;
+
+    let grandTotal =
+        0;
+
+    let grandMax =
+        0;
+
+    let passCount =
+        0;
+
+    let failCount =
+        0;
+
+
+    students.forEach(
+        (student,index) => {
+
+            let studentTotal =
+                0;
+
+            let studentMax =
+                0;
+
+            let entered =
+                0;
+
+
+            SUBJECTS.forEach(
+                (subject,sIndex) => {
+
+                    const input =
+                        document.getElementById(
+                            `mark_${index}_${sIndex}`
+                        );
+
+
+                    const max =
+                        getMaxMarks(
+                            subject
+                        );
+
+
+                    studentMax +=
+                        max;
+
+
+                    if(
+                        input &&
+                        input.value !== ""
+                    ){
+
+                        const value =
+                            Number(
+                                input.value
+                            );
+
+
+                        if(!isNaN(value)){
+
+                            studentTotal +=
+                                value;
+
+                            totalEntries++;
+
+                            entered++;
+
+                        }
+
+                    }
+
+                }
+            );
+
+
+            grandTotal +=
+                studentTotal;
+
+            grandMax +=
+                studentMax;
+
+
+            if(entered > 0){
+
+                const result =
+                    calculateResult(
+                        studentTotal,
+                        studentMax,
+                        entered
+                    );
+
+
+                if(result === "PASS"){
+
+                    passCount++;
+
+                }
+
+
+                if(result === "FAIL"){
+
+                    failCount++;
+
+                }
+
+            }
+
+        }
+    );
+
+
+    const averagePercent =
+        grandMax > 0
+        ? (grandTotal / grandMax) * 100
+        : 0;
+
+
+    const studentsBox =
+        document.getElementById(
+            "summaryStudents"
+        );
+
+
+    if(studentsBox){
+
+        studentsBox.innerText =
+            students.length;
+
+    }
+
+
+    const entriesBox =
+        document.getElementById(
+            "summaryEntries"
+        );
+
+
+    if(entriesBox){
+
+        entriesBox.innerText =
+            totalEntries;
+
+    }
+
+
+    const totalBox =
+        document.getElementById(
+            "summaryTotal"
+        );
+
+
+    if(totalBox){
+
+        totalBox.innerText =
+            `${formatNumber(grandTotal)} / ${formatNumber(grandMax)}`;
+
+    }
+
+
+    const percentBox =
+        document.getElementById(
+            "summaryPercent"
+        );
+
+
+    if(percentBox){
+
+        percentBox.innerText =
+            `${averagePercent.toFixed(2)}%`;
+
+    }
+
+
+    const resultBox =
+        document.getElementById(
+            "summaryResult"
+        );
+
+
+    if(resultBox){
+
+        resultBox.innerText =
+            `PASS: ${passCount} | FAIL: ${failCount}`;
+
+    }
 
 }
 
@@ -1550,12 +2192,19 @@ function downloadExcel(){
         );
 
         return;
+
     }
 
 
     const cls =
         document.getElementById(
             "classSelect"
+        ).value;
+
+
+    const division =
+        document.getElementById(
+            "divisionSelect"
         ).value;
 
 
@@ -1590,44 +2239,151 @@ function downloadExcel(){
     );
 
 
+    headers.push(
+        "Total",
+        "Percentage",
+        "Overall Grade",
+        "Result"
+    );
+
+
     const rows = [];
 
 
     students.forEach(
-        student => {
+        (student,index) => {
+
 
             const row = [
 
-                student.roll_no
-                || "",
+                student.roll_no || "",
 
-                student.student_name
-                || "",
+                student.student_name || "",
 
-                student.father_name
-                || "",
+                student.father_name || "",
 
-                student.mother_name
-                || "",
+                student.mother_name || "",
 
-                student.sats_no
-                || "",
+                student.sats_no || "",
 
                 cls,
 
-                "A",
+                division,
 
                 exam
 
             ];
 
 
-            SUBJECTS.forEach(
-                () => {
+            let total =
+                0;
 
-                    row.push("");
+            let maxTotal =
+                0;
+
+            let entered =
+                0;
+
+
+            SUBJECTS.forEach(
+                (subject,sIndex) => {
+
+                    const input =
+                        document.getElementById(
+                            `mark_${index}_${sIndex}`
+                        );
+
+
+                    const max =
+                        getMaxMarks(
+                            subject
+                        );
+
+
+                    maxTotal +=
+                        max;
+
+
+                    if(
+                        input &&
+                        input.value !== ""
+                    ){
+
+                        const value =
+                            Number(
+                                input.value
+                            );
+
+
+                        if(!isNaN(value)){
+
+                            total +=
+                                value;
+
+                            entered++;
+
+                            row.push(
+                                value
+                            );
+
+                        }
+                        else{
+
+                            row.push("");
+
+                        }
+
+                    }
+                    else{
+
+                        row.push("");
+
+                    }
 
                 }
+            );
+
+
+            const percentage =
+                maxTotal > 0
+                ? (total / maxTotal) * 100
+                : 0;
+
+
+            const overallGrade =
+                entered > 0
+                ? calculateOverallGrade(
+                    total,
+                    maxTotal
+                )
+                : "";
+
+
+            const result =
+                calculateResult(
+                    total,
+                    maxTotal,
+                    entered
+                );
+
+
+            row.push(
+                `${formatNumber(total)} / ${formatNumber(maxTotal)}`
+            );
+
+
+            row.push(
+                percentage.toFixed(2) + "%"
+            );
+
+
+            row.push(
+                overallGrade
+            );
+
+
+            row.push(
+                result
             );
 
 
@@ -1655,15 +2411,21 @@ function downloadExcel(){
         {wch:22},
         {wch:22},
         {wch:15},
-        {wch:15},
+        {wch:12},
         {wch:10},
         {wch:25},
+
         {wch:15},
         {wch:15},
         {wch:15},
         {wch:15},
         {wch:15},
-        {wch:18}
+        {wch:18},
+
+        {wch:18},
+        {wch:15},
+        {wch:15},
+        {wch:15}
 
     ];
 
@@ -1681,12 +2443,12 @@ function downloadExcel(){
 
     XLSX.writeFile(
         workbook,
-        `Marks_${cls}_A.xlsx`
+        `Marks_${cls}_${division}.xlsx`
     );
 
 
     showMessage(
-        "✅ Excel Form Download ಆಗಿದೆ.",
+        "✅ Excel Download ಆಗಿದೆ.",
         "success"
     );
 
@@ -1704,7 +2466,9 @@ async function uploadExcel(event){
 
 
     if(!file){
+
         return;
+
     }
 
 
@@ -1721,6 +2485,7 @@ async function uploadExcel(event){
             "";
 
         return;
+
     }
 
 
@@ -1763,13 +2528,14 @@ async function uploadExcel(event){
 
                 const roll =
                     String(
-                        row["Roll No"]
-                        || ""
+                        row["Roll No"] || ""
                     ).trim();
 
 
                 if(!roll){
+
                     return;
+
                 }
 
 
@@ -1777,15 +2543,16 @@ async function uploadExcel(event){
                     students.find(
                         s =>
                         String(
-                            s.roll_no
-                            || ""
+                            s.roll_no || ""
                         ).trim()
                         === roll
                     );
 
 
                 if(!student){
+
                     return;
+
                 }
 
 
@@ -1796,10 +2563,7 @@ async function uploadExcel(event){
 
 
                 SUBJECTS.forEach(
-                    (
-                        subject,
-                        sIndex
-                    ) => {
+                    (subject,sIndex) => {
 
                         const value =
                             row[
@@ -1808,11 +2572,12 @@ async function uploadExcel(event){
 
 
                         if(
-                            value === ""
-                            ||
+                            value === "" ||
                             value === undefined
                         ){
+
                             return;
+
                         }
 
 
@@ -1827,13 +2592,13 @@ async function uploadExcel(event){
 
 
                         if(
-                            isNaN(number)
-                            ||
-                            number < 0
-                            ||
+                            isNaN(number) ||
+                            number < 0 ||
                             number > max
                         ){
+
                             return;
+
                         }
 
 
@@ -1860,10 +2625,18 @@ async function uploadExcel(event){
                 );
 
 
+                updateStudentTotal(
+                    index
+                );
+
+
                 count++;
 
             }
         );
+
+
+        updateSummary();
 
 
         showMessage(
@@ -1872,6 +2645,7 @@ async function uploadExcel(event){
         );
 
     }
+
     catch(error){
 
         console.error(
@@ -1901,16 +2675,6 @@ async function uploadExcel(event){
 
 async function saveMarks(){
 
-    /*
-       ಈ ಹಂತದಲ್ಲಿ databaseನ
-       marks table structure ಖಚಿತವಾಗಿಲ್ಲ.
-
-       ಆದ್ದರಿಂದ ತಪ್ಪು table/columnಗೆ
-       data ಹೋಗದಂತೆ ತಾತ್ಕಾಲಿಕವಾಗಿ
-       screen validation ಮಾತ್ರ.
-    */
-
-
     if(
         students.length === 0
     ){
@@ -1921,12 +2685,12 @@ async function saveMarks(){
         );
 
         return;
+
     }
 
 
-    let totalMarks =
+    let totalEntries =
         0;
-
 
     let invalid =
         false;
@@ -1936,10 +2700,7 @@ async function saveMarks(){
         (student,index) => {
 
             SUBJECTS.forEach(
-                (
-                    subject,
-                    sIndex
-                ) => {
+                (subject,sIndex) => {
 
                     const input =
                         document.getElementById(
@@ -1948,14 +2709,18 @@ async function saveMarks(){
 
 
                     if(!input){
+
                         return;
+
                     }
 
 
                     if(
                         input.value === ""
                     ){
+
                         return;
+
                     }
 
 
@@ -1972,22 +2737,20 @@ async function saveMarks(){
 
 
                     if(
-                        isNaN(mark)
-                        ||
-                        mark < 0
-                        ||
+                        isNaN(mark) ||
+                        mark < 0 ||
                         mark > max
                     ){
 
                         invalid =
                             true;
 
-                        return;
+                    }
+                    else{
+
+                        totalEntries++;
 
                     }
-
-
-                    totalMarks++;
 
                 }
             );
@@ -2004,22 +2767,31 @@ async function saveMarks(){
         );
 
         return;
+
     }
 
 
     /*
-       ಈಗ marks screenನಲ್ಲಿ
-       ಸರಿಯಾಗಿ validate ಆಗಿವೆ.
-
-       Database Save ಮಾಡಲು
-       ನಿಮ್ಮ marks table structure
-       ಬೇಕಾಗಿದೆ.
+       ಈಗ screen calculation ಪೂರ್ಣವಾಗಿದೆ.
     */
 
+    updateAllTotals();
+
+
     showMessage(
-        `✅ ${totalMarks} marks entry ಸಿದ್ಧವಾಗಿದೆ. Database Saveಗಾಗಿ marks table columns ಹೊಂದಿಸಬೇಕು.`,
+        `✅ ${totalEntries} marks entries ಪರಿಶೀಲಿಸಲಾಗಿದೆ. Total, Percentage, Grade ಮತ್ತು Result calculate ಆಗಿವೆ.`,
         "success"
     );
+
+
+    /*
+       IMPORTANT:
+       Database marks table structure ನಮಗೆ ಇನ್ನೂ
+       ಖಚಿತವಾಗಿಲ್ಲ.
+
+       ಆದ್ದರಿಂದ ತಪ್ಪು column/tableಗೆ data save
+       ಮಾಡುವುದನ್ನು ಇಲ್ಲಿ ತಪ್ಪಿಸಲಾಗಿದೆ.
+    */
 
 }
 
@@ -2064,49 +2836,76 @@ function clearPage(){
 
 
 /* =====================================================
-   ESCAPE HTML
+   EXAM / CLASS CHANGE
 ===================================================== */
 
-function escapeHtml(value){
+document.getElementById(
+    "classSelect"
+).addEventListener(
+    "change",
+    function(){
 
-    if(
-        value === null ||
-        value === undefined
-    ){
-        return "";
+        if(
+            students.length > 0
+        ){
+
+            students = [];
+
+            document.getElementById(
+                "studentCount"
+            ).innerText =
+                "ಹೊಸ ತರಗತಿಗಾಗಿ Students Load ಮಾಡಿ";
+
+
+            document.getElementById(
+                "marksArea"
+            ).innerHTML = `
+
+                <div style="
+                    text-align:center;
+                    padding:30px;
+                ">
+
+                    Students Load ಒತ್ತಿ
+
+                </div>
+
+            `;
+
+        }
+
     }
+);
 
 
-    return String(value)
+document.getElementById(
+    "examSelect"
+).addEventListener(
+    "change",
+    function(){
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
+        if(
+            students.length > 0
+        ){
 
-        .replace(
-            /</g,
-            "&lt;"
-        )
+            /*
+               ಪರೀಕ್ಷೆ ಬದಲಾದಾಗ max marks ಕೂಡ
+               ಬದಲಾಗಬೇಕು.
 
-        .replace(
-            />/g,
-            "&gt;"
-        )
+               ಆದ್ದರಿಂದ table ಅನ್ನು ಮತ್ತೆ
+               create ಮಾಡುತ್ತೇವೆ.
+            */
 
-        .replace(
-            /"/g,
-            "&quot;"
-        )
+            createMarksTable();
 
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        }
 
-}
+    }
+);
+
 
 </script>
 
 </body>
+
 </html>
