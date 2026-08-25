@@ -270,20 +270,19 @@ tr:hover{
                 </select>
             </div>
 
-            <button class="btn-load" onclick="loadStudents()">
-                🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
-            </button>
-
-            <button type="button" class="btn-load" onclick="document.getElementById('excelFile').click()">
+            <label for="excelFile" class="btn-load" style="display:inline-block;cursor:pointer;">
                 📤 Excel Upload
-            </button>
-
+            </label>
             <input id="excelFile" type="file" accept=".xlsx,.xls,.csv"
-                   style="display:none" onchange="handleExcelUpload(event)">
+                   style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
+                   onchange="handleExcelUpload(event)">
 
-            <button class="btn-clear" onclick="downloadStudentExcelTemplate()">
+            <a class="btn-clear" id="excelTemplateLink"
+               href="#"
+               download="Students-Excel-Template.xls"
+               onclick="downloadStudentExcelTemplate(event)">
                 📥 Excel Template
-            </button>
+            </a>
 
             <button class="btn-new" onclick="newStudent()">
                 ＋ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
@@ -1237,8 +1236,9 @@ function excelDateToISO(value){
 }
 
 async function handleExcelUpload(event){
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
+
+    const input = event.target;
+    const file = input.files && input.files[0];
 
     if(!file) return;
 
@@ -1247,16 +1247,13 @@ async function handleExcelUpload(event){
 
     if(!classValue){
         showMessage("ಮೊದಲು ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.", "error");
-        return;
-    }
-
-    if(!divisionValue){
-        showMessage("ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ.", "error");
+        input.value = "";
         return;
     }
 
     if(typeof XLSX === "undefined"){
-        showMessage("Excel library Load ಆಗಿಲ್ಲ. Internet connection ಪರಿಶೀಲಿಸಿ.", "error");
+        showMessage("Excel library Load ಆಗಿಲ್ಲ. Ctrl+F5 ಮಾಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.", "error");
+        input.value = "";
         return;
     }
 
@@ -1270,7 +1267,7 @@ async function handleExcelUpload(event){
         });
 
         if(!workbook.SheetNames.length){
-            throw new Error("Excelನಲ್ಲಿ ಯಾವುದೇ Sheet ಕಂಡುಬಂದಿಲ್ಲ.");
+            throw new Error("Excelನಲ್ಲಿ Sheet ಕಂಡುಬಂದಿಲ್ಲ.");
         }
 
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -1289,78 +1286,67 @@ async function handleExcelUpload(event){
         const errors = [];
 
         for(let i=0; i<rows.length; i++){
+
             const row = rows[i];
-            const excelRowNo = i + 2;
+            const rowNo = i + 2;
 
-            const rollNo = excelText(excelValue(row, [
-                "Roll No","RollNo","Reg No","RegNo","Registration No","RegistrationNo"
-            ]));
+            const get = function(names){
+                const keys = Object.keys(row);
+                for(const name of names){
+                    const wanted = String(name).trim().toLowerCase().replace(/[\s_\-]/g,"");
+                    const key = keys.find(k =>
+                        String(k).trim().toLowerCase().replace(/[\s_\-]/g,"") === wanted
+                    );
+                    if(key !== undefined) return row[key];
+                }
+                return "";
+            };
 
-            const studentName = excelText(excelValue(row, [
-                "Student Name","StudentName","Name","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು"
-            ]));
-
-            const fatherName = excelText(excelValue(row, [
-                "Father Name","FatherName","Father","ತಂದೆಯ ಹೆಸರು"
-            ]));
-
-            const motherName = excelText(excelValue(row, [
-                "Mother Name","MotherName","Mother","ತಾಯಿಯ ಹೆಸರು"
-            ]));
-
-            const genderRaw = excelText(excelValue(row, [
-                "Gender","ಲಿಂಗ"
-            ]));
-
-            const dobRaw = excelValue(row, [
-                "DOB","Date of Birth","DateofBirth","Birth Date","ಜನ್ಮ ದಿನಾಂಕ"
-            ]);
-
-            const satsNo = excelText(excelValue(row, [
-                "SATS No","SATSNo","SATS","SATS Number"
-            ]));
-
-            const caste = excelText(excelValue(row, [
-                "Caste","ಜಾತಿ"
-            ]));
-
-            const mobile = excelText(excelValue(row, [
-                "Mobile","Mobile Number","MobileNumber","Phone","ಮೊಬೈಲ್ ಸಂಖ್ಯೆ"
-            ]));
+            const rollNo = String(get(["Roll No","RollNo","Reg No","RegNo"]) ?? "").trim();
+            const studentName = String(get(["Student Name","StudentName","Name"]) ?? "").trim();
+            const fatherName = String(get(["Father Name","FatherName","Father"]) ?? "").trim();
+            const motherName = String(get(["Mother Name","MotherName","Mother"]) ?? "").trim();
+            const genderRaw = String(get(["Gender"]) ?? "").trim();
+            const satsNo = String(get(["SATS No","SATSNo","SATS"]) ?? "").trim();
+            const caste = String(get(["Caste"]) ?? "").trim();
+            const mobile = String(get(["Mobile","Mobile Number","MobileNumber","Phone"]) ?? "").trim();
 
             if(!rollNo || !studentName){
                 skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Roll No ಮತ್ತು Student Name ಕಡ್ಡಾಯ.`);
+                errors.push(`Row ${rowNo}: Roll No ಮತ್ತು Student Name ಬೇಕು.`);
                 continue;
             }
 
             if(!/^\d{9}$/.test(satsNo)){
                 skipped++;
-                errors.push(`Excel Row ${excelRowNo}: SATS No 9 digits ಇರಬೇಕು (${satsNo || "ಖಾಲಿ"}).`);
+                errors.push(`Row ${rowNo}: SATS No 9 digits ಇರಬೇಕು.`);
                 continue;
             }
 
-            const genderMap = {
-                "male":"ಗಂಡು",
-                "m":"ಗಂಡು",
-                "ಗಂಡು":"ಗಂಡು",
-                "female":"ಹೆಣ್ಣು",
-                "f":"ಹೆಣ್ಣು",
-                "ಹೆಣ್ಣು":"ಹೆಣ್ಣು"
-            };
-            const gender = genderMap[genderRaw.toLowerCase()] || genderRaw || null;
+            let gender = genderRaw;
+            const gl = genderRaw.toLowerCase();
+            if(gl === "male" || gl === "m") gender = "ಗಂಡು";
+            if(gl === "female" || gl === "f") gender = "ಹೆಣ್ಣು";
 
             if(gender && gender !== "ಗಂಡು" && gender !== "ಹೆಣ್ಣು"){
                 skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Gender 'ಗಂಡು' ಅಥವಾ 'ಹೆಣ್ಣು' ಇರಬೇಕು.`);
+                errors.push(`Row ${rowNo}: Gender ಗಂಡು ಅಥವಾ ಹೆಣ್ಣು ಇರಬೇಕು.`);
                 continue;
             }
 
             const mobileClean = mobile.replace(/\D/g,"");
             if(mobileClean && !/^\d{10}$/.test(mobileClean)){
                 skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Mobile Number 10 digits ಇರಬೇಕು.`);
+                errors.push(`Row ${rowNo}: Mobile 10 digits ಇರಬೇಕು.`);
                 continue;
+            }
+
+            let dob = get(["DOB","Date of Birth","DateofBirth","Birth Date"]);
+            if(typeof dob === "number" && XLSX.SSF){
+                const d = XLSX.SSF.parse_date_code(dob);
+                if(d) dob = `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+            }else{
+                dob = String(dob ?? "").trim();
             }
 
             const data = {
@@ -1368,50 +1354,47 @@ async function handleExcelUpload(event){
                 student_name: studentName,
                 father_name: fatherName,
                 mother_name: motherName,
-                gender: gender,
-                dob: excelDateToISO(dobRaw) || null,
+                gender: gender || null,
+                dob: dob || null,
                 sats_no: satsNo,
                 caste: caste,
                 mobile: mobileClean,
                 class_name: classValue,
-                division: "A",
+                division: divisionValue,
                 academic_year: "2026-27",
                 is_active: true
             };
 
-            // Avoid duplicate students by Class + Division + Roll No.
-            const { data: existing, error: findError } = await db
+            const {data: existing, error: findError} = await db
                 .from("students")
                 .select("id")
                 .eq("class_name", classValue)
-                .eq("division", "A")
+                .eq("division", divisionValue)
                 .eq("roll_no", rollNo)
                 .limit(1);
 
-            if(findError){
-                throw findError;
-            }
+            if(findError) throw findError;
 
             if(existing && existing.length){
-                const { error:updateError } = await db
+                const {error} = await db
                     .from("students")
                     .update(data)
                     .eq("id", existing[0].id);
 
-                if(updateError){
+                if(error){
                     skipped++;
-                    errors.push(`Excel Row ${excelRowNo}: ${updateError.message}`);
+                    errors.push(`Row ${rowNo}: ${error.message}`);
                 }else{
                     updated++;
                 }
             }else{
-                const { error:insertError } = await db
+                const {error} = await db
                     .from("students")
                     .insert([data]);
 
-                if(insertError){
+                if(error){
                     skipped++;
-                    errors.push(`Excel Row ${excelRowNo}: ${insertError.message}`);
+                    errors.push(`Row ${rowNo}: ${error.message}`);
                 }else{
                     added++;
                 }
@@ -1420,122 +1403,73 @@ async function handleExcelUpload(event){
 
         await loadStudents();
 
-        let message = `✅ Excel Upload ಪೂರ್ಣಗೊಂಡಿದೆ. ಹೊಸ ವಿದ್ಯಾರ್ಥಿಗಳು: ${added}, Update: ${updated}, Skip: ${skipped}.`;
+        let msg = `✅ Excel Upload ಮುಗಿದಿದೆ. ಹೊಸದು: ${added}, Update: ${updated}, Skip: ${skipped}.`;
+        if(errors.length) msg += " Skip ಆದ rowsಗಳ ವಿವರ Consoleನಲ್ಲಿ ಇದೆ.";
 
-        if(errors.length){
-            console.warn("Excel Upload Errors:", errors);
-            message += " ಕೆಲವು rows skip ಆಗಿವೆ. Browser Consoleನಲ್ಲಿ ವಿವರಗಳಿವೆ.";
-        }
-
-        showMessage(message, errors.length ? "info" : "success");
+        showMessage(msg, errors.length ? "info" : "success");
 
     }catch(error){
         console.error("EXCEL UPLOAD ERROR:", error);
-        showMessage(
-            "Excel Upload ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " + getSupabaseError(error),
-            "error"
-        );
+        showMessage("❌ Excel Upload Error: " + getSupabaseError(error), "error");
+    }finally{
+        input.value = "";
     }
 }
 
-function downloadStudentExcelTemplate(){
 
-    const headers = [
-        "Roll No","Student Name","Father Name","Mother Name",
-        "Gender","DOB","SATS No","Caste","Mobile"
-    ];
+function downloadStudentExcelTemplate(event){
 
-    const sample = [
-        "1","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತಂದೆಯ ಹೆಸರು","ತಾಯಿಯ ಹೆಸರು",
-        "ಗಂಡು","2013-05-10","123456789","2A","9876543210"
-    ];
-
-    try {
-
-        if(typeof XLSX === "undefined"){
-            showMessage("Excel library Load ಆಗಿಲ್ಲ. Page ಅನ್ನು Ctrl+F5 ಮಾಡಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.", "error");
-            return;
-        }
-
-        const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
-
-        // Keep SATS and Mobile as text so leading zeros are not lost.
-        ws["G2"] = { t:"s", v:"123456789" };
-        ws["I2"] = { t:"s", v:"9876543210" };
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Students");
-
-        // Create XLSX bytes in browser memory.
-        const xlsxArray = XLSX.write(wb, {
-            bookType: "xlsx",
-            type: "array"
-        });
-
-        const blob = new Blob(
-            [xlsxArray],
-            {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
-        );
-
-        const url = URL.createObjectURL(blob);
-
-        // Real download link.
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "Students-Excel-Template.xlsx";
-        a.style.display = "none";
-
-        document.body.appendChild(a);
-        a.click();
-
-        // Do NOT revoke immediately; some browsers cancel the download.
-        setTimeout(function(){
-            URL.revokeObjectURL(url);
-            a.remove();
-        }, 10000);
-
-        showMessage("✅ Excel Template Download ಪ್ರಾರಂಭವಾಗಿದೆ.", "success");
-
-    } catch(error) {
-
-        console.error("TEMPLATE DOWNLOAD ERROR:", error);
-
-        // Guaranteed fallback to CSV.
-        const csvRows = [
-            headers,
-            sample
-        ];
-
-        const csvEscape = function(value){
-            return '"' + String(value ?? "").replace(/"/g, '""') + '"';
-        };
-
-        const csv = csvRows
-            .map(row => row.map(csvEscape).join(","))
-            .join("\r\n");
-
-        const blob = new Blob(
-            ["\\uFEFF" + csv],
-            {type:"text/csv;charset=utf-8;"}
-        );
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-
-        a.href = url;
-        a.download = "Students-Excel-Template.csv";
-        a.style.display = "none";
-
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(function(){
-            URL.revokeObjectURL(url);
-            a.remove();
-        }, 10000);
-
-        showMessage("Excel download ಆಗದ ಕಾರಣ CSV Template download ಮಾಡಲಾಗಿದೆ. Excelನಲ್ಲಿ ತೆರೆಯಬಹುದು.", "info");
+    if(event){
+        event.preventDefault();
     }
+
+    const html =
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+        'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+        'xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head><meta charset="UTF-8"></head><body>' +
+        '<table border="1">' +
+        '<tr>' +
+        '<th>Roll No</th>' +
+        '<th>Student Name</th>' +
+        '<th>Father Name</th>' +
+        '<th>Mother Name</th>' +
+        '<th>Gender</th>' +
+        '<th>DOB</th>' +
+        '<th>SATS No</th>' +
+        '<th>Caste</th>' +
+        '<th>Mobile</th>' +
+        '</tr>' +
+        '<tr>' +
+        '<td>1</td>' +
+        '<td>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</td>' +
+        '<td>ತಂದೆಯ ಹೆಸರು</td>' +
+        '<td>ತಾಯಿಯ ಹೆಸರು</td>' +
+        '<td>ಗಂಡು</td>' +
+        '<td>2013-05-10</td>' +
+        '<td>123456789</td>' +
+        '<td>2A</td>' +
+        '<td>9876543210</td>' +
+        '</tr>' +
+        '</table></body></html>';
+
+    const dataUrl =
+        'data:application/vnd.ms-excel;charset=utf-8,' +
+        encodeURIComponent(html);
+
+    const link = document.getElementById("excelTemplateLink");
+
+    if(link){
+        link.href = dataUrl;
+        link.download = "Students-Excel-Template.xls";
+        link.textContent = "📥 Download Excel Template";
+        showMessage("ಈಗ 'Download Excel Template' ಮೇಲೆ ಒತ್ತಿ.", "success");
+        return false;
+    }
+
+    // Fallback for older browsers.
+    window.location.href = dataUrl;
+    return false;
 }
 
 /* =========================================================
