@@ -145,6 +145,51 @@ td.subject{text-align:left;font-weight:700}
 }
 .loading{text-align:center;padding:25px}
 
+.result-settings-head{
+    text-align:center;
+}
+.result-settings-head .school-name{
+    margin:0 0 5px;
+    font-size:26px;
+    font-weight:800;
+}
+.result-settings-head .exam-name{
+    margin:0 0 4px;
+    font-size:21px;
+    font-weight:800;
+}
+.result-settings-head .academic-year{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+}
+.teacher-footer{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-top:42px;
+    padding-top:25px;
+    page-break-inside:avoid;
+}
+.teacher-block{
+    text-align:center;
+    min-height:70px;
+    font-weight:700;
+}
+.teacher-block .role{
+    display:block;
+    margin-bottom:10px;
+    font-size:16px;
+}
+.teacher-block .name{
+    display:block;
+    font-size:16px;
+    font-weight:800;
+}
+@media print{
+    .teacher-footer{margin-top:35px}
+}
+
 @media(max-width:700px){
     .search-grid,.student-info{grid-template-columns:1fr}
     .summary{grid-template-columns:repeat(2,1fr)}
@@ -166,8 +211,8 @@ td.subject{text-align:left;font-weight:700}
 <body>
 
 <div class="header">
-    <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
-    <p>ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
+    <h1 id="schoolNameHeader">ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
+    <p id="schoolAddressHeader">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
 </div>
 
 <div class="container">
@@ -376,11 +421,107 @@ function clearResult(){
 }
 
 /* =========================================================
+   SETTINGS
+   Only presentation/header/footer values are loaded here.
+   Existing result/marks logic is unchanged.
+========================================================= */
+let appSettings = {
+    school_name: "",
+    school_address: "",
+    head_teacher_name: "",
+    class_teacher_8: "",
+    class_teacher_9: "",
+    class_teacher_10: "",
+    academic_year: "2026-27"
+};
+
+async function loadAppSettings(){
+    try{
+        /*
+         * Settings page saves ONE record with id = 1.
+         * We intentionally select the complete row and use the first
+         * available record, so the Result page does not fail silently
+         * if the id value was changed/recreated.
+         */
+        const {data,error} = await db
+            .from("settings")
+            .select("*")
+            .order("id",{ascending:true})
+            .limit(1)
+            .maybeSingle();
+
+        if(error) throw error;
+
+        if(data){
+            appSettings = {
+                school_name: String(data.school_name ?? "").trim(),
+                school_address: String(data.school_address ?? "").trim(),
+                head_teacher_name: String(data.head_teacher_name ?? "").trim(),
+                class_teacher_8: String(data.class_teacher_8 ?? "").trim(),
+                class_teacher_9: String(data.class_teacher_9 ?? "").trim(),
+                class_teacher_10: String(data.class_teacher_10 ?? "").trim(),
+                academic_year: String(data.academic_year ?? "2026-27").trim()
+            };
+
+            const school = $("schoolNameHeader");
+            const address = $("schoolAddressHeader");
+
+            if(school)
+                school.textContent =
+                    appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು";
+
+            if(address && appSettings.school_address)
+                address.textContent = appSettings.school_address;
+
+            console.log("Settings loaded:", appSettings);
+        }else{
+            console.warn("Settings record not found.");
+        }
+
+    }catch(error){
+        console.error("Settings Load Error:",error);
+    }
+}
+
+function getClassTeacherForStudent(student){
+    /*
+     * The Students table may store class as 8, 8th, 8ನೇ ತರಗತಿ,
+     * etc. getClass() already normalizes the value.
+     */
+    const cls = String(getClass(student) || "")
+        .trim()
+        .toLowerCase();
+
+    if(cls.includes("8"))
+        return appSettings.class_teacher_8;
+
+    if(cls.includes("9"))
+        return appSettings.class_teacher_9;
+
+    if(cls.includes("10"))
+        return appSettings.class_teacher_10;
+
+    return "";
+}
+
+function getHeadTeacherName(){
+    return String(appSettings.head_teacher_name || "").trim();
+}
+
+function examDisplayName(examType){
+    if(examType === "HALF_YEARLY") return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    if(examType === "ANNUAL") return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    return examType || "";
+}
+
+/* =========================================================
    VIEW RESULT
 ========================================================= */
 async function viewResult(){
 
     hideMessage();
+
+    await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
     const dob=$("dob").value;
@@ -603,9 +744,20 @@ function renderResult(student,subjects,results,marksMap){
     let html=`
     <div class="card">
 
-        <div class="result-head">
-            <h2>📘 ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ</h2>
-            <div>ಶೈಕ್ಷಣಿಕ ಫಲಿತಾಂಶ</div>
+        <div class="result-head result-settings-head">
+            <h2 class="school-name">
+                ${esc(appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
+            </h2>
+            <div class="exam-name">
+                ${esc(
+                    results.length === 1
+                        ? examDisplayName(results[0].exam_type)
+                        : results.map(r => examDisplayName(r.exam_type)).filter(Boolean).join(" / ")
+                )}
+            </div>
+            <div class="academic-year">
+                ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year || "2026-27")}
+            </div>
         </div>
 
         <div class="student-info">
@@ -666,6 +818,17 @@ function renderResult(student,subjects,results,marksMap){
     }
 
     html+=`
+        <div class="teacher-footer">
+            <div class="teacher-block">
+                <span class="role">Class Teacher</span>
+                <span class="name">${esc(getClassTeacherForStudent(student) || " ")}</span>
+            </div>
+            <div class="teacher-block">
+                <span class="role">Head Teacher</span>
+                <span class="name">${esc(getHeadTeacherName() || " ")}</span>
+            </div>
+        </div>
+
         <div class="button-row no-print">
             <button class="btn-print"
                     onclick="window.print()">
