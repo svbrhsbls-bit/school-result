@@ -1936,7 +1936,291 @@ function csvCell(value){
 }
 
 
-function downloadExcel(){
+function downloadExcel(){function downloadExcel(){
+
+    if(!students.length){
+
+        alert("ಮೊದಲು Students Load ಮಾಡಿ.");
+
+        return;
+    }
+
+
+    const headers = [
+        "Roll No",
+        "Student Name",
+        "SATS No"
+    ];
+
+
+    subjects.forEach(subject => {
+
+        headers.push(
+            subjectName(subject) + " Marks"
+        );
+
+        headers.push(
+            subjectName(subject) + " Grade"
+        );
+
+    });
+
+
+    headers.push(
+        "Total",
+        "Maximum",
+        "Percentage",
+        "Grade",
+        "Result"
+    );
+
+
+    const rows = [];
+
+    rows.push(
+        headers.map(csvCell).join(",")
+    );
+
+
+    students.forEach((student,index) => {
+
+        const row = [];
+
+        const studentId =
+            getValue(
+                student,
+                ["id","student_id"]
+            );
+
+
+        row.push(
+            rollNumber(
+                student,
+                index
+            )
+        );
+
+
+        row.push(
+            studentName(student)
+        );
+
+
+        row.push(
+            getValue(
+                student,
+                [
+                    "sats_no",
+                    "sats_number",
+                    "sats"
+                ]
+            )
+        );
+
+
+        let total = 0;
+
+        let maximum = 0;
+
+        let entered = 0;
+
+
+        subjects.forEach(subject => {
+
+            const input =
+                getInput(
+                    studentId,
+                    subject.id
+                );
+
+
+            const value =
+                input &&
+                input.value !== ""
+                ?
+                Number(input.value)
+                :
+                "";
+
+
+            const max =
+                maximumMarks(subject);
+
+
+            row.push(value);
+
+
+            if(value !== ""){
+
+                row.push(
+                    subjectGrade(
+                        value,
+                        max,
+                        subject
+                    )
+                );
+
+                total += value;
+
+                entered++;
+
+            }
+            else{
+
+                row.push("");
+
+            }
+
+
+            maximum += max;
+
+        });
+
+
+        const percentage =
+            maximum > 0
+            ?
+            (total / maximum) * 100
+            :
+            0;
+
+
+        const complete =
+            entered === subjects.length &&
+            subjects.length > 0;
+
+
+        const grade =
+            complete
+            ?
+            overallGrade(percentage)
+            :
+            "-";
+
+
+        const pass =
+            marksSelectedClass === "8"
+            ?
+            percentage >= 30
+            :
+            percentage >= 35;
+
+
+        const result =
+            complete
+            ?
+            (
+                pass
+                ?
+                "PASS"
+                :
+                "FAIL"
+            )
+            :
+            "PENDING";
+
+
+        row.push(
+            Number(
+                total.toFixed(2)
+            )
+        );
+
+
+        row.push(
+            Number(
+                maximum.toFixed(2)
+            )
+        );
+
+
+        row.push(
+            percentage.toFixed(2) + "%"
+        );
+
+
+        row.push(grade);
+
+
+        row.push(result);
+
+
+        rows.push(
+            row.map(csvCell).join(",")
+        );
+
+    });
+
+
+    const csv =
+        "\uFEFF" +
+        rows.join("\r\n");
+
+
+    const blob =
+        new Blob(
+            [csv],
+            {
+                type:
+                "text/csv;charset=utf-8"
+            }
+        );
+
+
+    const url =
+        URL.createObjectURL(blob);
+
+
+    const link =
+        document.createElement("a");
+
+
+    const examName =
+        marksSelectedExam === "HALF_YEARLY"
+        ?
+        "Half-Yearly"
+        :
+        "Annual";
+
+
+    link.href = url;
+
+
+    link.download =
+        "Marks-" +
+        marksSelectedClass +
+        "-" +
+        marksSelectedDivision +
+        "-" +
+        examName +
+        ".csv";
+
+
+    document.body.appendChild(link);
+
+
+    link.click();
+
+
+    document.body.removeChild(link);
+
+
+    setTimeout(
+        function(){
+
+            URL.revokeObjectURL(url);
+
+        },
+        1000
+    );
+
+
+    showMessage(
+        "✅ Excel file download ಆಗಿದೆ. ಇದನ್ನು Microsoft Excelನಲ್ಲಿ ತೆರೆಯಬಹುದು.",
+        "success"
+    );
+
+}
 
     if(!students.length){
 
