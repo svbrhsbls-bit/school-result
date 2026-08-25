@@ -185,6 +185,47 @@ td.subject{text-align:left;font-weight:700}
     font-weight:800;
 }
 @media print{
+    body{
+        background:#fff;
+    }
+
+    /* ಮೇಲಿನ website header Print ಆಗಬಾರದು */
+    .header{
+        display:none !important;
+    }
+
+    .no-print{
+        display:none !important;
+    }
+
+    .container{
+        max-width:none;
+        margin:0;
+        padding:0;
+    }
+
+    .card{
+        box-shadow:none;
+        padding:0;
+    }
+
+    .exam-title{
+        break-after:avoid;
+    }
+
+    .table-wrap{
+        overflow:visible;
+    }
+
+    table{
+        min-width:0;
+        font-size:11px;
+    }
+
+    th,td{
+        padding:5px;
+    }
+}
     .result-footer{
         margin-top:35px;
     }
