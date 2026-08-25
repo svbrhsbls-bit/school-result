@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings - School Result Management System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
+    background:#eef6fb;
+    color:#17324d;
+}
+.header{
+    background:#087db5;
+    color:#fff;
+    padding:22px 15px;
+    text-align:center;
+}
+.header h1{margin:0;font-size:28px}
+.header p{margin:7px 0 0;font-size:15px}
+.container{width:95%;max-width:900px;margin:25px auto}
+.card{
+    background:#fff;
+    border-radius:14px;
+    padding:25px;
+    box-shadow:0 3px 16px rgba(0,0,0,.10);
+}
+.card h2{
+    margin-top:0;
+    color:#087db5;
+    border-bottom:2px solid #e5eef3;
+    padding-bottom:12px;
+}
+.form-group{margin-bottom:18px}
+label{display:block;font-weight:700;margin-bottom:7px}
+input{
+    width:100%;
+    padding:13px;
+    border:1px solid #b9c9d3;
+    border-radius:8px;
+    font-size:16px;
+    outline:none;
+}
+input:focus{
+    border-color:#087db5;
+    box-shadow:0 0 0 2px rgba(8,125,181,.10);
+}
+.class-box{
+    background:#f7fbfd;
+    border:1px solid #d9e7ee;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:14px;
+}
+.class-title{
+    font-weight:800;
+    color:#087db5;
+    margin-bottom:10px;
+}
+.button-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:22px;
+}
+button{
+    border:0;
+    border-radius:8px;
+    padding:12px 20px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+}
+.btn-save{background:#168a52;color:#fff}
+.btn-edit{background:#087db5;color:#fff}
+.btn-reset{background:#687582;color:#fff}
+.status{
+    display:none;
+    padding:12px 15px;
+    border-radius:8px;
+    margin-bottom:18px;
+    font-weight:600;
+}
+.status.show{display:block}
+.status.success{background:#dcf5e2;color:#126b38}
+.status.error{background:#ffe0e0;color:#9b1c1c}
+.status.info{background:#dceeff;color:#15547a}
+.info-box{
+    margin-top:22px;
+    padding:15px;
+    background:#f4f9fc;
+    border:1px solid #d8e6ed;
+    border-radius:9px;
+    line-height:1.7;
+}
+.info-box b{color:#087db5}
+.small{color:#687582;font-size:13px;margin-top:5px}
+
+@media(max-width:600px){
+    .card{padding:18px}
+    .header h1{font-size:23px}
+    button{width:100%}
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>⚙️ Settings</h1>
+    <p>School Result Management System</p>
+</div>
+
+<div class="container">
+<div class="card">
+
+    <h2>🏫 ಶಾಲೆಯ ಮಾಹಿತಿ</h2>
+
+    <div id="status" class="status"></div>
+
+    <div class="form-group">
+        <label for="schoolName">🏫 ಶಾಲೆಯ ಹೆಸರು</label>
+        <input
+            type="text"
+            id="schoolName"
+            placeholder="ಶಾಲೆಯ ಸಂಪೂರ್ಣ ಹೆಸರು">
+    </div>
+
+    <div class="form-group">
+        <label for="headTeacherName">👨‍🏫 ಮುಖ್ಯಶಿಕ್ಷಕರ ಹೆಸರು</label>
+        <input
+            type="text"
+            id="headTeacherName"
+            placeholder="ಮುಖ್ಯಶಿಕ್ಷಕರ ಹೆಸರು">
+    </div>
+
+    <h2>👩‍🏫 ತರಗತಿ ಶಿಕ್ಷಕರ ಮಾಹಿತಿ</h2>
+
+    <div class="class-box">
+        <div class="class-title">8ನೇ ತರಗತಿ</div>
+        <input
+            type="text"
+            id="classTeacher8"
+            placeholder="8ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+    </div>
+
+    <div class="class-box">
+        <div class="class-title">9ನೇ ತರಗತಿ</div>
+        <input
+            type="text"
+            id="classTeacher9"
+            placeholder="9ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+    </div>
+
+    <div class="class-box">
+        <div class="class-title">10ನೇ ತರಗತಿ</div>
+        <input
+            type="text"
+            id="classTeacher10"
+            placeholder="10ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+    </div>
+
+    <div class="form-group">
+        <label for="academicYear">📅 ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
+        <input
+            type="text"
+            id="academicYear"
+            placeholder="ಉದಾ: 2026-27"
+            maxlength="7">
+        <div class="small">
+            ಉದಾಹರಣೆ: 2026-27
+        </div>
+    </div>
+
+    <div class="button-row">
+        <button type="button" class="btn-save" onclick="saveSettings()">
+            💾 Save / Update
+        </button>
+
+        <button type="button" class="btn-edit" onclick="loadSettings()">
+            ✏️ Edit / Reload
+        </button>
+
+        <button type="button" class="btn-reset" onclick="resetForm()">
+            ↺ Reset
+        </button>
+    </div>
+
+    <div class="info-box">
+        <b>ಮುಖ್ಯ ಸೂಚನೆ:</b><br>
+        ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು ಇಲ್ಲಿ ಒಮ್ಮೆ Update ಮಾಡಿದರೆ,
+        Student Result, Reports, Print ಮತ್ತು ಇತರ pagesಗಳಲ್ಲಿ
+        ಇದೇ Academic Year ಬಳಸಲಾಗುತ್ತದೆ.
+        <br><br>
+        8, 9, 10ನೇ ತರಗತಿಗಳ ಶಿಕ್ಷಕರ ಹೆಸರುಗಳನ್ನು ಪ್ರತ್ಯೇಕವಾಗಿ
+        ಉಳಿಸಲಾಗುತ್ತದೆ. ಆಯಾ ತರಗತಿಯ Reportನಲ್ಲಿ ಸಂಬಂಧಿಸಿದ
+        Class Teacher ಹೆಸರನ್ನು ಬಳಸಬಹುದು.
+    </div>
+
+</div>
+</div>
+
+<script>
+/* =========================================================
+   SUPABASE CONNECTION
+   Same working connection as the existing project
+========================================================= */
+
+const SUPABASE_URL =
+    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function $(id){
+    return document.getElementById(id);
+}
+
+function showStatus(message,type="info"){
+    const box=$("status");
+    box.textContent=message;
+    box.className="status show "+type;
+}
+
+function hideStatus(){
+    $("status").textContent="";
+    $("status").className="status";
+}
+
+function getFormData(){
+    return {
+        id:1,
+
+        school_name:
+            $("schoolName").value.trim(),
+
+        head_teacher_name:
+            $("headTeacherName").value.trim(),
+
+        class_teacher_8:
+            $("classTeacher8").value.trim(),
+
+        class_teacher_9:
+            $("classTeacher9").value.trim(),
+
+        class_teacher_10:
+            $("classTeacher10").value.trim(),
+
+        academic_year:
+            $("academicYear").value.trim(),
+
+        updated_at:
+            new Date().toISOString()
+    };
+}
+
+function setFormData(data){
+
+    $("schoolName").value =
+        data?.school_name || "";
+
+    $("headTeacherName").value =
+        data?.head_teacher_name || "";
+
+    $("classTeacher8").value =
+        data?.class_teacher_8 || "";
+
+    $("classTeacher9").value =
+        data?.class_teacher_9 || "";
+
+    $("classTeacher10").value =
+        data?.class_teacher_10 || "";
+
+    $("academicYear").value =
+        data?.academic_year || "2026-27";
+}
+
+
+/* =========================================================
+   LOAD SETTINGS
+========================================================= */
+
+async function loadSettings(){
+
+    hideStatus();
+
+    showStatus(
+        "⏳ Settings load ಆಗುತ್ತಿದೆ...",
+        "info"
+    );
+
+    try{
+
+        const {data,error} =
+            await supabaseClient
+                .from("settings")
+                .select("*")
+                .eq("id",1)
+                .maybeSingle();
+
+        if(error)
+            throw error;
+
+        if(!data){
+
+            setFormData({
+                school_name:"",
+                head_teacher_name:"",
+                class_teacher_8:"",
+                class_teacher_9:"",
+                class_teacher_10:"",
+                academic_year:"2026-27"
+            });
+
+            showStatus(
+                "Settings record ಸಿಗಲಿಲ್ಲ. ಹೊಸ ಮಾಹಿತಿಯನ್ನು Save ಮಾಡಬಹುದು.",
+                "info"
+            );
+
+            return;
+        }
+
+        setFormData(data);
+
+        showStatus(
+            "✅ Settings ಯಶಸ್ವಿಯಾಗಿ load ಆಗಿದೆ.",
+            "success"
+        );
+
+    }catch(error){
+
+        console.error(error);
+
+        showStatus(
+            "Settings Load Error: "+
+            (error.message || String(error)),
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   SAVE / UPDATE SETTINGS
+========================================================= */
+
+async function saveSettings(){
+
+    hideStatus();
+
+    const data=getFormData();
+
+    if(!data.school_name){
+        showStatus(
+            "ಶಾಲೆಯ ಹೆಸರು ನಮೂದಿಸಿ.",
+            "error"
+        );
+        $("schoolName").focus();
+        return;
+    }
+
+    if(!data.academic_year){
+        showStatus(
+            "ಶೈಕ್ಷಣಿಕ ವರ್ಷ ನಮೂದಿಸಿ.",
+            "error"
+        );
+        $("academicYear").focus();
+        return;
+    }
+
+    if(!/^\d{4}-\d{2}$/.test(data.academic_year)){
+
+        showStatus(
+            "ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು 2026-27 ರೀತಿಯಲ್ಲಿ ನಮೂದಿಸಿ.",
+            "error"
+        );
+
+        $("academicYear").focus();
+        return;
+    }
+
+    try{
+
+        showStatus(
+            "⏳ Settings Save / Update ಆಗುತ್ತಿದೆ...",
+            "info"
+        );
+
+        const {data:updated,error} =
+            await supabaseClient
+                .from("settings")
+                .upsert(
+                    data,
+                    {
+                        onConflict:"id"
+                    }
+                )
+                .select()
+                .single();
+
+        if(error)
+            throw error;
+
+        setFormData(updated);
+
+        showStatus(
+            "✅ Settings ಯಶಸ್ವಿಯಾಗಿ Save / Update ಆಗಿದೆ.",
+            "success"
+        );
+
+    }catch(error){
+
+        console.error(error);
+
+        showStatus(
+            "Update Error: "+
+            (error.message || String(error)),
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetForm(){
+
+    setFormData({
+        school_name:"",
+        head_teacher_name:"",
+        class_teacher_8:"",
+        class_teacher_9:"",
+        class_teacher_10:"",
+        academic_year:"2026-27"
+    });
+
+    hideStatus();
+}
+
+
+/* =========================================================
+   PAGE LOAD
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    loadSettings
+);
+</script>
+
+</body>
+</html>
