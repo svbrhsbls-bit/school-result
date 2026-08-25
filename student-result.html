@@ -461,13 +461,75 @@ async function viewResult(){
             );
 
         /* ---------------------------------------------
+           IMPORTANT: Subject Masterನಲ್ಲಿ ಹಳೆಯ code + ಹೊಸ
+           code ಎರಡೂ ಇದ್ದರೆ ಒಂದೇ subject ಎರಡು ಬಾರಿ ಬರುತ್ತದೆ.
+           Student Resultನಲ್ಲಿ 6 subjects ಮಾತ್ರ ತೋರಿಸಬೇಕು.
+           ಒಂದೇ subject_nameಗೆ ಒಂದು record ಮಾತ್ರ ತೆಗೆದುಕೊಳ್ಳುತ್ತೇವೆ.
+           ಹೊಸ preferred code ಇದ್ದರೆ ಅದಕ್ಕೆ priority.
+        --------------------------------------------- */
+        const preferredCodes = [
+            "01K", "31E", "61H", "81K", "83K", "85K",
+            "02E", "03H", "04M", "05S", "06SS"
+        ];
+
+        const normalizeSubjectName = (name) =>
+            String(name || "")
+                .trim()
+                .replace(/\\s+/g, " ")
+                .toLowerCase();
+
+        const uniqueSubjects = [];
+        const subjectGroups = new Map();
+
+        subjects.forEach(subject => {
+            const key = normalizeSubjectName(subject.subject_name);
+            if(!subjectGroups.has(key)) subjectGroups.set(key, []);
+            subjectGroups.get(key).push(subject);
+        });
+
+        subjectGroups.forEach(group => {
+            group.sort((a,b) => {
+                const ai = preferredCodes.indexOf(String(a.subject_code || "").trim());
+                const bi = preferredCodes.indexOf(String(b.subject_code || "").trim());
+
+                const ap = ai === -1 ? 999 : ai;
+                const bp = bi === -1 ? 999 : bi;
+
+                if(ap !== bp) return ap - bp;
+
+                return Number(a.display_order || 999) -
+                       Number(b.display_order || 999);
+            });
+
+            /*
+               Keep ALL duplicate subject IDs internally.
+               Marks Entry may have saved marks against the old
+               subject ID (for example KAN) while the preferred
+               Subject Master record is the new ID (01K).
+               The result page must still display only one subject,
+               but it must be able to find marks from either ID.
+            */
+            const chosen = {...group[0]};
+            chosen._allSubjectIds = group.map(x => x.id);
+            uniqueSubjects.push(chosen);
+        });
+
+        uniqueSubjects.sort((a,b) =>
+            Number(a.display_order || 999) -
+            Number(b.display_order || 999)
+        );
+
+        /* Exactly the six regular subjects for Classes 8/9/10 */
+        const subjectsForResult = uniqueSubjects.slice(0, 6);
+
+        /* ---------------------------------------------
            3. Load only published results
            Existing database uses exam_results.exam_type
            and exam_results.published.
         --------------------------------------------- */
         const examTypes=[
-            "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
-            "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            "HALF_YEARLY",
+            "ANNUAL"
         ];
 
         const {data:results,error:resultError}=await db
@@ -514,7 +576,7 @@ async function viewResult(){
         --------------------------------------------- */
         renderResult(
             student,
-            subjects,
+            subjectsForResult,
             results || [],
             marksMap
         );
@@ -629,11 +691,25 @@ function renderExam(student,subjects,result,marksMap){
 
     subjects.forEach(subject=>{
 
-        const key=
-            `${result.id}_${subject.id}`;
+        /*
+           Find marks using the selected subject ID first, then
+           fall back to any duplicate/legacy subject IDs belonging
+           to the same subject name. This keeps the display at one
+           subject while preserving marks already entered earlier.
+        */
+        const subjectIds =
+            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
+                ? subject._allSubjectIds
+                : [subject.id];
 
-        const value=
-            marksMap[key];
+        let value;
+        for(const subjectId of subjectIds){
+            const candidate = marksMap[`${result.id}_${subjectId}`];
+            if(candidate !== null && candidate !== undefined && candidate !== ""){
+                value = candidate;
+                break;
+            }
+        }
 
         const max=
             getMaxMarks(
@@ -701,7 +777,7 @@ function renderExam(student,subjects,result,marksMap){
 
     return `
         <div class="exam-title">
-            📝 ${esc(result.exam_type)}
+            📝 ${esc(result.exam_type==="HALF_YEARLY" ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type==="ANNUAL" ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type)}
         </div>
 
         <div class="exam-status">
