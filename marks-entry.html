@@ -648,6 +648,28 @@ function grade8(mark,max){
 
     return "";
 }
+
+    /* =====================================================
+   9TH / 10TH GRADE
+===================================================== */
+    
+function grade910(mark,subject){
+
+    const m = Number(mark);
+
+    if(!Number.isFinite(m)){
+        return "";
+    }
+
+
+    const kannada =
+        isKannada(subject);
+
+
+    /* ---------------------------------------------
+       HALF YEARLY
+    --------------------------------------------- */
+
     if(currentExam === "HALF_YEARLY"){
 
         /* Kannada - 100 */
