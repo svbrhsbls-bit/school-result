@@ -7,6 +7,7 @@
 <title>Marks Entry</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 *{
@@ -303,6 +304,18 @@ th{
     <button class="btn-orange" onclick="downloadExcel()">
         📥 Excel Download
     </button>
+
+    <button class="btn-purple" onclick="document.getElementById('excelUploadInput').click()">
+        📤 Excel Upload
+    </button>
+
+    <input
+        type="file"
+        id="excelUploadInput"
+        accept=".xlsx,.xls,.csv"
+        style="display:none"
+        onchange="handleExcelUpload(event)"
+    >
 
     <button class="btn-purple" onclick="printMarks()">
         🖨️ Print
@@ -2809,6 +2822,502 @@ function escapeHtml(value){
             }
         );
 });
+
+
+/* =====================================================
+   EXCEL MARKS UPLOAD - ADDED WITHOUT CHANGING EXISTING LOGIC
+===================================================== */
+
+function excelUploadNormalize(value){
+
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g," ")
+        .replace(/[._-]+/g," ");
+}
+
+
+function excelUploadNumber(value){
+
+    if(value === undefined || value === null || value === ""){
+        return null;
+    }
+
+    if(typeof value === "number" && Number.isFinite(value)){
+        return value;
+    }
+
+    const cleaned =
+        String(value)
+            .trim()
+            .replace(/,/g,"")
+            .replace(/%$/g,"");
+
+    if(cleaned === "") return null;
+
+    const n = Number(cleaned);
+
+    return Number.isFinite(n) ? n : null;
+}
+
+
+function excelUploadHeaderAliases(){
+
+    return {
+        roll:[
+            "roll no",
+            "roll number",
+            "rollno",
+            "roll",
+            "reg no",
+            "reg number",
+            "registration no",
+            "registration number",
+            "registration"
+        ],
+        name:[
+            "student name",
+            "studentname",
+            "name",
+            "ವಿದ್ಯಾರ್ಥಿ ಹೆಸರು",
+            "ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು",
+            "ವಿದ್ಯಾರ್ಥಿ"
+        ],
+        sats:[
+            "sats no",
+            "sats number",
+            "satsno",
+            "sats",
+            "sats no.",
+            "sats ಸಂಖ್ಯೆ"
+        ],
+        subject:[
+            "subject",
+            "subject name",
+            "ವಿಷಯ",
+            "ವಿಷಯದ ಹೆಸರು"
+        ],
+        marks:[
+            "marks",
+            "mark",
+            "ಅಂಕ",
+            "ಅಂಕಗಳು",
+            "marks obtained",
+            "obtained marks"
+        ]
+    };
+}
+
+
+function excelUploadFindColumn(headers, aliases){
+
+    const normalizedHeaders = headers.map(h =>
+        excelUploadNormalize(h)
+    );
+
+    const normalizedAliases = aliases.map(a =>
+        excelUploadNormalize(a)
+    );
+
+    // Exact match first.
+    for(const alias of normalizedAliases){
+
+        const index = normalizedHeaders.indexOf(alias);
+
+        if(index >= 0) return headers[index];
+    }
+
+    // Then contains match.
+    for(let i=0;i<normalizedHeaders.length;i++){
+
+        const h = normalizedHeaders[i];
+
+        if(normalizedAliases.some(alias =>
+            h === alias ||
+            h.includes(alias) ||
+            alias.includes(h)
+        )){
+            return headers[i];
+        }
+    }
+
+    return null;
+}
+
+
+function excelUploadFindStudent(row, headers, index){
+
+    const aliases = excelUploadHeaderAliases();
+
+    const rollCol = excelUploadFindColumn(headers, aliases.roll);
+    const nameCol = excelUploadFindColumn(headers, aliases.name);
+    const satsCol = excelUploadFindColumn(headers, aliases.sats);
+
+    const rowRoll = rollCol ? String(row[rollCol] ?? "").trim() : "";
+    const rowName = nameCol ? String(row[nameCol] ?? "").trim() : "";
+    const rowSats = satsCol ? String(row[satsCol] ?? "").trim() : "";
+
+    const normRoll = excelUploadNormalize(rowRoll);
+    const normName = excelUploadNormalize(rowName);
+    const normSats = excelUploadNormalize(rowSats);
+
+    // Best match: SATS No.
+    if(normSats){
+
+        const found = students.find((student) =>
+            excelUploadNormalize(getValue(student,["sats_no","sats_number","sats"])) === normSats
+        );
+
+        if(found) return found;
+    }
+
+    // Next: Roll No / Reg No.
+    if(normRoll){
+
+        const found = students.find((student,studentIndex) =>
+            excelUploadNormalize(String(rollNumber(student,studentIndex))) === normRoll
+        );
+
+        if(found) return found;
+    }
+
+    // Finally: Student Name.
+    if(normName){
+
+        const found = students.find((student) =>
+            excelUploadNormalize(studentName(student)) === normName
+        );
+
+        if(found) return found;
+    }
+
+    return null;
+}
+
+
+function excelUploadFindMarkColumn(headers, subject){
+
+    const name = excelUploadNormalize(subjectName(subject));
+    const code = excelUploadNormalize(subjectCode(subject));
+
+    const candidates = [];
+
+    if(name){
+        candidates.push(name + " marks");
+        candidates.push(name + " mark");
+        candidates.push(name);
+    }
+
+    if(code){
+        candidates.push(code + " marks");
+        candidates.push(code + " mark");
+        candidates.push(code);
+    }
+
+    const normalizedHeaders = headers.map(h =>
+        excelUploadNormalize(h)
+    );
+
+    for(const candidate of candidates){
+
+        const idx = normalizedHeaders.indexOf(candidate);
+
+        if(idx >= 0) return headers[idx];
+    }
+
+    // Accept headers such as "Kannada - Marks", "Kannada Marks", etc.
+    for(let i=0;i<normalizedHeaders.length;i++){
+
+        const h = normalizedHeaders[i];
+
+        if(
+            (name && h.includes(name)) ||
+            (code && h.includes(code))
+        ){
+
+            if(
+                h.includes("mark") ||
+                h.includes("ಅಂಕ") ||
+                h === name ||
+                h === code
+            ){
+                return headers[i];
+            }
+        }
+    }
+
+    return null;
+}
+
+
+function excelUploadSetMark(student, subject, value){
+
+    const studentId = getValue(student,["id","student_id"]);
+
+    if(!studentId || !subject || value === null) return false;
+
+    const max = maximumMarks(subject);
+
+    if(value < 0 || value > max){
+        return false;
+    }
+
+    const input = getInput(studentId,subject.id);
+
+    if(!input) return false;
+
+    input.value = String(value);
+
+    // Keep the uploaded value in the existing student object so
+    // renderMarksTable() can rebuild the table without losing it.
+    student.marks = student.marks || {};
+    student.marks[subject.id] = value;
+
+    // Keep the existing mark-change / grade / summary logic untouched.
+    markChanged(input);
+
+    return true;
+}
+
+
+async function handleExcelUpload(event){
+
+    const file = event && event.target && event.target.files
+        ? event.target.files[0]
+        : null;
+
+    if(!file) return;
+
+    try{
+        /* Excel Upload uses the already selected screen state.
+           It does NOT change currentClass/currentExam or any
+           existing marks-entry logic. */
+
+        if(typeof XLSX === "undefined"){
+            throw new Error(
+                "Excel library load ಆಗಿಲ್ಲ. Internet connection ಪರಿಶೀಲಿಸಿ."
+            );
+        }
+
+        if(!students.length || !subjects.length){
+            alert(
+                "ಮೊದಲು ತರಗತಿ → ವಿಭಾಗ → ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ Students Load ಒತ್ತಿ. ನಂತರ Excel Upload ಮಾಡಿ."
+            );
+            return;
+        }
+
+        showMessage("📥 Excel file ಓದಲಾಗುತ್ತಿದೆ...", "info");
+
+        const buffer = await file.arrayBuffer();
+
+        const workbook = XLSX.read(buffer,{
+            type:"array",
+            cellDates:false,
+            raw:true
+        });
+
+        if(!workbook.SheetNames || !workbook.SheetNames.length){
+            throw new Error("Excel sheet ಸಿಗಲಿಲ್ಲ.");
+        }
+
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+        const rows = XLSX.utils.sheet_to_json(sheet,{
+            defval:"",
+            raw:true
+        });
+
+        if(!rows.length){
+            throw new Error("Excelನಲ್ಲಿ data rows ಸಿಗಲಿಲ್ಲ.");
+        }
+
+        const headers = Object.keys(rows[0]);
+
+        if(!headers.length){
+            throw new Error("Excel headers ಸಿಗಲಿಲ್ಲ.");
+        }
+
+        let marksLoaded = 0;
+        let invalidMarks = 0;
+        let unmatchedRows = 0;
+        let wideRowsWithMarks = 0;
+
+        /* =====================================================
+           FORMAT A — Excel Download ಮಾಡಿದ file
+           Roll No | Student Name | SATS No | Subject Marks...
+        ===================================================== */
+        for(let rowIndex=0; rowIndex<rows.length; rowIndex++){
+
+            const row = rows[rowIndex];
+
+            const student = excelUploadFindStudent(
+                row,
+                headers,
+                rowIndex
+            );
+
+            if(!student){
+                unmatchedRows++;
+                continue;
+            }
+
+            let rowHadMark = false;
+
+            for(const subject of subjects){
+
+                const markColumn = excelUploadFindMarkColumn(
+                    headers,
+                    subject
+                );
+
+                if(!markColumn) continue;
+
+                const value = excelUploadNumber(row[markColumn]);
+
+                if(value === null) continue;
+
+                const max = maximumMarks(subject);
+
+                if(value < 0 || value > max){
+                    invalidMarks++;
+                    continue;
+                }
+
+                if(excelUploadSetMark(student,subject,value)){
+                    marksLoaded++;
+                    rowHadMark = true;
+                }
+            }
+
+            if(rowHadMark){
+                wideRowsWithMarks++;
+            }
+        }
+
+        /* =====================================================
+           FORMAT B — Long format
+           Roll No | Student Name | Subject | Marks
+
+           Long format is used ONLY if wide format did not
+           load any marks, so marks are never loaded twice.
+        ===================================================== */
+        if(wideRowsWithMarks === 0){
+
+            const aliases = excelUploadHeaderAliases();
+
+            const subjectCol = excelUploadFindColumn(
+                headers,
+                aliases.subject
+            );
+
+            const marksCol = excelUploadFindColumn(
+                headers,
+                aliases.marks
+            );
+
+            if(subjectCol && marksCol){
+
+                for(let rowIndex=0; rowIndex<rows.length; rowIndex++){
+
+                    const row = rows[rowIndex];
+
+                    const student = excelUploadFindStudent(
+                        row,
+                        headers,
+                        rowIndex
+                    );
+
+                    if(!student) continue;
+
+                    const uploadedSubject =
+                        excelUploadNormalize(row[subjectCol]);
+
+                    const uploadedMarks =
+                        excelUploadNumber(row[marksCol]);
+
+                    if(!uploadedSubject || uploadedMarks === null){
+                        continue;
+                    }
+
+                    const subject = subjects.find(s => {
+
+                        const sName =
+                            excelUploadNormalize(subjectName(s));
+
+                        const sCode =
+                            excelUploadNormalize(subjectCode(s));
+
+                        return (
+                            uploadedSubject === sName ||
+                            uploadedSubject === sCode ||
+                            (sName && uploadedSubject.includes(sName)) ||
+                            (sCode && uploadedSubject.includes(sCode))
+                        );
+                    });
+
+                    if(!subject) continue;
+
+                    const max = maximumMarks(subject);
+
+                    if(uploadedMarks < 0 || uploadedMarks > max){
+                        invalidMarks++;
+                        continue;
+                    }
+
+                    if(excelUploadSetMark(
+                        student,
+                        subject,
+                        uploadedMarks
+                    )){
+                        marksLoaded++;
+                    }
+                }
+            }
+        }
+
+        /* Existing table/grade/summary logic only. */
+        renderMarksTable();
+        updateSummary();
+
+        if(marksLoaded === 0){
+
+            showMessage(
+                "⚠️ Excel ಓದಲಾಗಿದೆ, ಆದರೆ ಹೊಂದುವ student/subject marks ಸಿಗಲಿಲ್ಲ. Excel headings ಪರಿಶೀಲಿಸಿ.",
+                "error"
+            );
+
+        }else{
+
+            showMessage(
+                "✅ Excel marks load ಆಗಿವೆ. " +
+                marksLoaded +
+                " marks ತುಂಬಲಾಗಿದೆ. ಈಗ Save Marks ಒತ್ತಿ Supabaseಗೆ save ಮಾಡಿ." +
+                (invalidMarks ? " Invalid marks: " + invalidMarks : "") +
+                (unmatchedRows ? " Unmatched rows: " + unmatchedRows : ""),
+                "success"
+            );
+        }
+
+    }
+    catch(error){
+
+        console.error("Excel Upload Error:",error);
+
+        showMessage(
+            "❌ Excel Upload Error: " +
+            (error && error.message ? error.message : error),
+            "error"
+        );
+
+    }
+    finally{
+
+        if(event && event.target){
+            event.target.value = "";
+        }
+    }
+}
 
 </script>
 
