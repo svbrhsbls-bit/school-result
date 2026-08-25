@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Publish Student Results</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;background:#eef6fb;color:#17324d}
+header{background:#087db5;color:#fff;text-align:center;padding:22px}
+header h1{margin:0;font-size:28px} header p{margin:7px 0 0}
+.box{background:#fff;margin:18px auto;padding:18px;width:96%;max-width:1400px;border-radius:12px;box-shadow:0 2px 12px #ccd5da}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+label{font-weight:700;display:block}select{width:100%;padding:10px;margin-top:6px;border:1px solid #b8c8d2;border-radius:7px;font-size:15px}
+button{border:0;padding:10px 15px;margin:12px 6px 0 0;border-radius:7px;color:#fff;font-weight:700;cursor:pointer}
+.b{background:#087db5}.g{background:#168a52}.r{background:#d93645}.x{background:#687582}
+.msg{padding:11px;margin-top:12px;border-radius:7px;display:none}.show{display:block}.ok{background:#dcf5e2;color:#126b38}.err{background:#ffe0e0;color:#9b1c1c}.inf{background:#dceeff;color:#15547a}
+.wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:800px}th,td{border:1px solid #ccd8e0;padding:9px;text-align:center}th{background:#087db5;color:#fff}
+.name{text-align:left;min-width:220px}.published{font-weight:700;color:#168a52}.unpublished{font-weight:700;color:#c77700}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.count{font-size:18px;font-weight:700}
+@media(max-width:750px){.grid{grid-template-columns:1fr}header h1{font-size:22px}}
+@media print{.noprint{display:none!important}body{background:#fff}.box{box-shadow:none;width:100%;margin:0}}
+</style>
+</head>
+<body>
+<header>
+<h1>📢 ಫಲಿತಾಂಶ ಪ್ರಕಟಣೆ</h1>
+<p>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</p>
+</header>
+
+<div class="box noprint">
+<div class="grid">
+<div>
+<label>ತರಗತಿ</label>
+<select id="classSelect">
+<option value="8">8ನೇ ತರಗತಿ</option>
+<option value="9">9ನೇ ತರಗತಿ</option>
+<option value="10">10ನೇ ತರಗತಿ</option>
+</select>
+</div>
+<div>
+<label>ವಿಭಾಗ</label>
+<select id="divisionSelect">
+<option value="A">A</option>
+</select>
+</div>
+<div>
+<label>ಪರೀಕ್ಷೆ</label>
+<select id="examSelect">
+<option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+</select>
+</div>
+</div>
+<div class="actions">
+<button class="b" onclick="loadResults()">🔄 Students Load</button>
+<button class="g" onclick="publishSelected()">📢 Publish Selected</button>
+<button class="r" onclick="unpublishSelected()">🔒 Unpublish Selected</button>
+<button class="x" onclick="clearList()">❌ Clear</button>
+</div>
+<div id="msg" class="msg"></div>
+</div>
+
+<div class="box">
+<div class="actions">
+<div class="count" id="count">ಒಟ್ಟು: 0</div>
+<label style="display:flex;align-items:center;gap:7px;margin-left:auto">
+<input id="selectAll" type="checkbox" onchange="toggleAll(this.checked)" style="width:18px;height:18px">
+<span>All Select / Unselect</span>
+</label>
+</div>
+<div class="wrap">
+<table>
+<thead>
+<tr>
+<th><input id="headCheck" type="checkbox" onchange="toggleAll(this.checked)" style="width:18px;height:18px"></th>
+<th>Roll No</th>
+<th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
+<th>SATS No</th>
+<th>Result Record</th>
+<th>Publish Status</th>
+</tr>
+</thead>
+<tbody id="tbody">
+<tr><td colspan="6">Students Load button ಒತ್ತಿ.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let rows=[];
+let currentClass="8", currentDivision="A", currentExam="HALF_YEARLY";
+
+const $=id=>document.getElementById(id);
+const val=(o,a)=>{for(const k of a)if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];return""};
+const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+
+function classNo(v){
+  const m=String(v??"").match(/10|9|8/);
+  return m?m[0]:"";
+}
+function studentName(s){
+  return val(s,["student_name","name","studentName"])||"Student";
+}
+function rollNo(s,i){
+  return val(s,["roll_no","roll_number","reg_no","registration_no","registration_number"])||String(i+1);
+}
+function division(s){
+  return String(val(s,["division","section","division_name","section_name"])).trim().toUpperCase();
+}
+function showMsg(t,c){
+  $("msg").textContent=t;
+  $("msg").className="msg show "+c;
+}
+function hideMsg(){
+  $("msg").textContent="";
+  $("msg").className="msg";
+}
+
+async function loadResults(){
+  hideMsg();
+  currentClass=classNo($("classSelect").value);
+  currentDivision=$("divisionSelect").value.trim().toUpperCase();
+  currentExam=$("examSelect").value;
+  $("tbody").innerHTML="<tr><td colspan='6'>⏳ Loading...</td></tr>";
+
+  try{
+    const sr=await db.from("students").select("*");
+    if(sr.error) throw sr.error;
+
+    const students=(sr.data||[]).filter(s=>
+      classNo(val(s,["class_name","class","standard","className"]))===currentClass &&
+      division(s)===currentDivision
+    );
+
+    if(!students.length){
+      rows=[];
+      $("tbody").innerHTML="<tr><td colspan='6'>ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.</td></tr>";
+      $("count").textContent="ಒಟ್ಟು: 0";
+      showMsg("ಆಯ್ಕೆ ಮಾಡಿದ ತರಗತಿ ಮತ್ತು ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.","err");
+      return;
+    }
+
+    rows=[];
+    for(let i=0;i<students.length;i++){
+      const s=students[i];
+      const q=await db.from("exam_results")
+        .select("id,student_id,exam_type,published")
+        .eq("student_id",s.id)
+        .eq("exam_type",currentExam)
+        .order("id",{ascending:false})
+        .limit(1)
+        .maybeSingle();
+
+      if(q.error) throw q.error;
+
+      rows.push({
+        student:s,
+        index:i,
+        result:q.data||null
+      });
+    }
+
+    render();
+    showMsg("Students ಮತ್ತು Result records Load ಆಗಿವೆ.","ok");
+  }catch(e){
+    console.error(e);
+    rows=[];
+    $("tbody").innerHTML="<tr><td colspan='6'>Error</td></tr>";
+    showMsg("Load Error: "+(e.message||String(e)),"err");
+  }
+}
+
+function render(){
+  $("count").textContent="ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: "+rows.length;
+  $("selectAll").checked=false;
+  $("headCheck").checked=false;
+
+  $("tbody").innerHTML=rows.map((r,i)=>{
+    const s=r.student;
+    const res=r.result;
+    const status=!res
+      ? "<span class='unpublished'>Marks/Result ಇಲ್ಲ</span>"
+      : res.published
+        ? "<span class='published'>✅ PUBLISHED</span>"
+        : "<span class='unpublished'>⏳ NOT PUBLISHED</span>";
+
+    return `<tr>
+      <td><input class="rowCheck" type="checkbox" data-index="${i}" style="width:18px;height:18px"></td>
+      <td>${esc(rollNo(s,i))}</td>
+      <td class="name">${esc(studentName(s))}</td>
+      <td>${esc(val(s,["sats_no","sats_number","sats"]))}</td>
+      <td>${res?"✅ Result record ಇದೆ":"❌ Result record ಇಲ್ಲ"}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join("");
+}
+
+function toggleAll(checked){
+  document.querySelectorAll(".rowCheck").forEach(x=>x.checked=checked);
+  $("selectAll").checked=checked;
+  $("headCheck").checked=checked;
+}
+
+function selectedRows(){
+  return [...document.querySelectorAll(".rowCheck:checked")]
+    .map(x=>rows[Number(x.dataset.index)])
+    .filter(Boolean);
+}
+
+async function publishSelected(){
+  await changePublish(true);
+}
+async function unpublishSelected(){
+  await changePublish(false);
+}
+
+async function changePublish(value){
+  hideMsg();
+  const selected=selectedRows();
+
+  if(!selected.length){
+    showMsg("ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Tick ಮಾಡಿ.","err");
+    return;
+  }
+
+  try{
+    let changed=0, skipped=0;
+
+    for(const r of selected){
+      if(!r.result){
+        skipped++;
+        continue;
+      }
+
+      const q=await db.from("exam_results")
+        .update({published:value})
+        .eq("id",r.result.id);
+
+      if(q.error) throw q.error;
+      r.result.published=value;
+      changed++;
+    }
+
+    render();
+
+    const action=value?"Publish":"Unpublish";
+    showMsg(
+      `✅ ${changed} ವಿದ್ಯಾರ್ಥಿಗಳ ಫಲಿತಾಂಶ ${action} ಆಯಿತು.`+
+      (skipped?` ${skipped} ವಿದ್ಯಾರ್ಥಿಗಳಿಗೆ Result record ಇಲ್ಲ.`:""),
+      "ok"
+    );
+  }catch(e){
+    console.error(e);
+    showMsg(
+      "Update Error: "+(e.message||String(e))+
+      " — Supabase RLS policy ಪರಿಶೀಲಿಸಿ.",
+      "err"
+    );
+  }
+}
+
+function clearList(){
+  rows=[];
+  $("tbody").innerHTML="<tr><td colspan='6'>Students Load button ಒತ್ತಿ.</td></tr>";
+  $("count").textContent="ಒಟ್ಟು: 0";
+  $("selectAll").checked=false;
+  $("headCheck").checked=false;
+  hideMsg();
+}
+</script>
+</body>
+</html>
