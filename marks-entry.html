@@ -499,6 +499,166 @@ function calculateGrade(mark,max){
 
 async function loadStudents(){
 
+    const exam =
+        document.getElementById("examSelect").value;
+
+    if(!exam){
+        message("ದಯವಿಟ್ಟು ಪರೀಕ್ಷೆ ಆಯ್ಕೆಮಾಡಿ.","error");
+        return;
+    }
+
+    message("Students database ನಿಂದ load ಆಗುತ್ತಿದೆ...","info");
+
+    try {
+
+        // ಮೊದಲು ಯಾವುದೇ class/division filter ಇಲ್ಲದೆ
+        // students tableನ data ತೆಗೆದುಕೊಳ್ಳುತ್ತೇವೆ
+        const { data, error } =
+            await supabaseClient
+            .from("students")
+            .select("*")
+            .order("roll_no", { ascending:true });
+
+        if(error){
+            throw error;
+        }
+
+        console.log("ALL STUDENTS FROM SUPABASE:", data);
+
+        if(!data || data.length === 0){
+
+            document.getElementById("studentCount").innerText =
+                "Students tableನಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.";
+
+            document.getElementById("marksArea").innerHTML = `
+                <div style="padding:30px;text-align:center;color:red">
+                    ❌ students tableನಲ್ಲಿ ಯಾವುದೇ data ಸಿಗಲಿಲ್ಲ.
+                </div>
+            `;
+
+            message(
+                "Supabase students tableನಿಂದ ಯಾವುದೇ data ಸಿಗಲಿಲ್ಲ.",
+                "error"
+            );
+
+            return;
+        }
+
+        // Databaseನಲ್ಲಿ ಇರುವ class/division values
+        console.log(
+            "CLASS VALUES:",
+            [...new Set(data.map(s => s.class_name))]
+        );
+
+        console.log(
+            "DIVISION VALUES:",
+            [...new Set(data.map(s => s.division))]
+        );
+
+        // ಈಗ 8ನೇ ತರಗತಿಯ students ಅನ್ನು
+        // ಹಲವು ಸಾಧ್ಯವಾದ value formatಗಳಿಂದ ಹುಡುಕುತ್ತೇವೆ
+        const classStudents = data.filter(s => {
+
+            const c =
+                String(s.class_name || "")
+                .trim()
+                .toLowerCase();
+
+            return (
+                c === "8" ||
+                c === "8th" ||
+                c === "8ನೇ" ||
+                c === "8ನೇ ತರಗತಿ" ||
+                c.includes("8")
+            );
+
+        });
+
+        // A division
+        const aStudents = classStudents.filter(s => {
+
+            const d =
+                String(s.division || "")
+                .trim()
+                .toUpperCase();
+
+            return d === "A";
+
+        });
+
+        students = aStudents;
+
+        console.log(
+            "8TH A STUDENTS:",
+            students
+        );
+
+        if(students.length === 0){
+
+            document.getElementById("studentCount").innerText =
+                "8ನೇ ತರಗತಿ - A ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.";
+
+            document.getElementById("marksArea").innerHTML = `
+
+                <div style="
+                    padding:30px;
+                    text-align:center;
+                    background:#fff3cd;
+                    border-radius:10px;
+                ">
+
+                    <h3>⚠️ 8ನೇ ತರಗತಿ - A ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ</h3>
+
+                    <p>
+                    Browser Consoleನಲ್ಲಿ
+                    <b>CLASS VALUES</b> ಮತ್ತು
+                    <b>DIVISION VALUES</b>
+                    ನೋಡಿ.
+                    </p>
+
+                    <p>
+                    F12 → Console
+                    </p>
+
+                </div>
+
+            `;
+
+            message(
+                "Databaseನಲ್ಲಿ ಇರುವ actual class/division values ನೋಡಬೇಕು.",
+                "error"
+            );
+
+            return;
+        }
+
+        createMarksTable();
+
+        document.getElementById("studentCount").innerText =
+            `ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: ${students.length}`;
+
+        message(
+            `✅ ${students.length} ವಿದ್ಯಾರ್ಥಿಗಳು Load ಆಗಿದ್ದಾರೆ.`,
+            "success"
+        );
+
+    }
+    catch(error){
+
+        console.error(
+            "Students Load ERROR:",
+            error
+        );
+
+        message(
+            "Students Load: " + error.message,
+            "error"
+        );
+
+    }
+}
+    async function loadStudents(){
+
     const cls =
         document.getElementById("classSelect").value;
 
