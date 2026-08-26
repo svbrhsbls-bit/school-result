@@ -186,6 +186,18 @@ td.subject{text-align:left;font-weight:700}
     font-size:16px;
     font-weight:800;
 }
+
+.dob-input-wrap{position:relative;width:100%;}
+.dob-input-wrap #dob{padding-right:48px;}
+.dob-calendar{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:38px;padding:0;background:transparent;color:#17324d;font-size:21px;}
+.dob-picker{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;padding:0!important;border:0!important;}
+.dob-help{display:block;margin-top:5px;font-size:12px;color:#6b7280;}
+@media(max-width:700px){
+ .dob-input-wrap #dob{min-height:46px;font-size:16px;padding-right:48px;}
+ .dob-calendar{width:42px;height:42px;font-size:21px;}
+ .dob-help{font-size:11px;}
+}
+
 @media print{
     body{
         background:#fff;
@@ -232,41 +244,9 @@ td.subject{text-align:left;font-weight:700}
 }
 
 @media(max-width:700px){
-    html,body{width:100%;max-width:100%;overflow-x:hidden}
-    .header{padding:15px 8px}
-    .header h1{font-size:19px;line-height:1.4;overflow-wrap:anywhere}
-    .header p{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-    .container{width:100%;max-width:100%;margin:10px 0;padding:0 6px}
-    .card{width:100%;max-width:100%;padding:11px;margin-bottom:11px;overflow:hidden}
-    .search-grid{grid-template-columns:1fr;gap:10px}
-    .student-info{grid-template-columns:repeat(2,minmax(0,1fr));gap:0;padding:6px}
-    .info-item{min-width:0;font-size:11px;line-height:1.4;overflow-wrap:anywhere;word-break:break-word;padding:6px 4px}
-    input{font-size:16px;min-height:44px}
-    .button-row button{min-height:44px;padding:10px 12px}
-    .result-settings-head .school-name{font-size:18px;line-height:1.4;overflow-wrap:anywhere}
-    .result-settings-head .exam-name{font-size:15px;line-height:1.4}
-    .result-settings-head .academic-year{font-size:12px}
-    .exam-title{font-size:15px;padding:9px 8px}
-    .exam-status{font-size:12px;padding:8px}
-    .table-wrap{overflow:visible;width:100%;max-width:100%}
-    table{width:100%;min-width:0;max-width:100%;table-layout:fixed;font-size:8.5px}
-    th,td{padding:4px 2px;line-height:1.25;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
-    th:nth-child(1),td:nth-child(1){width:34%}
-    th:nth-child(2),td:nth-child(2){width:18%}
-    th:nth-child(3),td:nth-child(3){width:14%}
-    th:nth-child(4),td:nth-child(4){width:16%}
-    th:nth-child(5),td:nth-child(5){width:18%}
-    td.subject{font-size:8.5px}
-    .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-    .summary-box{min-width:0;padding:7px 3px;font-size:10px;overflow-wrap:anywhere}
-    .summary-box b{font-size:13px}
-    .teacher-footer{gap:8px;margin-top:25px}
-    .teacher-block .role,.teacher-block .name{font-size:11px}
-}
-@media(max-width:380px){
-    .container{padding:0 4px}.card{padding:8px}.header h1{font-size:17px}
-    .result-settings-head .school-name{font-size:16px}
-    table{font-size:8px}.summary-box{font-size:9px}.summary-box b{font-size:12px}
+    .search-grid,.student-info{grid-template-columns:1fr}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .header h1{font-size:22px}
 }
 @media print{
     body{background:#fff}
@@ -304,7 +284,16 @@ td.subject{text-align:left;font-weight:700}
 
             <div>
                 <label for="dob">Date of Birth</label>
-                <input id="dob" type="text" inputmode="numeric" autocomplete="bday" maxlength="10" placeholder="DD MM YYYY">
+                <div class="dob-input-wrap">
+                    <input id="dob" type="text" inputmode="numeric"
+                           autocomplete="off" maxlength="10"
+                           placeholder="DD MM YYYY">
+                    <button type="button" class="dob-calendar"
+                            onclick="openDOBPicker()" aria-label="Calendar">📅</button>
+                    <input id="dobPicker" type="date" class="dob-picker"
+                           onchange="setDOBFromPicker(this.value)">
+                </div>
+                <small class="dob-help">ಉದಾ: 28 08 2026 → 28-08-2026</small>
             </div>
         </div>
 
@@ -352,22 +341,6 @@ function esc(value){
         .replace(/'/g,"&#039;");
 }
 
-function parseDobInput(value){
-    const digits=String(value||"").replace(/\D/g,"").slice(0,8);
-    if(digits.length!==8) return "";
-    const day=digits.slice(0,2), month=digits.slice(2,4), year=digits.slice(4,8);
-    const d=Number(day), m=Number(month), y=Number(year);
-    if(d<1||d>31||m<1||m>12||y<1900||y>2100) return "";
-    return `${year}-${month}-${day}`;
-}
-
-function formatDobTyping(value){
-    const digits=String(value||"").replace(/\D/g,"").slice(0,8);
-    if(digits.length<=2) return digits;
-    if(digits.length<=4) return digits.slice(0,2)+" "+digits.slice(2);
-    return digits.slice(0,2)+" "+digits.slice(2,4)+" "+digits.slice(4);
-}
-
 function normalizeDate(value){
     if(!value) return "";
 
@@ -397,6 +370,40 @@ function formatDate(value){
         return `${p[2]}-${p[1]}-${p[0]}`;
 
     return s;
+}
+
+function formatNumber(value){
+    const n=Number(value);
+    if(!Number.isFinite(n)) return "0";
+    return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
+}
+
+function parseTypedDOB(value){
+    const digits=String(value || "").replace(/\D/g, "").slice(0,8);
+    if(digits.length <= 2) return digits;
+    if(digits.length <= 4) return digits.slice(0,2)+"-"+digits.slice(2);
+    return digits.slice(0,2)+"-"+digits.slice(2,4)+"-"+digits.slice(4);
+}
+
+function dobToISO(value){
+    const m=String(value || "").match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if(!m) return "";
+    const day=m[1], month=m[2], year=m[3];
+    const d=new Date(Number(year),Number(month)-1,Number(day));
+    if(d.getFullYear()!==Number(year) || d.getMonth()!==Number(month)-1 || d.getDate()!==Number(day)) return "";
+    return `${year}-${month}-${day}`;
+}
+
+function openDOBPicker(){
+    const picker=$("dobPicker");
+    if(picker.showPicker) picker.showPicker();
+    else picker.click();
+}
+
+function setDOBFromPicker(value){
+    if(!value) return;
+    const [year,month,day]=value.split("-");
+    $("dob").value=`${day}-${month}-${year}`;
 }
 
 function normalizeClass(value){
@@ -647,7 +654,8 @@ async function viewResult(){
     await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
-    const dob=$("dob").value;
+    const dobText=$("dob").value.trim();
+    const dob=dobToISO(dobText);
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
@@ -656,7 +664,7 @@ async function viewResult(){
     }
 
     if(!dob){
-        showMessage("Date of Birth ನಮೂದಿಸಿ.","error");
+        showMessage("Date of Birth ಅನ್ನು DD-MM-YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ.","error");
         $("dob").focus();
         return;
     }
@@ -678,13 +686,7 @@ async function viewResult(){
         if(studentError)
             throw studentError;
 
-        const wantedDob=normalizeDate(parseDobInput(dob));
-        if(!wantedDob){
-            $("resultArea").innerHTML="";
-            showMessage("ಜನ್ಮ ದಿನಾಂಕವನ್ನು DD MM YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ.","error");
-            $("dob").focus();
-            return;
-        }
+        const wantedDob=normalizeDate(dob);
 
         const matches=(students || []).filter(s =>
             normalizeDate(s.dob)===wantedDob
@@ -1193,17 +1195,17 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${Number.isInteger(total) ? total : Number(total.toFixed(2))}</b>
+                <b>${formatNumber(total)}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${Number.isInteger(maximum) ? maximum : Number(maximum.toFixed(2))}</b>
+                <b>${formatNumber(maximum)}</b>
             </div>
 
             <div class="summary-box">
                 ಶೇಕಡಾವಾರು
-                <b>${percentage.toFixed(2)}%</b>
+                <b>${formatNumber(percentage)}%</b>
             </div>
 
             <div class="summary-box">
@@ -1223,10 +1225,7 @@ function renderExam(student,subjects,result,marksMap){
 }
 
 $("dob").addEventListener("input",function(){
-    const pos=this.selectionStart;
-    const before=this.value;
-    this.value=formatDobTyping(before);
-    if(pos!==null) this.selectionStart=this.selectionEnd=this.value.length;
+    this.value=parseTypedDOB(this.value);
 });
 
 /* Enter key support */
