@@ -249,7 +249,7 @@ th{
 
 <header>
     <h1>📝 Marks Entry</h1>
-    <div>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ ಬಲ್ಲಾಳಸಮುದ್ರ ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ PIN NO-577 597</div>
+    <div>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</div>
 </header>
 
 <div class="container">
@@ -829,6 +829,9 @@ async function loadStudents(){
 
         students =
             (studentResponse.data || [])
+            // Students Database uses soft-delete (is_active = false).
+            // Marks Entry must show only active students.
+            .filter(student => student.is_active !== false)
             .filter(student => {
 
                 const cls =
@@ -930,95 +933,29 @@ async function loadStudents(){
 
 
         /*
-          HARD DUPLICATE PROTECTION
-          -------------------------
-          Supabase may contain old/new subject rows with different codes
-          (for example KAN/01K, ENG/31E, etc.).  Marks Entry must show
-          each real subject only once.  Therefore we create a canonical
-          key from both subject code and subject name, with known aliases
-          mapped to the same subject.
+          Duplicate subject rows ಇದ್ದರೂ
+          Subject Name ಆಧಾರದಲ್ಲಿ ಒಂದೇ ಬಾರಿ.
         */
 
-        function normalizeSubjectText(value){
-            return String(value || "")
-                .normalize("NFKC")
-                .replace(/[\u200B-\u200D\uFEFF]/g, "")
-                .replace(/[.\-_/]/g, " ")
-                .replace(/\s+/g, " ")
-                .trim()
-                .toLowerCase();
-        }
+        const seen = new Set();
 
-        function canonicalSubjectKey(subject){
+        subjects =
+            subjects.filter(subject => {
 
-            const code = normalizeSubjectText(subjectCode(subject));
-            const name = normalizeSubjectText(subjectName(subject));
+                const key =
+                    subjectName(subject)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g," ");
 
-            // Known old/new code aliases used in this project.
-            const codeAliases = {
-                "01k":"kannada", "kan":"kannada",
-                "31e":"english", "eng":"english",
-                "61h":"hindi", "hin":"hindi",
-                "81k":"mathematics", "mat":"mathematics",
-                "83k":"science", "sci":"science",
-                "85k":"social science", "soc":"social science", "ss":"social science",
-                "06ss":"social science"
-            };
+                if(seen.has(key)){
+                    return false;
+                }
 
-            if(codeAliases[code]){
-                return codeAliases[code];
-            }
+                seen.add(key);
 
-            // Common subject-name aliases.
-            const nameAliases = {
-                "ಕನ್ನಡ":"kannada",
-                "ಕನ್ನಡ ಭಾಷೆ":"kannada",
-                "ಇಂಗ್ಲಿಷ್":"english",
-                "ಇಂಗ್ಲೀಷ್":"english",
-                "ಹಿಂದಿ":"hindi",
-                "ಗಣಿತ":"mathematics",
-                "ಗಣಿತಶಾಸ್ತ್ರ":"mathematics",
-                "ವಿಜ್ಞಾನ":"science",
-                "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science",
-                "ಸಮಾಜ ವಿಜ್ಞಾನ ":"social science",
-                "kannada":"kannada",
-                "english":"english",
-                "hindi":"hindi",
-                "mathematics":"mathematics",
-                "maths":"mathematics",
-                "science":"science",
-                "social science":"social science",
-                "socialscience":"social science"
-            };
-
-            if(nameAliases[name]){
-                return nameAliases[name];
-            }
-
-            // Fallback: normalized displayed subject name.
-            return name;
-        }
-
-        const seenSubjects = new Set();
-
-        subjects = subjects.filter(subject => {
-
-            const key = canonicalSubjectKey(subject);
-
-            if(seenSubjects.has(key)){
-                return false;
-            }
-
-            seenSubjects.add(key);
-            return true;
-        });
-
-        // Always keep the Subject Master display order.
-        subjects.sort((a,b) => {
-            const ao = Number(getValue(a,["display_order","displayOrder","order"])) || 9999;
-            const bo = Number(getValue(b,["display_order","displayOrder","order"])) || 9999;
-            return ao - bo;
-        });
+                return true;
+            });
 
 
         if(!subjects.length){
