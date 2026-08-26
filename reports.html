@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reports & Print</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef6fb;color:#17324d;font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif}
+header{background:#087db5;color:#fff;text-align:center;padding:20px}
+header h1{margin:0;font-size:28px}
+.container{width:96%;max-width:1450px;margin:22px auto}
+.card{background:#fff;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 3px 16px rgba(0,0,0,.09)}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+label{font-weight:700;display:block;margin-bottom:6px}
+select{width:100%;padding:11px;border:1px solid #b9c9d3;border-radius:8px;font-size:15px;background:#fff}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{border:0;border-radius:8px;padding:11px 18px;font-size:15px;font-weight:700;cursor:pointer}
+.blue{background:#087db5;color:#fff}.green{background:#168a52;color:#fff}
+.orange{background:#e38b00;color:#fff}.purple{background:#7545b5;color:#fff}
+.gray{background:#687582;color:#fff}
+.message{margin-top:14px;padding:11px;border-radius:8px;display:none}
+.message.show{display:block}.success{background:#dcf5e2;color:#126b38}
+.error{background:#ffe0e0;color:#9b1c1c}.info{background:#dceeff;color:#15547a}
+.report{overflow:auto}
+.school{text-align:center;margin-bottom:15px}
+.school h2,.school h3,.school p{margin:4px}
+.student-head{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.info-box{border:1px solid #d8e4eb;background:#f8fbfd;border-radius:7px;padding:9px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #bbc8d2;padding:7px;text-align:center}
+th{background:#087db5;color:#fff}
+.left{text-align:left}
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+.sum{padding:10px 15px;background:#f2f7fa;border:1px solid #d7e2e9;border-radius:8px}
+.sum b{margin-left:5px}
+.annual-note{background:#fff4d7;padding:10px;border-radius:8px;margin-top:12px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.student-head{grid-template-columns:1fr 1fr}}
+@media print{
+ body{background:#fff}
+ .no-print{display:none!important}
+ .container{width:100%;margin:0}
+ .card{box-shadow:none;border:0;padding:0}
+ .report{overflow:visible}
+ @page{size:A4 landscape;margin:8mm}
+}
+</style>
+</head>
+<body>
+<header class="no-print">
+<h1>📊 Reports & Print</h1>
+<div>School Result Management System</div>
+</header>
+
+<div class="container">
+<div class="card no-print">
+<div class="grid">
+<div>
+<label>Report</label>
+<select id="reportType">
+<option value="progress">📄 Progress Report Card</option>
+<option value="school">🏫 School Announcement</option>
+<option value="subject">📚 Subject-wise Announcement</option>
+</select>
+</div>
+<div>
+<label>ತರಗತಿ</label>
+<select id="classSelect">
+<option value="8">8ನೇ ತರಗತಿ</option>
+<option value="9">9ನೇ ತರಗತಿ</option>
+<option value="10">10ನೇ ತರಗತಿ</option>
+</select>
+</div>
+<div>
+<label>ವಿಭಾಗ</label>
+<select id="divisionSelect">
+<option value="A">A</option>
+</select>
+</div>
+<div>
+<label>ಪರೀಕ್ಷೆ</label>
+<select id="examSelect">
+<option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+</select>
+</div>
+<div>
+<label>ವಿದ್ಯಾರ್ಥಿ</label>
+<select id="studentSelect">
+<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>
+</select>
+</div>
+</div>
+<div class="actions">
+<button class="blue" id="loadBtn">🔄 Load Report</button>
+<button class="green" id="excelBtn">📊 Excel Export</button>
+<button class="orange" id="printBtn">🖨️ PDF / Print</button>
+<button class="gray" id="clearBtn">Clear</button>
+</div>
+<div id="message" class="message"></div>
+</div>
+
+<div class="card report" id="reportArea">
+<p style="text-align:center;color:#687582">ತರಗತಿ, ವಿಭಾಗ, ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ <b>Load Report</b> ಒತ್ತಿ.</p>
+</div>
+</div>
+
+<script>
+const SUPABASE_URL="https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let appSettings={};
+let allStudents=[];
+let currentStudents=[];
+let currentSubjects=[];
+let currentRows=[];
+let currentExam="ANNUAL";
+let currentClass="8";
+let currentDivision="A";
+let reportType="progress";
+
+const $=id=>document.getElementById(id);
+
+function msg(text,type="info"){
+ const e=$("message"); e.textContent=text; e.className="message show "+type;
+}
+function esc(v){
+ return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function classNumber(v){
+ const m=String(v||"").match(/10|9|8/); return m?m[0]:"";
+}
+function studentName(s){return s.student_name||s.name||s.studentName||"Student"}
+function roll(s,i){return s.roll_no||s.roll_number||s.reg_no||s.registration_no||(i+1)}
+function division(s){return String(s.division||s.section||s.division_name||s.section_name||"").trim().toUpperCase()}
+function subjectName(s){return s.subject_name||s.name||s.subject||s.subjectName||s.title||"Subject"}
+function subjectCode(s){return s.subject_code||s.code||s.subjectCode||""}
+function normalizeSubjectKey(name){
+ const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+ const map={
+  "ಕನ್ನಡ":"kannada","kannada":"kannada",
+  "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
+  "ಹಿಂದಿ":"hindi","hindi":"hindi",
+  "ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics",
+  "ವಿಜ್ಞಾನ":"science","science":"science",
+  "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
+  "social science":"social science","socialscience":"social science"
+ };
+ return map[n]||n;
+}
+function uniqueSubjects(rows){
+ const groups=new Map();
+ (rows||[]).filter(r=>r.is_active!==false).forEach(r=>{
+  const key=normalizeSubjectKey(subjectName(r)); if(!key)return;
+  if(!groups.has(key))groups.set(key,[]); groups.get(key).push(r);
+ });
+ return Array.from(groups.values()).map(g=>[...g].sort((a,b)=>{
+  const ai=Number(a.id),bi=Number(b.id);
+  if(Number.isFinite(ai)&&Number.isFinite(bi)&&ai!==bi)return bi-ai;
+  const at=new Date(a.updated_at||a.created_at||0).getTime();
+  const bt=new Date(b.updated_at||b.created_at||0).getTime();
+  if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return bt-at;
+  return Number(a.display_order||999)-Number(b.display_order||999);
+ })[0]).sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999));
+}
+function isKannada(s){
+ const n=String(subjectName(s)).toLowerCase(),c=String(subjectCode(s)).toLowerCase();
+ return n.includes("kannada")||n.includes("ಕನ್ನಡ")||c==="1"||c==="01";
+}
+function maxMarks(s){
+ if(currentClass==="8") return currentExam==="HALF_YEARLY"?50:100;
+ if(currentClass==="9"||currentClass==="10"){
+  if(currentExam==="HALF_YEARLY")return isKannada(s)?100:80;
+  return isKannada(s)?125:100;
+ }
+ return 100;
+}
+function grade8(m,max){
+ m=Number(m); if(!Number.isFinite(m))return "";
+ if(currentExam==="HALF_YEARLY"&&max===50){
+  if(m>=45)return"A+";if(m>=35)return"A";if(m>=25)return"B+";if(m>=15)return"B";return"C";
+ }
+ if(currentExam==="ANNUAL"&&max===100){
+  if(m>=90)return"A+";if(m>=70)return"A";if(m>=50)return"B+";if(m>=30)return"B";return"C";
+ }
+ return"";
+}
+function grade910(m,s){
+ m=Number(m);if(!Number.isFinite(m))return"";
+ const k=isKannada(s);
+ if(currentExam==="HALF_YEARLY"){
+  if(k){if(m>=90)return"A+";if(m>=80)return"A";if(m>=70)return"B+";if(m>=60)return"B";if(m>=50)return"C+";if(m>=35)return"C";return"NC"}
+  if(m>=72)return"A+";if(m>=64)return"A";if(m>=56)return"B+";if(m>=48)return"B";if(m>=40)return"C+";if(m>=28)return"C";return"NC";
+ }
+ if(k){if(m>=112)return"A+";if(m>=100)return"A";if(m>=87)return"B+";if(m>=75)return"B";if(m>=63)return"C+";if(m>=44)return"C";return"NC"}
+ if(m>=90)return"A+";if(m>=80)return"A";if(m>=70)return"B+";if(m>=60)return"B";if(m>=50)return"C+";if(m>=35)return"C";return"NC";
+}
+function subjectGrade(m,max,s){
+ return currentClass==="8"?grade8(m,max):grade910(m,s);
+}
+function overallGrade(p){
+ p=Number(p);
+ if(currentClass==="8"){if(p>=90)return"A+";if(p>=70)return"A";if(p>=50)return"B+";if(p>=30)return"B";return"C"}
+ if(p>=90)return"A+";if(p>=80)return"A";if(p>=70)return"B+";if(p>=60)return"B";if(p>=50)return"C+";if(p>=35)return"C";return"NC";
+}
+function passResult(p){
+ return Number(p)>=(currentClass==="8"?30:35)?"PASS":"FAIL";
+}
+
+async function loadSettings(){
+ const r=await db.from("settings").select("*").eq("id",1).maybeSingle();
+ if(!r.error&&r.data)appSettings=r.data;
+}
+async function loadBase(){
+ currentClass=classNumber($("classSelect").value);
+ currentDivision=$("divisionSelect").value.trim().toUpperCase();
+ currentExam=$("examSelect").value;
+ reportType=$("reportType").value;
+
+ await loadSettings();
+
+ const sr=await db.from("students").select("*");
+ if(sr.error)throw sr.error;
+ allStudents=(sr.data||[]).filter(s=>s.is_active!==false);
+
+ currentStudents=allStudents.filter(s=>
+  classNumber(s.class_name||s.class||s.standard||"")===currentClass &&
+  division(s)===currentDivision
+ ).sort((a,b)=>Number(a.roll_no||999999)-Number(b.roll_no||999999));
+
+ const sub=await db.from("subjects").select("*").eq("is_active",true);
+ if(sub.error)throw sub.error;
+ currentSubjects=uniqueSubjects((sub.data||[]).filter(s=>
+  classNumber(s.class_name||s.class||s.standard||"")===currentClass
+ ));
+
+ const sel=$("studentSelect");
+ sel.innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
+ currentStudents.forEach(s=>{
+  const o=document.createElement("option");o.value=s.id;o.textContent=roll(s,0)+" - "+studentName(s);sel.appendChild(o);
+ });
+}
+
+async function loadResults(){
+ const ids=currentStudents.map(s=>s.id);
+ if(!ids.length)return [];
+
+ const rr=await db.from("exam_results")
+  .select("id,student_id,exam_type,published")
+  .in("student_id",ids).eq("exam_type",currentExam);
+ if(rr.error)throw rr.error;
+
+ const results=rr.data||[];
+ const resultIds=results.map(r=>r.id);
+ let marks=[];
+ if(resultIds.length){
+  const mr=await db.from("result_marks")
+   .select("exam_result_id,subject_id,marks")
+   .in("exam_result_id",resultIds);
+  if(mr.error)throw mr.error;
+  marks=mr.data||[];
+ }
+ const map={};
+ marks.forEach(m=>map[`${m.exam_result_id}_${m.subject_id}`]=m.marks);
+
+ return currentStudents.map((s,i)=>{
+  const r=results.find(x=>String(x.student_id)===String(s.id));
+  let total=0,max=0,entered=0;
+  const items=currentSubjects.map(sub=>{
+   const value=r?map[`${r.id}_${sub.id}`]:"";
+   const mm=maxMarks(sub);max+=mm;
+   if(value!==""&&value!==null&&value!==undefined){total+=Number(value);entered++}
+   return {subject:subjectName(sub),code:subjectCode(sub),mark:value??"",max:mm,grade:value===""||value===null?"":subjectGrade(value,mm,sub),subjectId:sub.id};
+  });
+  const pct=max?total/max*100:0;
+  return {student:s,result:r,items,total,max,percentage:pct,grade:entered===currentSubjects.length?overallGrade(pct):"-",resultText:entered===currentSubjects.length?passResult(pct):"PENDING"};
+ });
+}
+
+function header(title){
+ return `<div class="school">
+  <h2>${esc(appSettings.school_name||"ಶಾಲೆಯ ಹೆಸರು")}</h2>
+  <p>ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year||"2026-27")}</p>
+  <h3>${title}</h3>
+ </div>`;
+}
+function studentInfo(d){
+ const s=d.student;
+ return `<div class="student-head">
+  <div class="info-box"><b>Roll No</b><br>${esc(roll(s,0))}</div>
+  <div class="info-box"><b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</b><br>${esc(studentName(s))}</div>
+  <div class="info-box"><b>ತರಗತಿ</b><br>${esc(s.class_name||currentClass)}</div>
+  <div class="info-box"><b>ವಿಭಾಗ</b><br>${esc(division(s)||currentDivision)}</div>
+ </div>`;
+}
+function progressHTML(d){
+ return header("📄 ಪ್ರಗತಿ ವರದಿ")+
+ studentInfo(d)+
+ `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಅಂಕ</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
+ d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.max}</td><td>${x.grade||"-"}</td></tr>`).join("")+
+ `</tbody></table>
+ <div class="summary">
+  <div class="sum">ಒಟ್ಟು <b>${d.total.toFixed(2)} / ${d.max.toFixed(2)}</b></div>
+  <div class="sum">Percentage <b>${d.percentage.toFixed(2)}%</b></div>
+  <div class="sum">Grade <b>${d.grade}</b></div>
+  <div class="sum">Result <b>${d.resultText}</b></div>
+ </div>`;
+}
+function schoolHTML(rows){
+ return header("🏫 ಶಾಲಾ ಘೋಷಣೆ")+
+ `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>${currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"}</b></div>
+ <table><thead><tr><th>ಕ್ರಮ</th><th>Roll No</th><th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th><th>ಒಟ್ಟು</th><th>ಗರಿಷ್ಠ</th><th>%</th><th>Grade</th><th>Result</th></tr></thead><tbody>`+
+ rows.map((d,i)=>`<tr><td>${i+1}</td><td>${esc(roll(d.student,i))}</td><td class="left">${esc(studentName(d.student))}</td><td>${d.total.toFixed(2)}</td><td>${d.max.toFixed(2)}</td><td>${d.percentage.toFixed(2)}%</td><td>${d.grade}</td><td>${d.resultText}</td></tr>`).join("")+
+ `</tbody></table>`;
+}
+function subjectHTML(rows){
+ return header("📚 ವಿಷಯವಾರು ಘೋಷಣೆ")+
+ `<table><thead><tr><th>Roll No</th><th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>`+
+ currentSubjects.map(s=>`<th>${esc(subjectName(s))}<br><small>${esc(subjectCode(s))}</small></th>`).join("")+
+ `</tr></thead><tbody>`+
+ rows.map((d,i)=>`<tr><td>${esc(roll(d.student,i))}</td><td class="left">${esc(studentName(d.student))}</td>`+
+ d.items.map(x=>`<td>${x.mark===""?"-":x.mark}<br><b>${x.grade||"-"}</b></td>`).join("")+
+ `</tr>`).join("")+
+ `</tbody></table>`;
+}
+
+async function generate(){
+ try{
+  msg("Report loading...","info");
+  await loadBase();
+
+  // The three report types are annual-only.
+  if((reportType==="progress"||reportType==="school"||reportType==="subject") && currentExam!=="ANNUAL"){
+   msg("ಈ reportಗೆ ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ ಮಾತ್ರ ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ. Excel/PDF/Printಗೆ ಅರ್ಧವಾರ್ಷಿಕ ಆಯ್ಕೆ ಮಾಡಬಹುದು.","error");
+   return;
+  }
+
+  let rows=await loadResults();
+  const studentId=$("studentSelect").value;
+  if(studentId)rows=rows.filter(x=>String(x.student.id)===String(studentId));
+  currentRows=rows;
+
+  if(!rows.length){$("reportArea").innerHTML="<p style='text-align:center;color:red'>ವಿದ್ಯಾರ್ಥಿಗಳ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.</p>";msg("ವಿದ್ಯಾರ್ಥಿಗಳ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.","error");return}
+
+  if(reportType==="progress"){
+   $("reportArea").innerHTML=rows.map(progressHTML).join('<hr style="border:0;border-top:2px dashed #aaa;margin:25px 0">');
+  }else if(reportType==="school"){
+   $("reportArea").innerHTML=schoolHTML(rows);
+  }else{
+   $("reportArea").innerHTML=subjectHTML(rows);
+  }
+  msg("✅ Report ಸಿದ್ಧವಾಗಿದೆ.","success");
+ }catch(e){
+  console.error(e);msg("Report Error: "+(e.message||e),"error");
+ }
+}
+
+function exportExcel(){
+ if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+ const data=[];
+ if(reportType==="progress"){
+  currentRows.forEach((d,i)=>d.items.forEach(x=>data.push({
+   "Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student),
+   "ತರಗತಿ":currentClass,"ವಿಭಾಗ":currentDivision,"ಪರೀಕ್ಷೆ":currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+   "ವಿಷಯ":x.subject,"Subject Code":x.code,"ಅಂಕ":x.mark,"ಗರಿಷ್ಠ ಅಂಕ":x.max,"Grade":x.grade
+  })));
+ }else if(reportType==="school"){
+  currentRows.forEach((d,i)=>data.push({
+   "ಕ್ರಮ":i+1,"Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student),
+   "ತರಗತಿ":currentClass,"ವಿಭಾಗ":currentDivision,"ಪರೀಕ್ಷೆ":currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+   "ಒಟ್ಟು":d.total,"ಗರಿಷ್ಠ":d.max,"Percentage":Number(d.percentage.toFixed(2)),"Grade":d.grade,"Result":d.resultText
+  }));
+ }else{
+  currentRows.forEach((d,i)=>{
+   const r={"Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student)};
+   d.items.forEach(x=>{r[`${x.subject} [${x.code}]`]=x.mark;r[`${x.subject} Grade`]=x.grade});
+   r["Total"]=d.total;r["Maximum"]=d.max;r["Percentage"]=Number(d.percentage.toFixed(2));r["Grade"]=d.grade;r["Result"]=d.resultText;
+   data.push(r);
+  });
+ }
+ const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,ws,"Report");
+ XLSX.writeFile(wb,`Report_${currentClass}_${currentExam}.xlsx`);
+ msg("✅ Excel Download ಆರಂಭವಾಗಿದೆ.","success");
+}
+function printReport(){
+ if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+ window.print();
+}
+$("loadBtn").onclick=generate;
+$("excelBtn").onclick=exportExcel;
+$("printBtn").onclick=printReport;
+$("clearBtn").onclick=()=>{
+ $("reportArea").innerHTML='<p style="text-align:center;color:#687582">Report generate ಮಾಡಲು ಮೇಲಿನ ಆಯ್ಕೆಗಳನ್ನು ಮಾಡಿ.</p>';
+ $("studentSelect").innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
+ currentRows=[];msg("Cleared.","info");
+};
+$("classSelect").onchange=()=>{currentRows=[]};
+$("divisionSelect").onchange=()=>{currentRows=[]};
+$("examSelect").onchange=()=>{currentRows=[]};
+$("reportType").onchange=()=>{
+ currentRows=[];
+ // For the three requested reports, automatically switch to Annual.
+ if(["progress","school","subject"].includes($("reportType").value)) $("examSelect").value="ANNUAL";
+};
+
+loadSettings().catch(e=>console.warn(e));
+</script>
+</body>
+</html>
