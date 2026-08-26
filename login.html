@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="kn">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>School Result Management System - Login</title>
 
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
 *{
     box-sizing:border-box;
 }
@@ -16,178 +19,370 @@
 body{
     margin:0;
     min-height:100vh;
-    font-family:Arial,"Noto Sans Kannada",sans-serif;
-    background:linear-gradient(135deg,#173b68,#2d78b7);
+    font-family:
+        Arial,
+        "Noto Sans Kannada",
+        "Nirmala UI",
+        sans-serif;
+
+    background:
+        linear-gradient(
+            135deg,
+            #173b68,
+            #2d78b7
+        );
+
     display:flex;
-    align-items:center;
     justify-content:center;
+    align-items:center;
+
     padding:20px;
 }
 
+
+/* LOGIN BOX */
+
 .login-box{
+
     width:100%;
     max-width:460px;
-    background:#fff;
+
+    background:white;
+
     border-radius:20px;
+
     padding:38px 34px;
-    box-shadow:0 15px 45px rgba(0,0,0,.25);
+
+    box-shadow:
+        0 15px 45px
+        rgba(0,0,0,0.25);
 }
+
+
+/* LOGO */
 
 .logo{
+
     width:80px;
     height:80px;
+
     border-radius:50%;
+
     background:#173b68;
+
     color:white;
+
     display:flex;
-    align-items:center;
     justify-content:center;
+    align-items:center;
+
+    margin:0 auto 20px;
+
     font-size:30px;
     font-weight:bold;
-    margin:0 auto 20px;
 }
 
+
+/* SCHOOL NAME */
+
 .school-name{
+
     text-align:center;
+
     color:#173b68;
+
     font-size:25px;
+
     font-weight:bold;
+
     line-height:1.5;
 }
 
+
 .location{
+
     text-align:center;
+
     color:#777;
+
     font-size:16px;
+
     margin-top:5px;
 }
 
+
+/* TITLE */
+
 .title{
+
     text-align:center;
+
     color:#173b68;
+
     font-size:21px;
+
     font-weight:bold;
+
     margin:25px 0;
 }
 
+
+/* LABEL */
+
 label{
+
     display:block;
+
     font-weight:bold;
+
     color:#333;
+
     margin-bottom:8px;
 }
 
+
+/* INPUT */
+
 input{
+
     width:100%;
+
     padding:14px;
+
     border:1px solid #cbd5e1;
+
     border-radius:10px;
+
     font-size:17px;
+
     outline:none;
+
     background:#f8fafc;
+
     margin-bottom:20px;
 }
 
+
 input:focus{
+
     border-color:#2474b5;
-    box-shadow:0 0 0 3px rgba(36,116,181,.12);
+
+    box-shadow:
+        0 0 0 3px
+        rgba(36,116,181,.12);
 }
 
+
+/* PASSWORD */
+
 .password-box{
+
     position:relative;
 }
 
+
 .password-box input{
-    padding-right:50px;
+
+    padding-right:55px;
 }
 
+
 .show-password{
+
     position:absolute;
-    right:15px;
-    top:14px;
+
+    right:16px;
+
+    top:13px;
+
     cursor:pointer;
-    font-size:20px;
+
+    font-size:21px;
+
     color:#666;
 }
 
+
+/* LOGIN BUTTON */
+
 .login-btn{
+
     width:100%;
+
     border:none;
+
     border-radius:10px;
+
     padding:15px;
+
     background:#173b68;
+
     color:white;
+
     font-size:18px;
+
     font-weight:bold;
+
     cursor:pointer;
 }
 
+
 .login-btn:hover{
+
     background:#0f2d52;
 }
 
+
 .login-btn:disabled{
+
     background:#8ca1b8;
+
     cursor:not-allowed;
 }
 
+
+/* MESSAGE */
+
 .message{
+
     display:none;
+
     padding:12px;
+
     border-radius:8px;
+
     margin-bottom:18px;
+
     text-align:center;
+
     font-size:15px;
 }
 
+
 .error{
+
     background:#fee2e2;
+
     color:#b91c1c;
 }
 
+
 .success{
+
     background:#dcfce7;
+
     color:#166534;
 }
 
-.footer{
+
+/* LOADING */
+
+.loading{
+
+    display:none;
+
     text-align:center;
+
+    color:#555;
+
+    margin-top:12px;
+}
+
+
+/* FOOTER */
+
+.footer{
+
+    text-align:center;
+
     color:#888;
+
     margin-top:25px;
+
     font-size:14px;
 }
 
-.loading{
-    display:none;
-    text-align:center;
-    color:#555;
-    margin-top:12px;
+
+/* MOBILE */
+
+@media(max-width:500px){
+
+    .login-box{
+
+        padding:30px 22px;
+    }
+
+    .school-name{
+
+        font-size:21px;
+    }
+
+    .title{
+
+        font-size:18px;
+    }
+
 }
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <div class="login-box">
 
-    <div class="logo">SR</div>
+
+    <!-- LOGO -->
+
+    <div class="logo">
+        SR
+    </div>
+
+
+    <!-- SCHOOL NAME -->
 
     <div class="school-name">
+
         ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ
+
     </div>
+
 
     <div class="location">
+
         ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು
+
     </div>
+
+
+    <!-- TITLE -->
 
     <div class="title">
+
         School Result Management System
+
     </div>
 
-    <div id="message" class="message"></div>
+
+    <!-- MESSAGE -->
+
+    <div
+        id="message"
+        class="message">
+    </div>
+
 
     <!-- DISE CODE -->
-    <label for="diseCode">DISE CODE</label>
+
+    <label for="diseCode">
+
+        DISE CODE
+
+    </label>
+
 
     <input
         type="text"
@@ -198,10 +393,18 @@ input:focus{
         maxlength="20"
     >
 
+
     <!-- PASSWORD -->
-    <label for="password">PASSWORD</label>
+
+    <label for="password">
+
+        PASSWORD
+
+    </label>
+
 
     <div class="password-box">
+
 
         <input
             type="password"
@@ -210,150 +413,231 @@ input:focus{
             autocomplete="current-password"
         >
 
+
         <span
             class="show-password"
             id="showPassword"
-            title="Password ತೋರಿಸಿ"
-        >👁</span>
+            title="Password ತೋರಿಸಿ">
+
+            👁
+
+        </span>
+
 
     </div>
+
+
+    <!-- LOGIN -->
 
     <button
         class="login-btn"
         id="loginBtn"
-        onclick="login()"
-    >
+        onclick="login()">
+
         LOGIN
+
     </button>
 
-    <div id="loading" class="loading">
+
+    <!-- LOADING -->
+
+    <div
+        id="loading"
+        class="loading">
+
         Login ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ...
+
     </div>
 
+
+    <!-- FOOTER -->
+
     <div class="footer">
+
         © School Result Management System
+
     </div>
+
 
 </div>
 
 
+
 <script>
+
 
 /* =====================================================
    SUPABASE CONFIGURATION
    ===================================================== */
 
-const SUPABASE_URL =
-    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
 
 /*
-   ಇಲ್ಲಿ ನಿಮ್ಮ ಈಗಿರುವ Supabase ANON / PUBLIC KEY ಹಾಕಿ.
-   SECRET / SERVICE_ROLE KEY ಹಾಕಬೇಡಿ.
+   ನಿಮ್ಮ Supabase Project URL
 */
-const SUPABASE_ANON_KEY =
-    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
+const SUPABASE_URL =
+"https://sozlvjvqrgpaabnvjvxe.supabase.co";
+
+
+/*
+   ನಿಮ್ಮ Supabase Publishable Key
+*/
+
+const SUPABASE_ANON_KEY =
+"sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+
+
+/*
+   Supabase Client
+*/
 
 const supabaseClient =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-    );
+window.supabase.createClient(
+
+    SUPABASE_URL,
+
+    SUPABASE_ANON_KEY
+
+);
+
 
 
 /* =====================================================
    PASSWORD SHOW / HIDE
    ===================================================== */
 
+
 document
 .getElementById("showPassword")
-.addEventListener("click", function(){
+.addEventListener(
+    "click",
+    function(){
 
-    const password =
+        const password =
         document.getElementById("password");
 
-    if(password.type === "password"){
 
-        password.type = "text";
-        this.textContent = "🙈";
+        if(password.type === "password"){
 
-    }else{
+            password.type = "text";
 
-        password.type = "password";
-        this.textContent = "👁";
+            this.textContent = "🙈";
+
+        }
+
+        else{
+
+            password.type = "password";
+
+            this.textContent = "👁";
+
+        }
+
     }
-});
+);
+
 
 
 /* =====================================================
    ENTER KEY LOGIN
    ===================================================== */
 
+
 document
 .getElementById("password")
-.addEventListener("keydown", function(event){
+.addEventListener(
+    "keydown",
+    function(event){
 
-    if(event.key === "Enter"){
-        login();
+        if(event.key === "Enter"){
+
+            login();
+
+        }
+
     }
+);
 
-});
 
 
 /* =====================================================
    MESSAGE
    ===================================================== */
 
-function showMessage(text,type){
+
+function showMessage(
+    text,
+    type
+){
 
     const box =
-        document.getElementById("message");
+    document.getElementById("message");
+
 
     box.textContent = text;
 
-    box.className =
-        "message " + type;
 
-    box.style.display = "block";
+    box.className =
+    "message " + type;
+
+
+    box.style.display =
+    "block";
+
 }
+
 
 
 function hideMessage(){
 
     document
     .getElementById("message")
-    .style.display = "none";
+    .style.display =
+    "none";
 
 }
 
 
+
 /* =====================================================
-   LOGIN
+   LOGIN FUNCTION
    ===================================================== */
+
 
 async function login(){
 
+
     hideMessage();
 
+
     const diseCode =
-        document
-        .getElementById("diseCode")
-        .value
-        .trim();
+    document
+    .getElementById("diseCode")
+    .value
+    .trim();
+
 
     const password =
-        document
-        .getElementById("password")
-        .value;
+    document
+    .getElementById("password")
+    .value;
+
 
     const loginBtn =
-        document.getElementById("loginBtn");
+    document
+    .getElementById("loginBtn");
+
 
     const loading =
-        document.getElementById("loading");
+    document
+    .getElementById("loading");
 
 
-    /* Validation */
+
+    /* -----------------------------------------------
+       VALIDATION
+       ----------------------------------------------- */
+
 
     if(!diseCode){
 
@@ -363,7 +647,9 @@ async function login(){
         );
 
         return;
+
     }
+
 
 
     if(!password){
@@ -374,26 +660,47 @@ async function login(){
         );
 
         return;
+
     }
 
 
-    loginBtn.disabled = true;
-    loading.style.display = "block";
+
+    loginBtn.disabled =
+    true;
+
+
+    loading.style.display =
+    "block";
+
 
 
     try{
 
-        /* ---------------------------------------------
-           STEP 1:
-           DISE Code ಮೂಲಕ school_users ಹುಡುಕುವುದು
-           --------------------------------------------- */
 
-        const { data: schoolUser, error: userError } =
-            await supabaseClient
-            .from("school_users")
-            .select("id,dise_code,user_name,login_email,is_active")
-            .eq("dise_code", diseCode)
-            .maybeSingle();
+        /* -------------------------------------------
+           STEP 1
+           DISE CODE ಪರಿಶೀಲನೆ
+           ------------------------------------------- */
+
+
+        const {
+            data: schoolUser,
+            error: userError
+        } = await supabaseClient
+
+        .from("school_users")
+
+        .select(
+            "id,dise_code,user_name,login_email,is_active"
+        )
+
+        .eq(
+            "dise_code",
+            diseCode
+        )
+
+        .maybeSingle();
+
 
 
         if(userError){
@@ -404,9 +711,16 @@ async function login(){
             );
 
             throw new Error(
-                "School user ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
+                "School User ಪರಿಶೀಲಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
             );
+
         }
+
+
+
+        /* -------------------------------------------
+           DISE CODE FOUND?
+           ------------------------------------------- */
 
 
         if(!schoolUser){
@@ -414,67 +728,118 @@ async function login(){
             throw new Error(
                 "DISE Code ತಪ್ಪಾಗಿದೆ."
             );
+
         }
 
 
-        /* ---------------------------------------------
-           STEP 2:
-           Account active ಇದೆಯೇ?
-           --------------------------------------------- */
 
-        if(schoolUser.is_active === false){
+        /* -------------------------------------------
+           ACTIVE USER?
+           ------------------------------------------- */
+
+
+        if(
+            schoolUser.is_active === false
+        ){
 
             throw new Error(
                 "ಈ School User ಅನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ."
             );
+
         }
 
 
-        /* ---------------------------------------------
-           STEP 3:
-           Auth Email
-           --------------------------------------------- */
 
-        if(!schoolUser.login_email){
+        /* -------------------------------------------
+           LOGIN EMAIL EXISTS?
+           ------------------------------------------- */
+
+
+        if(
+            !schoolUser.login_email
+        ){
 
             throw new Error(
                 "ಈ DISE Code ಗೆ Login Email link ಆಗಿಲ್ಲ."
             );
+
         }
 
 
-        /* ---------------------------------------------
-           STEP 4:
-           Supabase Authentication
-           --------------------------------------------- */
 
-        const { data, error: loginError } =
-            await supabaseClient.auth.signInWithPassword({
+        /* -------------------------------------------
+           SUPABASE AUTH LOGIN
+           ------------------------------------------- */
 
-                email: schoolUser.login_email,
 
-                password: password
+        const {
+            data,
+            error: loginError
+        } = await supabaseClient.auth
+        .signInWithPassword({
 
-            });
+            email:
+            schoolUser.login_email,
+
+            password:
+            password
+
+        });
+
+
+
+        /* -------------------------------------------
+           PASSWORD ERROR
+           ------------------------------------------- */
 
 
         if(loginError){
 
             console.error(
-                "Login error:",
+                "Authentication error:",
                 loginError
             );
+
 
             throw new Error(
                 "Password ತಪ್ಪಾಗಿದೆ."
             );
+
         }
 
 
-        /* ---------------------------------------------
-           STEP 5:
-           Login Success
-           --------------------------------------------- */
+
+        /* -------------------------------------------
+           SESSION CHECK
+           ------------------------------------------- */
+
+
+        const {
+            data: sessionData
+        } =
+        await supabaseClient
+        .auth
+        .getSession();
+
+
+
+        if(
+            !sessionData ||
+            !sessionData.session
+        ){
+
+            throw new Error(
+                "Login session ಸೃಷ್ಟಿಯಾಗಲಿಲ್ಲ."
+            );
+
+        }
+
+
+
+        /* -------------------------------------------
+           LOGIN SUCCESS
+           ------------------------------------------- */
+
 
         showMessage(
             "Login ಯಶಸ್ವಿಯಾಗಿದೆ. Dashboard ತೆರೆಯಲಾಗುತ್ತಿದೆ...",
@@ -482,36 +847,56 @@ async function login(){
         );
 
 
-        /*
-           Dashboard ಗೆ ಹೋಗುವ ಮೊದಲು
-           user session ಇದೆ ಎಂದು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.
-        */
-
-        const {
-            data: sessionData
-        } =
-            await supabaseClient.auth.getSession();
+        loading.style.display =
+        "none";
 
 
-        if(!sessionData.session){
 
-            throw new Error(
-                "Login session ಸೃಷ್ಟಿಯಾಗಲಿಲ್ಲ."
-            );
-        }
+        /* -------------------------------------------
+           SAVE USER INFORMATION
+           ------------------------------------------- */
 
 
-        setTimeout(function(){
+        sessionStorage.setItem(
+            "school_dise_code",
+            schoolUser.dise_code
+        );
 
-            window.location.href =
+
+        sessionStorage.setItem(
+            "school_user_name",
+            schoolUser.user_name || ""
+        );
+
+
+
+        /* -------------------------------------------
+           GO TO DASHBOARD
+           ------------------------------------------- */
+
+
+        setTimeout(
+            function(){
+
+                window.location.href =
                 "dashboard.html";
 
-        },500);
+            },
+            700
+        );
 
 
-    }catch(error){
+    }
 
-        console.error(error);
+
+    catch(error){
+
+
+        console.error(
+            "LOGIN ERROR:",
+            error
+        );
+
 
         showMessage(
             error.message ||
@@ -519,14 +904,23 @@ async function login(){
             "error"
         );
 
-        loginBtn.disabled = false;
-        loading.style.display = "none";
+
+        loginBtn.disabled =
+        false;
+
+
+        loading.style.display =
+        "none";
 
     }
 
 }
 
+
+
 </script>
 
+
 </body>
+
 </html>
