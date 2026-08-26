@@ -859,10 +859,41 @@ async function generate(){
  }
 }
 
+
+function mergeExcelHeaderGroups(ws, groups){
+  ws["!merges"] = ws["!merges"] || [];
+  groups.forEach(g=>{
+    ws["!merges"].push({s:{r:g.row,c:g.start},e:{r:g.row,c:g.end}});
+  });
+}
+
 function addSheet(wb, data, sheetName){
- const ws=XLSX.utils.aoa_to_sheet(data);
- ws["!cols"] = data.length ? Array.from({length:data[0].length},()=>({wch:16})) : [];
- XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws["!cols"] = data.length ? Array.from({length:data[0].length},()=>({wch:16})) : [];
+
+  if(sheetName==="ಶಾಲಾ ಘೋಷವಾರು" || sheetName==="ವಿಷಯವಾರು"){
+    mergeExcelHeaderGroups(ws,[
+      {row:2,start:1,end:3},
+      {row:2,start:4,end:6},
+      {row:2,start:7,end:9},
+      {row:2,start:10,end:12}
+    ]);
+    ws["!merges"].push({s:{r:2,c:0},e:{r:3,c:0}});
+  }
+
+  if(sheetName==="ಜಾತಿವಾರು"){
+    const groups=[];
+    for(let i=0;i<7;i++){
+      const start=2+(i*3);
+      groups.push({row:2,start:start,end:start+2});
+    }
+    groups.push({row:2,start:23,end:25});
+    mergeExcelHeaderGroups(ws,groups);
+    ws["!merges"].push({s:{r:2,c:0},e:{r:3,c:0}});
+    ws["!merges"].push({s:{r:2,c:1},e:{r:3,c:1}});
+  }
+
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
 }
 
 function genderLabel(g){
