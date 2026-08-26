@@ -231,6 +231,20 @@ td.subject{text-align:left;font-weight:700}
     .teacher-footer{margin-top:35px}
 }
 
+
+.dob-wrap{position:relative;width:100%}
+#dob{width:100%;padding-right:48px;letter-spacing:.5px}
+.dob-calendar{
+    position:absolute;right:5px;top:50%;transform:translateY(-50%);
+    width:38px;height:36px;border:0;background:transparent;
+    cursor:pointer;font-size:20px;line-height:1
+}
+.dob-picker{
+    position:absolute!important;width:1px!important;height:1px!important;
+    opacity:0!important;pointer-events:none!important
+}
+.dob-help{display:block;margin-top:4px;font-size:11px;color:#777}
+
 @media(max-width:700px){
     .search-grid,.student-info{grid-template-columns:1fr}
     .summary{grid-template-columns:repeat(2,1fr)}
@@ -272,7 +286,25 @@ td.subject{text-align:left;font-weight:700}
 
             <div>
                 <label for="dob">Date of Birth</label>
-                <input id="dob" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD-MM-YYYY">
+                <div class="dob-wrap">
+                    <input id="dob"
+                           type="text"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           maxlength="10"
+                           placeholder="DD MM YYYY"
+                           aria-label="Date of Birth">
+                    <button type="button"
+                            class="dob-calendar"
+                            onclick="openDobCalendar()"
+                            aria-label="Calendar">📅</button>
+                    <input id="dobPicker"
+                           type="date"
+                           class="dob-picker"
+                           tabindex="-1"
+                           aria-hidden="true">
+                </div>
+                <small class="dob-help">ಉದಾ: 28 08 2026</small>
             </div>
         </div>
 
@@ -469,43 +501,6 @@ function hideMessage(){
     $("message").textContent="";
 }
 
-function formatDobInput(value){
-    let digits = String(value || "").replace(/\D/g, "").slice(0,8);
-    if(digits.length > 4) {
-        return digits.slice(0,2) + "-" + digits.slice(2,4) + "-" + digits.slice(4);
-    }
-    if(digits.length > 2) {
-        return digits.slice(0,2) + "-" + digits.slice(2);
-    }
-    return digits;
-}
-
-function getDobIso(){
-    const value = $("dob").value.trim();
-    const m = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if(!m) return "";
-
-    const day = Number(m[1]);
-    const month = Number(m[2]);
-    const year = Number(m[3]);
-    const d = new Date(year, month - 1, day);
-
-    if(d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day)
-        return "";
-
-    return `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-}
-
-$("dob").addEventListener("input", function(){
-    const cursor = this.selectionStart || 0;
-    const before = this.value.slice(0,cursor).replace(/\D/g, "").length;
-    this.value = formatDobInput(this.value);
-    let pos = before;
-    if(pos > 2) pos += 1;
-    if(pos > 5) pos += 1;
-    this.setSelectionRange(Math.min(pos,this.value.length), Math.min(pos,this.value.length));
-});
-
 function clearResult(){
     $("rollNumber").value="";
     $("dob").value="";
@@ -629,6 +624,30 @@ function getExamHeaderName(results){
 /* =========================================================
    VIEW RESULT
 ========================================================= */
+
+function formatDobInput(value){
+    const digits=String(value||"").replace(/\D/g,"").slice(0,8);
+    if(digits.length>4) return digits.slice(0,2)+" "+digits.slice(2,4)+" "+digits.slice(4);
+    if(digits.length>2) return digits.slice(0,2)+" "+digits.slice(2);
+    return digits;
+}
+$("dob").addEventListener("input",function(){
+    this.value=formatDobInput(this.value);
+});
+function openDobCalendar(){
+    const picker=$("dobPicker");
+    const text=$("dob").value.trim();
+    const m=text.match(/^(\d{2})\s(\d{2})\s(\d{4})$/);
+    if(m) picker.value=`${m[3]}-${m[2]}-${m[1]}`;
+    if(typeof picker.showPicker==="function") picker.showPicker();
+    else picker.click();
+}
+$("dobPicker").addEventListener("change",function(){
+    if(!this.value) return;
+    const p=this.value.split("-");
+    if(p.length===3) $("dob").value=`${p[2]} ${p[1]} ${p[0]}`;
+});
+
 async function viewResult(){
 
     hideMessage();
@@ -636,7 +655,9 @@ async function viewResult(){
     await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
-    const dob=getDobIso();
+    const dobText=$("dob").value.trim();
+    const dobMatch=dobText.match(/^(\d{2})\s(\d{2})\s(\d{4})$/);
+    const dob=dobMatch ? `${dobMatch[3]}-${dobMatch[2]}-${dobMatch[1]}` : dobText;
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
@@ -645,7 +666,7 @@ async function viewResult(){
     }
 
     if(!dob){
-        showMessage("Date of Birth ಅನ್ನು DD-MM-YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ. ಉದಾ: 28-08-2026","error");
+        showMessage("Date of Birth ಆಯ್ಕೆ ಮಾಡಿ.","error");
         $("dob").focus();
         return;
     }
@@ -1016,12 +1037,6 @@ function renderResult(student,subjects,results,marksMap){
 /* =========================================================
    RENDER ONE EXAM
 ========================================================= */
-function formatMarkNumber(value){
-    const n = Number(value);
-    if(!Number.isFinite(n)) return "0";
-    return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
-}
-
 function renderExam(student,subjects,result,marksMap){
 
     let total=0;
@@ -1182,12 +1197,12 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${formatMarkNumber(total)}</b>
+                <b>${total.toFixed(0)}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${formatMarkNumber(maximum)}</b>
+                <b>${maximum.toFixed(0)}</b>
             </div>
 
             <div class="summary-box">
