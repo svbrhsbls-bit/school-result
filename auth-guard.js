@@ -1,12 +1,4 @@
-/*
-=========================================================
- SCHOOL RESULT MANAGEMENT SYSTEM
- LOGIN PROTECTION
-=========================================================
-*/
-
 (function () {
-
     "use strict";
 
     const SUPABASE_URL =
@@ -17,195 +9,97 @@
 
     const LOGIN_PAGE = "login.html";
 
-    /*
-    -----------------------------------------------------
-    Prevent page content from flashing before login check
-    -----------------------------------------------------
-    */
-
+    // Hide page until authentication is checked
     document.documentElement.style.visibility = "hidden";
 
-
-    /*
-    -----------------------------------------------------
-    Load Supabase JS if it is not already loaded
-    -----------------------------------------------------
-    */
-
-    function loadSupabase() {
-
-        return new Promise(function (resolve, reject) {
-
-            if (
-                window.supabase &&
-                typeof window.supabase.createClient === "function"
-            ) {
-                resolve();
-                return;
-            }
-
-            const script =
-                document.createElement("script");
-
-            script.src =
-                "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-
-            script.onload = function () {
-                resolve();
-            };
-
-            script.onerror = function () {
-                reject(
-                    new Error("Supabase library load failed")
-                );
-            };
-
-            document.head.appendChild(script);
-
-        });
-
+    function redirectToLogin() {
+        window.location.replace(
+            LOGIN_PAGE + "?redirect=" +
+            encodeURIComponent(
+                window.location.pathname.split("/").pop()
+            )
+        );
     }
 
-
-    /*
-    -----------------------------------------------------
-    Create Supabase Client
-    -----------------------------------------------------
-    */
-
-    async function startAuthProtection() {
+    async function checkLogin() {
 
         try {
 
-            await loadSupabase();
+            // Supabase library must already be loaded
+            if (
+                !window.supabase ||
+                !window.supabase.createClient
+            ) {
+                console.error("Supabase library not loaded.");
+                redirectToLogin();
+                return;
+            }
 
-            const supabaseClient =
+            const client =
                 window.supabase.createClient(
                     SUPABASE_URL,
                     SUPABASE_ANON_KEY
                 );
 
-
-            /*
-            Make client available to other pages
-            */
-
-            window.schoolSupabase =
-                supabaseClient;
-
-
-            /*
-            -------------------------------------------------
-            Check current session
-            -------------------------------------------------
-            */
+            window.schoolSupabase = client;
 
             const {
                 data,
                 error
-            } =
-            await supabaseClient.auth.getSession();
-
+            } = await client.auth.getSession();
 
             if (error) {
-
                 console.error(
                     "Session error:",
                     error
                 );
 
-                window.location.replace(
-                    LOGIN_PAGE
-                );
-
+                redirectToLogin();
                 return;
             }
 
-
-            /*
-            -------------------------------------------------
-            No login session
-            -------------------------------------------------
-            */
-
+            // No active login session
             if (
                 !data ||
                 !data.session
             ) {
-
-                window.location.replace(
-                    LOGIN_PAGE
-                );
-
+                redirectToLogin();
                 return;
             }
 
-
-            /*
-            -------------------------------------------------
-            User is logged in
-            -------------------------------------------------
-            */
-
+            // Login exists
             window.currentSchoolUser =
                 data.session.user;
 
-
-            /*
-            Show page
-            */
-
+            // Show page
             document.documentElement.style.visibility =
                 "visible";
 
-
-            /*
-            -------------------------------------------------
-            Listen for authentication changes
-            -------------------------------------------------
-            */
-
-            supabaseClient.auth.onAuthStateChange(
+            // Watch logout
+            client.auth.onAuthStateChange(
                 function (event, session) {
 
                     if (
                         event === "SIGNED_OUT" ||
                         !session
                     ) {
-
-                        window.location.replace(
-                            LOGIN_PAGE
-                        );
-
+                        redirectToLogin();
                     }
 
                 }
             );
 
-
         } catch (error) {
 
             console.error(
-                "Authentication protection error:",
+                "Authentication error:",
                 error
             );
 
-            window.location.replace(
-                LOGIN_PAGE
-            );
-
+            redirectToLogin();
         }
-
     }
 
-
-    /*
-    -----------------------------------------------------
-    Start
-    -----------------------------------------------------
-    */
-
-    startAuthProtection();
-
+    checkLogin();
 
 })();
