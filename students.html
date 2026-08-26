@@ -209,36 +209,6 @@ tr:hover{
     color:#1261a0;
 }
 
-
-/* VIEW MODAL */
-.view-modal{
-    display:none;
-    position:fixed;
-    z-index:9999;
-    inset:0;
-    background:rgba(0,0,0,.55);
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-}
-.view-modal.show{display:flex;}
-.view-box{
-    width:min(700px,100%);
-    max-height:90vh;
-    overflow:auto;
-    background:#fff;
-    border-radius:16px;
-    padding:24px;
-    box-shadow:0 15px 50px rgba(0,0,0,.25);
-}
-.view-box h2{margin-top:0;text-align:center;color:#123d72;}
-.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.view-item{background:#f5f8fb;border-radius:9px;padding:11px;}
-.view-item strong{display:block;color:#23456e;margin-bottom:4px;}
-.bulk-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f4f8fc;border-radius:10px;}
-.bulk-delete{background:#d63031;color:#fff;}
-.check-cell{width:45px;text-align:center;}
-.check-cell input{width:18px;height:18px;cursor:pointer;}
 @media(max-width:850px){
     .selection{
         grid-template-columns:1fr 1fr;
@@ -412,6 +382,11 @@ tr:hover{
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
 
+        <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-bottom:12px;">
+            <span id="selectedCount" style="font-weight:bold;">ಆಯ್ಕೆ: 0</span>
+            <button type="button" class="btn-delete" onclick="deleteSelectedStudents()">🗑️ ಆಯ್ಕೆ ಮಾಡಿದವರನ್ನು Delete</button>
+        </div>
+
         <div id="loading" class="loading" style="display:none;">
             Loading...
         </div>
@@ -422,6 +397,9 @@ tr:hover{
 
                 <thead>
                     <tr>
+                        <th style="width:55px;text-align:center;">
+                            <input type="checkbox" id="selectAll" title="ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ" onclick="toggleSelectAll(this)">
+                        </th>
                         <th>Roll No</th>
                         <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
                         <th>ತಂದೆಯ ಹೆಸರು</th>
@@ -451,16 +429,6 @@ tr:hover{
 
 </div>
 
-
-<div id="viewModal" class="view-modal" onclick="closeViewModal(event)">
-  <div class="view-box" onclick="event.stopPropagation()">
-    <h2>👁️ ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ</h2>
-    <div id="viewContent" class="view-grid"></div>
-    <div class="actions" style="justify-content:center;">
-      <button class="btn-clear" type="button" onclick="closeViewModal()">✖ Close</button>
-    </div>
-  </div>
-</div>
 
 <script>
 
@@ -826,9 +794,10 @@ function renderStudents(students){
 
         tr.innerHTML = `
 
-            <td class="check-cell">
-                <input type="checkbox" class="student-check" value="${safe(student.id)}" onchange="updateSelectedCount()">
+            <td style="text-align:center;">
+                <input type="checkbox" class="student-check" value="${safe(student.id)}" onchange="updateSelectAllState()">
             </td>
+
             <td>${safe(student.roll_no)}</td>
 
             <td>${safe(student.student_name)}</td>
@@ -849,16 +818,9 @@ function renderStudents(students){
 
             <td>
                 <button
-                    type="button"
-                    class="btn-load small-btn"
-                    onclick='viewStudent(${JSON.stringify(student)})'>
-                    👁 View
-                </button>
-                <button
-                    type="button"
                     class="btn-update small-btn"
                     onclick='editStudent(${JSON.stringify(student)})'>
-                    ✏️ Edit
+                    Edit
                 </button>
             </td>
 
@@ -871,52 +833,25 @@ function renderStudents(students){
 
 
 /* =========================================================
-   VIEW STUDENT
+   SELECT ALL STUDENTS
    ========================================================= */
-function viewStudent(student){
-    const items = [
-        ["Roll No / Reg No", student.roll_no],
-        ["ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು", student.student_name],
-        ["ತಂದೆಯ ಹೆಸರು", student.father_name],
-        ["ತಾಯಿಯ ಹೆಸರು", student.mother_name],
-        ["ಲಿಂಗ / Gender", student.gender],
-        ["ಜನ್ಮ ದಿನಾಂಕ / DOB", formatDate(student.dob)],
-        ["SATS No", student.sats_no],
-        ["ಜಾತಿ / Caste", student.caste],
-        ["ಮೊಬೈಲ್ ಸಂಖ್ಯೆ", student.mobile],
-        ["ತರಗತಿ / Class", student.class_name],
-        ["ವಿಭಾಗ / Division", student.division]
-    ];
-    document.getElementById("viewContent").innerHTML = items.map(function(item){
-        return `<div class="view-item"><strong>${safe(item[0])}</strong>${safe(item[1])}</div>`;
-    }).join("");
-    document.getElementById("viewModal").classList.add("show");
-}
 
-function closeViewModal(event){
-    if(event && event.target !== document.getElementById("viewModal")) return;
-    document.getElementById("viewModal").classList.remove("show");
-}
-
-/* =========================================================
-   SELECT ALL + BULK DELETE
-   ========================================================= */
-function toggleAllStudents(checked){
+function toggleSelectAll(master){
     document.querySelectorAll(".student-check").forEach(function(cb){
-        cb.checked = checked;
+        cb.checked = master.checked;
     });
-    document.getElementById("selectAllStudents").checked = checked;
-    document.getElementById("selectAllStudentsHeader").checked = checked;
-    updateSelectedCount();
 }
 
-function updateSelectedCount(){
-    const checks = Array.from(document.querySelectorAll(".student-check"));
-    const selected = checks.filter(cb => cb.checked).length;
-    document.getElementById("selectedCount").textContent = selected + " ಆಯ್ಕೆ";
-    const all = checks.length > 0 && selected === checks.length;
-    document.getElementById("selectAllStudents").checked = all;
-    document.getElementById("selectAllStudentsHeader").checked = all;
+function updateSelectAllState(){
+    const all = document.querySelectorAll(".student-check");
+    const checked = document.querySelectorAll(".student-check:checked");
+    const master = document.getElementById("selectAll");
+    if(master){
+        master.checked = all.length > 0 && checked.length === all.length;
+        master.indeterminate = checked.length > 0 && checked.length < all.length;
+    }
+    const count = document.getElementById("selectedCount");
+    if(count) count.textContent = "ಆಯ್ಕೆ: " + checked.length;
 }
 
 async function deleteSelectedStudents(){
@@ -924,29 +859,22 @@ async function deleteSelectedStudents(){
         .map(cb => cb.value).filter(Boolean);
 
     if(!ids.length){
-        showMessage("ದಯವಿಟ್ಟು Delete ಮಾಡಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ.", "error");
+        showMessage("ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ.", "error");
         return;
     }
 
-    const ok = confirm(ids.length + " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲು ಖಚಿತವೇ?\n\nಈ ವಿದ್ಯಾರ್ಥಿಗಳು ಪಟ್ಟಿಯಿಂದ ಮಾತ್ರ ತೆಗೆದುಹಾಕಲಾಗುತ್ತಾರೆ.");
-    if(!ok) return;
+    if(!confirm(ids.length + " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲು ಖಚಿತವೇ?")) return;
 
     try{
-        showMessage("ಆಯ್ಕೆ ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲಾಗುತ್ತಿದೆ...", "info");
-        const { error } = await db
-            .from("students")
+        const {error} = await db.from("students")
             .update({is_active:false})
             .in("id", ids);
-
         if(error) throw error;
-
-        showMessage("✅ " + ids.length + " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ Delete ಮಾಡಲಾಗಿದೆ.", "success");
-        document.getElementById("selectAllStudents").checked = false;
-        document.getElementById("selectAllStudentsHeader").checked = false;
+        showMessage("✅ ಆಯ್ಕೆ ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲಾಗಿದೆ.", "success");
         await loadStudents();
     }catch(error){
-        console.error("BULK DELETE ERROR:", error);
-        showMessage("Bulk Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " + getSupabaseError(error), "error");
+        console.error(error);
+        showMessage("Delete Error: " + getSupabaseError(error), "error");
     }
 }
 
