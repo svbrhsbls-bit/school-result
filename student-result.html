@@ -391,21 +391,36 @@ function getDivision(student){
 }
 
 /* Current Marks Entry rules */
+function isKannadaSubject(subject){
+    const name = String(
+        subject?.subject_name ??
+        subject?.name ??
+        ""
+    ).trim().toLowerCase();
+
+    /* Kannada is identified by subject name, NOT by subject_code.
+       Therefore changing the code in Subject Master will never
+       break the Kannada maximum-mark rule. */
+    return name === "ಕನ್ನಡ" ||
+           name.includes("kannada");
+}
+
 function getMaxMarks(student, examType, subject){
     const cls=getClass(student);
+    const kannada=isKannadaSubject(subject);
 
     if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
         if(cls==="8") return 50;
 
         if(cls==="9" || cls==="10")
-            return subject.subject_code==="01K" ? 100 : 80;
+            return kannada ? 100 : 80;
     }
 
     if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
         if(cls==="8") return 100;
 
         if(cls==="9" || cls==="10")
-            return subject.subject_code==="01K" ? 125 : 100;
+            return kannada ? 125 : 100;
     }
 
     return Number(subject.max_marks || 100);
@@ -469,6 +484,7 @@ function clearResult(){
 let appSettings = {
     school_name: "",
     school_address: "",
+    exam_name: "",
     head_teacher_name: "",
     class_teacher_8: "",
     class_teacher_9: "",
@@ -497,11 +513,17 @@ async function loadAppSettings(){
             appSettings = {
                 school_name: String(data.school_name ?? "").trim(),
                 school_address: String(data.school_address ?? "").trim(),
+                exam_name: String(data.exam_name ?? "").trim(),
                 head_teacher_name: String(data.head_teacher_name ?? "").trim(),
                 class_teacher_8: String(data.class_teacher_8 ?? "").trim(),
                 class_teacher_9: String(data.class_teacher_9 ?? "").trim(),
                 class_teacher_10: String(data.class_teacher_10 ?? "").trim(),
-                academic_year: String(data.academic_year ?? "2026-27").trim()
+                academic_year: String(
+                    data.academic_year ??
+                    data.school_year ??
+                    data.academicYear ??
+                    "2026-27"
+                ).trim()
             };
 
             const school = $("schoolNameHeader");
@@ -553,6 +575,18 @@ function examDisplayName(examType){
     if(examType === "HALF_YEARLY") return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
     if(examType === "ANNUAL") return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
     return examType || "";
+}
+
+/* Settingsನಲ್ಲಿ ಪರೀಕ್ಷೆಯ ಹೆಸರು ಇದ್ದರೆ headerನಲ್ಲಿ ಅದನ್ನೇ ತೋರಿಸಿ.
+   Settings tableನಲ್ಲಿ exam_name column ಇಲ್ಲದಿದ್ದರೂ Result page error ಆಗಬಾರದು. */
+function getExamHeaderName(results){
+    const configured = String(appSettings.exam_name || "").trim();
+    if(configured) return configured;
+
+    return (results || [])
+        .map(r => examDisplayName(r.exam_type))
+        .filter(Boolean)
+        .join(" / ");
 }
 
 /* =========================================================
@@ -626,13 +660,24 @@ async function viewResult(){
            2. Load subjects for student's class
         --------------------------------------------- */
         const className=student.class_name;
+        const normalizedStudentClass=normalizeClass(className);
 
-        const {data:subjects,error:subjectError}=await db
+        /* Load active Subject Master rows and match class after
+           normalizing 8 / 9 / 10. This prevents Kannada/English/
+           other codes from being lost because of different class
+           text such as 8, 8th, 8ನೇ ತರಗತಿ, etc. */
+        const {data:allSubjectRows,error:subjectError}=await db
             .from("subjects")
             .select("*")
-            .eq("class_name",className)
             .eq("is_active",true)
             .order("display_order",{ascending:true});
+
+        if(subjectError)
+            throw subjectError;
+
+        const subjects=(allSubjectRows || []).filter(s =>
+            normalizeClass(s.class_name) === normalizedStudentClass
+        );
 
         if(subjectError)
             throw subjectError;
@@ -642,51 +687,120 @@ async function viewResult(){
                 `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
             );
 
-/* =========================================================
-   CURRENT SUBJECT MASTER CODE
-   Student Result → Subject Master code only
-========================================================= */
+        /* ---------------------------------------------
+           SUBJECT MASTER → STUDENT RESULT — LIVE CODE
 
-function getCurrentSubjectCode(subject){
+           IMPORTANT:
+           1. Subject Code is NEVER hard-coded here.
+           2. The value displayed in Student Result is always
+              subjects.subject_code from the CURRENT Subject Master row.
+           3. If old duplicate rows exist for the same subject,
+              the row with the highest numeric id is treated as
+              the latest/current Subject Master row.
+           4. Old subject IDs are retained only for finding marks
+              that were already entered earlier.
+        --------------------------------------------- */
+        const normalizeSubjectName = (name) =>
+            String(name || "")
+                .trim()
+                .replace(/\s+/g, " ")
+                .toLowerCase();
 
-    const name = String(subject?.subject_name || "")
-        .trim()
-        .toLowerCase();
+        /*
+           SUBJECT MASTER CURRENT ROWS ONLY
 
-    const codeMap = {
-        "ಕನ್ನಡ": "01K",
-        "ಕನ್ನಡ ಭಾಷೆ": "01K",
+           Your Subject Master table stores one row per subject and
+           uses display_order (1,2,3...) to define the subject list.
+           Older rows with old codes/names may still exist in Supabase.
 
-        "english": "31E",
-        "ಇಂಗ್ಲಿಷ್": "31E",
-        "ಇಂಗ್ಲೀಷ್": "31E",
+           Therefore we select ONLY the latest row for each
+           display_order. This is important because grouping by
+           subject_name is not safe: the old record may say "ಇಂಗ್ಲಿಷ್"
+           while the current Subject Master record says "English".
 
-        "hindi": "61H",
-        "ಹಿಂದಿ": "61H",
+           Example:
+             old  -> 02E / ಇಂಗ್ಲಿಷ್
+             current -> 31E / English
+           Result must show ONLY 31E / English.
+        */
+        const subjectGroups = new Map();
 
-        "mathematics": "81K",
-        "maths": "81K",
-        "ಗಣಿತ": "81K",
+        (subjects || []).forEach(subject => {
+            const order = Number(subject.display_order);
 
-        "science": "83K",
-        "ವಿಜ್ಞಾನ": "83K",
+            /*
+              display_order is the identity of the Subject Master
+              position. If it is missing, use subject name only as
+              a fallback so the record is not lost.
+            */
+            const key = Number.isFinite(order) && order > 0
+                ? `ORDER_${order}`
+                : `NAME_${normalizeSubjectName(subject.subject_name)}`;
 
-        "social science": "85K",
-        "socialscience": "85K",
-        "ಸಮಾಜ ವಿಜ್ಞಾನ": "85K"
-    };
+            if(!subjectGroups.has(key))
+                subjectGroups.set(key, []);
 
-    /* Subject Master current code */
-    if(codeMap[name]){
-        return codeMap[name];
-    }
+            subjectGroups.get(key).push(subject);
+        });
 
-    /* ಬೇರೆ subject ಇದ್ದರೆ Subject Master code */
-    return String(subject?.subject_code || "").trim() || "-";
-}
+        const uniqueSubjects = [];
 
-/* 8, 9, 10ಕ್ಕೆ 6 subjects ಮಾತ್ರ */
-const subjectsForResult = uniqueSubjects.slice(0, 6);
+        subjectGroups.forEach(group => {
+            /*
+              Latest Subject Master row = highest numeric id.
+              This ensures an old 02E row does not appear together
+              with the current 31E row.
+            */
+            group.sort((a,b) => {
+                const aid = Number(a.id);
+                const bid = Number(b.id);
+
+                if(Number.isFinite(aid) && Number.isFinite(bid) && aid !== bid)
+                    return bid - aid;
+
+                const au = new Date(
+                    a.updated_at || a.created_at || 0
+                ).getTime();
+
+                const bu = new Date(
+                    b.updated_at || b.created_at || 0
+                ).getTime();
+
+                if(Number.isFinite(au) && Number.isFinite(bu) && au !== bu)
+                    return bu - au;
+
+                return 0;
+            });
+
+            const current = {...group[0]};
+
+            /*
+              Keep old IDs only for retrieving previously saved marks.
+              They are NEVER rendered as subjects/codes.
+            */
+            current._allSubjectIds = group
+                .map(x => x.id)
+                .filter(id => id !== null && id !== undefined);
+
+            uniqueSubjects.push(current);
+        });
+
+        uniqueSubjects.sort((a,b) => {
+            const ao = Number(a.display_order);
+            const bo = Number(b.display_order);
+
+            if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo)
+                return ao - bo;
+
+            return Number(a.id || 0) - Number(b.id || 0);
+        });
+
+        /*
+          FINAL RESULT LIST:
+          Only the current Subject Master row for each display_order.
+          Old subject codes are not displayed.
+        */
+        const subjectsForResult = uniqueSubjects;
 
         /* ---------------------------------------------
            3. Load only published results
@@ -774,11 +888,7 @@ function renderResult(student,subjects,results,marksMap){
                 ${esc(appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
             </h2>
             <div class="exam-name">
-                ${esc(
-                    results.length === 1
-                        ? examDisplayName(results[0].exam_type)
-                        : results.map(r => examDisplayName(r.exam_type)).filter(Boolean).join(" / ")
-                )}
+                ${esc(getExamHeaderName(results))}
             </div>
             <div class="academic-year">
                 ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year || "2026-27")}
@@ -925,7 +1035,13 @@ function renderExam(student,subjects,result,marksMap){
             </td>
 
             <td>
-                ${esc(subject.subject_code)}
+                ${esc(
+                    String(
+                        subject.subject_code ??
+                        subject.code ??
+                        ""
+                    ).trim() || "-"
+                )}
             </td>
 
             <td>
@@ -965,7 +1081,7 @@ function renderExam(student,subjects,result,marksMap){
 
     return `
         <div class="exam-title">
-            📝 ${esc(result.exam_type==="HALF_YEARLY" ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type==="ANNUAL" ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type)}
+            📝 ${esc(examDisplayName(result.exam_type))}
         </div>
 
         <div class="exam-status">
