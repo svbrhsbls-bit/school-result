@@ -642,95 +642,48 @@ async function viewResult(){
                 `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
             );
 
-        /* =========================================================
-   SUBJECT MASTER CODE ONLY
-   Subject Masterನಲ್ಲಿ ACTIVE ಆಗಿರುವ ಹೊಸ code ಮಾತ್ರ display ಆಗಬೇಕು.
-   ಹಳೆಯ KAN / ENG / HIN ಮುಂತಾದ duplicate codes display ಆಗಬಾರದು.
+/* =========================================================
+   CURRENT SUBJECT MASTER CODE
+   Student Result → Subject Master code only
 ========================================================= */
 
-const normalizeSubjectName = (name) =>
-    String(name || "")
+function getCurrentSubjectCode(subject){
+
+    const name = String(subject?.subject_name || "")
         .trim()
-        .replace(/\s+/g, " ")
         .toLowerCase();
 
-const uniqueSubjects = [];
-const subjectGroups = new Map();
+    const codeMap = {
+        "ಕನ್ನಡ": "01K",
+        "ಕನ್ನಡ ಭಾಷೆ": "01K",
 
-/* Same subject name ಇರುವ records ಅನ್ನು group ಮಾಡುವುದು */
-subjects.forEach(subject => {
+        "english": "31E",
+        "ಇಂಗ್ಲಿಷ್": "31E",
+        "ಇಂಗ್ಲೀಷ್": "31E",
 
-    const key = normalizeSubjectName(subject.subject_name);
+        "hindi": "61H",
+        "ಹಿಂದಿ": "61H",
 
-    if(!subjectGroups.has(key)){
-        subjectGroups.set(key, []);
+        "mathematics": "81K",
+        "maths": "81K",
+        "ಗಣಿತ": "81K",
+
+        "science": "83K",
+        "ವಿಜ್ಞಾನ": "83K",
+
+        "social science": "85K",
+        "socialscience": "85K",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ": "85K"
+    };
+
+    /* Subject Master current code */
+    if(codeMap[name]){
+        return codeMap[name];
     }
 
-    subjectGroups.get(key).push(subject);
-});
-
-
-/* ಪ್ರತಿಯೊಂದು subjectಗೆ Subject Masterನ ಹೊಸ code ಇರುವ record ಆಯ್ಕೆ */
-subjectGroups.forEach(group => {
-
-    group.sort((a,b) => {
-
-        const codeA = String(a.subject_code || "").trim();
-        const codeB = String(b.subject_code || "").trim();
-
-        /*
-           Subject Master ಹೊಸ codes ಸಾಮಾನ್ಯವಾಗಿ:
-           01K
-           31E
-           61H
-           81K
-           83K
-           85K
-
-           ಹಳೆಯ codes:
-           KAN
-           ENG
-           HIN
-           MAT
-           SCI
-           SOC
-
-           ಆದ್ದರಿಂದ numeric-prefix codeಗೆ priority.
-        */
-
-        const newCodeA = /^\d+[A-Za-z]+$/.test(codeA);
-        const newCodeB = /^\d+[A-Za-z]+$/.test(codeB);
-
-        if(newCodeA && !newCodeB) return -1;
-        if(!newCodeA && newCodeB) return 1;
-
-        return Number(a.display_order || 999) -
-               Number(b.display_order || 999);
-    });
-
-
-    /* Subject Master record */
-    const chosen = {...group[0]};
-
-
-    /*
-       Marks Entryನಲ್ಲಿ ಹಳೆಯ subject ID ಅಥವಾ
-       ಹೊಸ subject ID ಬಳಸಿ marks save ಆಗಿದ್ದರೂ
-       marks ಹುಡುಕಲು ಎಲ್ಲಾ IDs ಉಳಿಸಿಕೊಳ್ಳುತ್ತೇವೆ.
-    */
-    chosen._allSubjectIds = group.map(x => x.id);
-
-
-    uniqueSubjects.push(chosen);
-});
-
-
-/* Subject Master Display Order ಪ್ರಕಾರ */
-uniqueSubjects.sort((a,b) =>
-    Number(a.display_order || 999) -
-    Number(b.display_order || 999)
-);
-
+    /* ಬೇರೆ subject ಇದ್ದರೆ Subject Master code */
+    return String(subject?.subject_code || "").trim() || "-";
+}
 
 /* 8, 9, 10ಕ್ಕೆ 6 subjects ಮಾತ್ರ */
 const subjectsForResult = uniqueSubjects.slice(0, 6);
