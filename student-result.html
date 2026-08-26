@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Student Result</title>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-setupDOBResultInput();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box}
@@ -248,161 +246,6 @@ td.subject{text-align:left;font-weight:700}
     table{min-width:0;font-size:11px}
     th,td{padding:5px}
 }
-
-/* =========================================================
-   DOB: Text + Calendar
-   Mobile friendly
-========================================================= */
-.dob-input-wrap{
-    position:relative;
-    width:100%;
-    display:flex;
-    align-items:center;
-}
-
-.dob-input-wrap #dob{
-    width:100%;
-    min-width:0;
-    padding-right:48px;
-    box-sizing:border-box;
-}
-
-.dob-calendar-btn{
-    position:absolute;
-    right:4px;
-    top:50%;
-    transform:translateY(-50%);
-    width:40px;
-    height:38px;
-    padding:0;
-    border:0;
-    background:transparent;
-    cursor:pointer;
-    font-size:21px;
-    line-height:1;
-    z-index:2;
-}
-
-.dob-hidden-calendar{
-    position:absolute!important;
-    width:1px!important;
-    height:1px!important;
-    opacity:0!important;
-    pointer-events:none!important;
-    padding:0!important;
-    border:0!important;
-}
-
-.dob-help{
-    display:block;
-    margin-top:4px;
-    font-size:11px;
-    color:#777;
-}
-
-@media(max-width:600px){
-    .dob-input-wrap #dob{
-        min-height:44px;
-        font-size:16px;
-    }
-
-    .dob-calendar-btn{
-        width:44px;
-        height:42px;
-        font-size:22px;
-    }
-}
-
-/* MOBILE RESULT + DOB RESPONSIVE */
-
-html,body{
-    width:100%;
-    max-width:100%;
-    overflow-x:hidden;
-}
-
-*,*::before,*::after{
-    box-sizing:border-box;
-}
-
-@media(max-width:700px){
-    .container{
-        width:100%;
-        max-width:100%;
-        padding:0 7px;
-    }
-
-    .header{
-        padding:12px 8px;
-    }
-
-    .header h1{
-        font-size:19px!important;
-        line-height:1.35;
-        overflow-wrap:anywhere;
-    }
-
-    .header p{
-        font-size:11px;
-        line-height:1.45;
-    }
-
-    .card{
-        width:100%;
-        max-width:100%;
-        padding:10px;
-        overflow:hidden;
-    }
-
-    .search-grid{
-        grid-template-columns:1fr!important;
-        gap:9px;
-    }
-
-    #rollNumber,#dob{
-        width:100%;
-        min-width:0;
-        min-height:44px;
-        font-size:16px;
-    }
-
-    .student-info{
-        grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    }
-
-    .table-wrap{
-        width:100%;
-        max-width:100%;
-        overflow:hidden;
-    }
-
-    table{
-        width:100%;
-        max-width:100%;
-        min-width:0!important;
-        table-layout:fixed;
-        font-size:9px;
-    }
-
-    th,td{
-        padding:4px 2px;
-        overflow-wrap:anywhere;
-        word-break:break-word;
-        white-space:normal;
-    }
-
-    .summary{
-        grid-template-columns:repeat(2,minmax(0,1fr))!important;
-    }
-}
-
-@media(max-width:380px){
-    .container{padding:0 4px;}
-    .card{padding:8px;}
-    table{font-size:8px;}
-    th,td{padding:3px 1px;}
-}
-
 </style>
 </head>
 
@@ -428,38 +271,9 @@ html,body{
             </div>
 
             <div>
-        <label for="dob">Date of Birth</label>
-
-        <div class="dob-input-wrap">
-            <input
-                id="dob"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                maxlength="10"
-                placeholder="DD-MM-YYYY"
-                aria-label="Date of Birth"
-            >
-
-            <button
-                type="button"
-                class="dob-calendar-btn"
-                id="dobCalendarBtn"
-                title="Calendar ಮೂಲಕ Date ಆಯ್ಕೆ ಮಾಡಿ"
-                aria-label="Calendar ಮೂಲಕ Date ಆಯ್ಕೆ ಮಾಡಿ"
-            >📅</button>
-
-            <input
-                id="dobCalendar"
-                type="date"
-                class="dob-hidden-calendar"
-                tabindex="-1"
-                aria-hidden="true"
-            >
-        </div>
-
-        <small class="dob-help">ಉದಾ: 24-08-2012</small>
-    </div>
+                <label for="dob">Date of Birth</label>
+                <input id="dob" type="text" inputmode="numeric" autocomplete="off" maxlength="10" placeholder="DD-MM-YYYY">
+            </div>
         </div>
 
         <div class="button-row">
@@ -655,6 +469,43 @@ function hideMessage(){
     $("message").textContent="";
 }
 
+function formatDobInput(value){
+    let digits = String(value || "").replace(/\D/g, "").slice(0,8);
+    if(digits.length > 4) {
+        return digits.slice(0,2) + "-" + digits.slice(2,4) + "-" + digits.slice(4);
+    }
+    if(digits.length > 2) {
+        return digits.slice(0,2) + "-" + digits.slice(2);
+    }
+    return digits;
+}
+
+function getDobIso(){
+    const value = $("dob").value.trim();
+    const m = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if(!m) return "";
+
+    const day = Number(m[1]);
+    const month = Number(m[2]);
+    const year = Number(m[3]);
+    const d = new Date(year, month - 1, day);
+
+    if(d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day)
+        return "";
+
+    return `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+}
+
+$("dob").addEventListener("input", function(){
+    const cursor = this.selectionStart || 0;
+    const before = this.value.slice(0,cursor).replace(/\D/g, "").length;
+    this.value = formatDobInput(this.value);
+    let pos = before;
+    if(pos > 2) pos += 1;
+    if(pos > 5) pos += 1;
+    this.setSelectionRange(Math.min(pos,this.value.length), Math.min(pos,this.value.length));
+});
+
 function clearResult(){
     $("rollNumber").value="";
     $("dob").value="";
@@ -775,103 +626,6 @@ function getExamHeaderName(results){
         .join(" / ");
 }
 
-
-/* =========================================================
-   DOB TEXT + CALENDAR FOR STUDENT RESULT
-========================================================= */
-function dobIsoToDisplay(value){
-    if(!value) return "";
-    const s=String(value).trim();
-
-    if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
-        const [y,m,d]=s.split("-");
-        return `${d}-${m}-${y}`;
-    }
-    return s;
-}
-
-function dobDisplayToIso(value){
-    if(!value) return null;
-
-    const s=String(value).trim();
-
-    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-    const m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/);
-    if(!m) return null;
-
-    const d=String(m[1]).padStart(2,"0");
-    const mo=String(m[2]).padStart(2,"0");
-    const y=m[3];
-
-    const dt=new Date(Number(y),Number(mo)-1,Number(d));
-
-    if(
-        dt.getFullYear()!==Number(y) ||
-        dt.getMonth()!==Number(mo)-1 ||
-        dt.getDate()!==Number(d)
-    ) return null;
-
-    return `${y}-${mo}-${d}`;
-}
-
-function setupDOBResultInput(){
-    const text=document.getElementById("dob");
-    const calendar=document.getElementById("dobCalendar");
-    const button=document.getElementById("dobCalendarBtn");
-
-    if(!text || !calendar || !button) return;
-
-    text.addEventListener("input",function(){
-        let v=this.value.replace(/\D/g,"").substring(0,8);
-
-        if(v.length>4)
-            v=v.substring(0,2)+"-"+v.substring(2,4)+"-"+v.substring(4);
-        else if(v.length>2)
-            v=v.substring(0,2)+"-"+v.substring(2);
-
-        this.value=v;
-
-        const iso=dobDisplayToIso(v);
-        if(iso) calendar.value=iso;
-    });
-
-    button.addEventListener("click",function(){
-        const iso=dobDisplayToIso(text.value);
-        if(iso) calendar.value=iso;
-
-        try{
-            if(typeof calendar.showPicker==="function")
-                calendar.showPicker();
-            else{
-                calendar.focus();
-                calendar.click();
-            }
-        }catch(e){
-            calendar.focus();
-            calendar.click();
-        }
-    });
-
-    calendar.addEventListener("change",function(){
-        text.value=dobIsoToDisplay(this.value);
-    });
-
-    text.addEventListener("blur",function(){
-        if(!this.value) return;
-
-        const iso=dobDisplayToIso(this.value);
-
-        if(!iso){
-            showMessage("ಜನ್ಮ ದಿನಾಂಕ DD-MM-YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ. ಉದಾ: 24-08-2012","error");
-            return;
-        }
-
-        this.value=dobIsoToDisplay(iso);
-        calendar.value=iso;
-    });
-}
-
 /* =========================================================
    VIEW RESULT
 ========================================================= */
@@ -882,7 +636,7 @@ async function viewResult(){
     await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
-    const dob=dobDisplayToIso($("dob").value);
+    const dob=getDobIso();
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
@@ -891,7 +645,7 @@ async function viewResult(){
     }
 
     if(!dob){
-        showMessage("Date of Birth ಆಯ್ಕೆ ಮಾಡಿ.","error");
+        showMessage("Date of Birth ಅನ್ನು DD-MM-YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ. ಉದಾ: 28-08-2026","error");
         $("dob").focus();
         return;
     }
@@ -1262,6 +1016,12 @@ function renderResult(student,subjects,results,marksMap){
 /* =========================================================
    RENDER ONE EXAM
 ========================================================= */
+function formatMarkNumber(value){
+    const n = Number(value);
+    if(!Number.isFinite(n)) return "0";
+    return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
+}
+
 function renderExam(student,subjects,result,marksMap){
 
     let total=0;
@@ -1422,12 +1182,12 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${total.toFixed(2)}</b>
+                <b>${formatMarkNumber(total)}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${maximum.toFixed(2)}</b>
+                <b>${formatMarkNumber(maximum)}</b>
             </div>
 
             <div class="summary-box">
