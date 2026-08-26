@@ -642,66 +642,98 @@ async function viewResult(){
                 `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
             );
 
-        /* ---------------------------------------------
-           IMPORTANT: Subject Masterನಲ್ಲಿ ಹಳೆಯ code + ಹೊಸ
-           code ಎರಡೂ ಇದ್ದರೆ ಒಂದೇ subject ಎರಡು ಬಾರಿ ಬರುತ್ತದೆ.
-           Student Resultನಲ್ಲಿ 6 subjects ಮಾತ್ರ ತೋರಿಸಬೇಕು.
-           ಒಂದೇ subject_nameಗೆ ಒಂದು record ಮಾತ್ರ ತೆಗೆದುಕೊಳ್ಳುತ್ತೇವೆ.
-           ಹೊಸ preferred code ಇದ್ದರೆ ಅದಕ್ಕೆ priority.
-        --------------------------------------------- */
-        const preferredCodes = [
-            "01K", "31E", "61H", "81K", "83K", "85K",   
-        ];
+        /* =========================================================
+   SUBJECT MASTER CODE ONLY
+   Subject Masterನಲ್ಲಿ ACTIVE ಆಗಿರುವ ಹೊಸ code ಮಾತ್ರ display ಆಗಬೇಕು.
+   ಹಳೆಯ KAN / ENG / HIN ಮುಂತಾದ duplicate codes display ಆಗಬಾರದು.
+========================================================= */
 
-        const normalizeSubjectName = (name) =>
-            String(name || "")
-                .trim()
-                .replace(/\\s+/g, " ")
-                .toLowerCase();
+const normalizeSubjectName = (name) =>
+    String(name || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
 
-        const uniqueSubjects = [];
-        const subjectGroups = new Map();
+const uniqueSubjects = [];
+const subjectGroups = new Map();
 
-        subjects.forEach(subject => {
-            const key = normalizeSubjectName(subject.subject_name);
-            if(!subjectGroups.has(key)) subjectGroups.set(key, []);
-            subjectGroups.get(key).push(subject);
-        });
+/* Same subject name ಇರುವ records ಅನ್ನು group ಮಾಡುವುದು */
+subjects.forEach(subject => {
 
-        subjectGroups.forEach(group => {
-            group.sort((a,b) => {
-                const ai = preferredCodes.indexOf(String(a.subject_code || "").trim());
-                const bi = preferredCodes.indexOf(String(b.subject_code || "").trim());
+    const key = normalizeSubjectName(subject.subject_name);
 
-                const ap = ai === -1 ? 999 : ai;
-                const bp = bi === -1 ? 999 : bi;
+    if(!subjectGroups.has(key)){
+        subjectGroups.set(key, []);
+    }
 
-                if(ap !== bp) return ap - bp;
+    subjectGroups.get(key).push(subject);
+});
 
-                return Number(a.display_order || 999) -
-                       Number(b.display_order || 999);
-            });
 
-            /*
-               Keep ALL duplicate subject IDs internally.
-               Marks Entry may have saved marks against the old
-               subject ID (for example KAN) while the preferred
-               Subject Master record is the new ID (01K).
-               The result page must still display only one subject,
-               but it must be able to find marks from either ID.
-            */
-            const chosen = {...group[0]};
-            chosen._allSubjectIds = group.map(x => x.id);
-            uniqueSubjects.push(chosen);
-        });
+/* ಪ್ರತಿಯೊಂದು subjectಗೆ Subject Masterನ ಹೊಸ code ಇರುವ record ಆಯ್ಕೆ */
+subjectGroups.forEach(group => {
 
-        uniqueSubjects.sort((a,b) =>
-            Number(a.display_order || 999) -
-            Number(b.display_order || 999)
-        );
+    group.sort((a,b) => {
 
-        /* Exactly the six regular subjects for Classes 8/9/10 */
-        const subjectsForResult = uniqueSubjects.slice(0, 6);
+        const codeA = String(a.subject_code || "").trim();
+        const codeB = String(b.subject_code || "").trim();
+
+        /*
+           Subject Master ಹೊಸ codes ಸಾಮಾನ್ಯವಾಗಿ:
+           01K
+           31E
+           61H
+           81K
+           83K
+           85K
+
+           ಹಳೆಯ codes:
+           KAN
+           ENG
+           HIN
+           MAT
+           SCI
+           SOC
+
+           ಆದ್ದರಿಂದ numeric-prefix codeಗೆ priority.
+        */
+
+        const newCodeA = /^\d+[A-Za-z]+$/.test(codeA);
+        const newCodeB = /^\d+[A-Za-z]+$/.test(codeB);
+
+        if(newCodeA && !newCodeB) return -1;
+        if(!newCodeA && newCodeB) return 1;
+
+        return Number(a.display_order || 999) -
+               Number(b.display_order || 999);
+    });
+
+
+    /* Subject Master record */
+    const chosen = {...group[0]};
+
+
+    /*
+       Marks Entryನಲ್ಲಿ ಹಳೆಯ subject ID ಅಥವಾ
+       ಹೊಸ subject ID ಬಳಸಿ marks save ಆಗಿದ್ದರೂ
+       marks ಹುಡುಕಲು ಎಲ್ಲಾ IDs ಉಳಿಸಿಕೊಳ್ಳುತ್ತೇವೆ.
+    */
+    chosen._allSubjectIds = group.map(x => x.id);
+
+
+    uniqueSubjects.push(chosen);
+});
+
+
+/* Subject Master Display Order ಪ್ರಕಾರ */
+uniqueSubjects.sort((a,b) =>
+    Number(a.display_order || 999) -
+    Number(b.display_order || 999)
+);
+
+
+/* 8, 9, 10ಕ್ಕೆ 6 subjects ಮಾತ್ರ */
+const subjectsForResult = uniqueSubjects.slice(0, 6);
 
         /* ---------------------------------------------
            3. Load only published results
