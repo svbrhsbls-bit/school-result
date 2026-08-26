@@ -29,7 +29,7 @@ button{border:0;border-radius:8px;padding:11px 18px;font-size:15px;font-weight:7
 .school h2,.school h3,.school p{margin:4px}
 .student-head{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
 .info-box{border:1px solid #d8e4eb;background:#f8fbfd;border-radius:7px;padding:9px}
-table{width:100%;border-collapse:collapse}
+table{width:100%;border-collapse:collapse}.announcement-stats{max-width:850px;margin:0 auto}
 th,td{border:1px solid #bbc8d2;padding:7px;text-align:center}
 th{background:#087db5;color:#fff}
 .left{text-align:left}
@@ -45,7 +45,22 @@ th{background:#087db5;color:#fff}
  .container{width:100%;margin:0}
  .card{box-shadow:none;border:0;padding:0}
  .report{overflow:visible}
- @page{size:A4 landscape;margin:8mm}
+ .student-page{
+   page-break-after:always;
+   break-after:page;
+   min-height:270mm;
+   display:flex;
+   flex-direction:column;
+ }
+ .student-page:last-child{page-break-after:auto;break-after:auto}
+ .student-signatures{
+   margin-top:auto;
+   display:flex;
+   justify-content:space-between;
+   padding-top:25mm;
+   font-weight:700;
+ }
+ @page{size:A4 portrait;margin:10mm}
 }
 </style>
 </head>
@@ -298,7 +313,8 @@ function studentInfo(d){
  </div>`;
 }
 function progressHTML(d){
- return header("📄 ಪ್ರಗತಿ ವರದಿ")+
+ return `<div class="student-page">`+
+ header("📄 ಪ್ರಗತಿ ವರದಿ")+
  studentInfo(d)+
  `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಅಂಕ</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
  d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.max}</td><td>${x.grade||"-"}</td></tr>`).join("")+
@@ -308,24 +324,124 @@ function progressHTML(d){
   <div class="sum">Percentage <b>${d.percentage.toFixed(2)}%</b></div>
   <div class="sum">Grade <b>${d.grade}</b></div>
   <div class="sum">Result <b>${d.resultText}</b></div>
+ </div>
+ <div class="student-signatures">
+   <div>ತರಗತಿ ಶಿಕ್ಷಕರು</div>
+   <div>ಮುಖ್ಯ ಶಿಕ್ಷಕರು</div>
+ </div>
  </div>`;
 }
+function countStats(rows){
+ const stats={registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}};
+ rows.forEach(d=>{
+  const g=String(d.student.gender||d.student.sex||"").trim().toLowerCase();
+  const male=["male","m","ಗಂಡು","ಪುರುಷ"].includes(g);
+  const female=["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g);
+  if(male){stats.registered.m++;stats.registered.t++}
+  else if(female){stats.registered.f++;stats.registered.t++}
+  const appeared=d.items.some(x=>x.mark!==""&&x.mark!==null&&x.mark!==undefined);
+  if(appeared){
+   if(male){stats.appeared.m++;stats.appeared.t++}
+   else if(female){stats.appeared.f++;stats.appeared.t++}
+  }
+  if(d.resultText==="PASS"){
+   if(male){stats.passed.m++;stats.passed.t++}
+   else if(female){stats.passed.f++;stats.passed.t++}
+  }else if(d.resultText==="FAIL"){
+   if(male){stats.failed.m++;stats.failed.t++}
+   else if(female){stats.failed.f++;stats.failed.t++}
+  }
+ });
+ return stats;
+}
+function statTable(title, rows){
+ const s=countStats(rows);
+ return `<h3 style="text-align:center">${title}</h3>
+ <table class="announcement-stats">
+ <thead><tr>
+ <th>ವಿವರ</th><th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ </tr></thead><tbody>
+ <tr><td class="left">ದಾಖಲಾತಿ</td><td>${s.registered.m}</td><td>${s.registered.f}</td><td>${s.registered.t}</td></tr>
+ <tr><td class="left">ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು</td><td>${s.appeared.m}</td><td>${s.appeared.f}</td><td>${s.appeared.t}</td></tr>
+ <tr><td class="left">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು</td><td>${s.passed.m}</td><td>${s.passed.f}</td><td>${s.passed.t}</td></tr>
+ <tr><td class="left">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು</td><td>${s.failed.m}</td><td>${s.failed.f}</td><td>${s.failed.t}</td></tr>
+ </tbody></table>`;
+}
 function schoolHTML(rows){
- return header("🏫 ಶಾಲಾ ಘೋಷಣೆ")+
- `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>${currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"}</b></div>
- <table><thead><tr><th>ಕ್ರಮ</th><th>Roll No</th><th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th><th>ಒಟ್ಟು</th><th>ಗರಿಷ್ಠ</th><th>%</th><th>Grade</th><th>Result</th></tr></thead><tbody>`+
- rows.map((d,i)=>`<tr><td>${i+1}</td><td>${esc(roll(d.student,i))}</td><td class="left">${esc(studentName(d.student))}</td><td>${d.total.toFixed(2)}</td><td>${d.max.toFixed(2)}</td><td>${d.percentage.toFixed(2)}%</td><td>${d.grade}</td><td>${d.resultText}</td></tr>`).join("")+
- `</tbody></table>`;
+ return header("🏫 ಶಾಲಾ ಘೋಷವಾರು")+
+ `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</b></div>`+
+ statTable("ಫಲಿತಾಂಶದ ಸಾರಾಂಶ",rows);
+}
+function subjectStats(rows, sub){
+ const out={registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}};
+ rows.forEach(d=>{
+  const g=String(d.student.gender||d.student.sex||"").trim().toLowerCase();
+  const male=["male","m","ಗಂಡು","ಪುರುಷ"].includes(g);
+  const female=["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g);
+  if(male){out.registered.m++;out.registered.t++}
+  else if(female){out.registered.f++;out.registered.t++}
+  const x=d.items.find(i=>String(i.subjectId)===String(sub.id));
+  const appeared=x && x.mark!=="" && x.mark!==null && x.mark!==undefined;
+  if(appeared){
+   if(male){out.appeared.m++;out.appeared.t++}
+   else if(female){out.appeared.f++;out.appeared.t++}
+   const passed=(d.resultText==="PASS" && Number(x.mark)>=0) ? true : false;
+   // Subject pass is based on the subject grade, not the overall result.
+   const sg=String(x.grade||"");
+   const isPass=sg && sg!=="NC" && sg!=="C";
+   if(isPass){
+    if(male){out.passed.m++;out.passed.t++}
+    else if(female){out.passed.f++;out.passed.t++}
+   }else{
+    if(male){out.failed.m++;out.failed.t++}
+    else if(female){out.failed.f++;out.failed.t++}
+   }
+  }
+ });
+ return out;
 }
 function subjectHTML(rows){
- return header("📚 ವಿಷಯವಾರು ಘೋಷಣೆ")+
- `<table><thead><tr><th>Roll No</th><th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>`+
- currentSubjects.map(s=>`<th>${esc(subjectName(s))}<br><small>${esc(subjectCode(s))}</small></th>`).join("")+
- `</tr></thead><tbody>`+
- rows.map((d,i)=>`<tr><td>${esc(roll(d.student,i))}</td><td class="left">${esc(studentName(d.student))}</td>`+
- d.items.map(x=>`<td>${x.mark===""?"-":x.mark}<br><b>${x.grade||"-"}</b></td>`).join("")+
- `</tr>`).join("")+
- `</tbody></table>`;
+ let htmlOut=header("📚 ವಿಷಯವಾರು ಘೋಷವಾರು")+
+ `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</b></div>
+ <table class="announcement-stats">
+ <thead>
+   <tr>
+     <th rowspan="2">ವಿಷಯ</th>
+     <th colspan="3">ದಾಖಲಾತಿ</th>
+     <th colspan="3">ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು</th>
+     <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು</th>
+     <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು</th>
+   </tr>
+   <tr>
+     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+   </tr>
+ </thead>
+ <tbody>`;
+
+ currentSubjects.forEach(sub=>{
+   const s=subjectStats(rows,sub);
+   htmlOut+=`<tr>
+     <td class="left"><b>${esc(subjectName(sub))}</b>${subjectCode(sub)?`<br><small>[${esc(subjectCode(sub))}]</small>`:""}</td>
+     <td>${s.registered.m}</td>
+     <td>${s.registered.f}</td>
+     <td>${s.registered.t}</td>
+     <td>${s.appeared.m}</td>
+     <td>${s.appeared.f}</td>
+     <td>${s.appeared.t}</td>
+     <td>${s.passed.m}</td>
+     <td>${s.passed.f}</td>
+     <td>${s.passed.t}</td>
+     <td>${s.failed.m}</td>
+     <td>${s.failed.f}</td>
+     <td>${s.failed.t}</td>
+   </tr>`;
+ });
+
+ htmlOut+=`</tbody></table>`;
+ return htmlOut;
 }
 
 async function generate(){
