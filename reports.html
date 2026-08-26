@@ -130,6 +130,48 @@ th{background:#087db5;color:#fff}
   }
 }
 
+
+@media print{
+  @page{
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  body.caste-print-landscape{
+    width:100%;
+  }
+
+  body.caste-print-landscape .caste-summary-table{
+    width:100% !important;
+    table-layout:auto !important;
+    font-size:9px !important;
+  }
+
+  body.caste-print-landscape .caste-summary-table th,
+  body.caste-print-landscape .caste-summary-table td{
+    padding:3px 3px !important;
+    white-space:nowrap !important;
+    overflow:visible !important;
+  }
+
+  body.caste-print-landscape .caste-summary-table th:first-child,
+  body.caste-print-landscape .caste-summary-table td:first-child{
+    width:1% !important;
+    min-width:30px !important;
+  }
+
+  body.caste-print-landscape .caste-summary-table th:nth-child(2),
+  body.caste-print-landscape .caste-summary-table td:nth-child(2){
+    width:1% !important;
+    min-width:55px !important;
+  }
+
+  body.caste-print-landscape .caste-summary-table .gender-head{
+    min-width:34px !important;
+    width:auto !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1004,8 +1046,16 @@ function exportExcel(){
 }
 
 function printReport(){
- if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
- window.print();
+  const isCaste = reportType === "caste";
+  document.body.classList.toggle("caste-print-landscape", isCaste);
+
+  // Give the browser a moment to apply the landscape print CSS.
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{
+      document.body.classList.remove("caste-print-landscape");
+    }, 500);
+  }, 50);
 }
 $("loadBtn").onclick=generate;
 $("excelBtn").onclick=exportExcel;
