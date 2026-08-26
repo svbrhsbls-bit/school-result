@@ -62,6 +62,37 @@ th{background:#087db5;color:#fff}
  }
  @page{size:A4 portrait;margin:10mm}
 }
+
+.caste-summary-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-size:12px;
+}
+.caste-summary-table th,
+.caste-summary-table td{
+  border:1px solid #333;
+  text-align:center;
+  padding:6px 3px;
+  vertical-align:middle;
+}
+.caste-summary-table th{
+  font-weight:700;
+}
+.caste-summary-table .left{
+  text-align:left;
+  padding-left:6px;
+}
+@media print{
+  .caste-summary-table{
+    font-size:10px;
+  }
+  .caste-summary-table th,
+  .caste-summary-table td{
+    padding:4px 2px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -79,9 +110,10 @@ th{background:#087db5;color:#fff}
 <option value="progress">📄 Progress Report Card</option>
 <option value="school">🏫 School Announcement</option>
 <option value="subject">📚 Subject-wise Announcement</option>
+<option value="caste">👥 ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ</option>
 </select>
 </div>
-<div>
+<div id="classBox">
 <label>ತರಗತಿ</label>
 <select id="classSelect">
 <option value="8">8ನೇ ತರಗತಿ</option>
@@ -372,6 +404,208 @@ function schoolHTML(rows){
  `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</b></div>`+
  statTable("ಫಲಿತಾಂಶದ ಸಾರಾಂಶ",rows);
 }
+
+function genderCounts(list){
+ const out={m:0,f:0,t:0};
+ list.forEach(s=>{
+  const g=String(s.gender||s.sex||"").trim().toLowerCase();
+  if(["male","m","ಗಂಡು","ಪುರುಷ"].includes(g))out.m++;
+  else if(["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g))out.f++;
+ });
+ out.t=out.m+out.f;
+ return out;
+}
+function combinedExamStats(allRows){
+ const out={registered:genderCounts(allStudents.filter(s=>{
+   const c=classNumber(
+     s.class_name ?? s.class ?? s.standard ?? s.class_number ?? s.className ?? s.standard_name ?? ""
+   );
+   return ["8","9","10"].includes(c);
+ })), appeared:{m:0,f:0,t:0}, passed:{m:0,f:0,t:0}, failed:{m:0,f:0,t:0}};
+ allRows.forEach(d=>{
+   const g=String(d.student.gender||d.student.sex||"").trim().toLowerCase();
+   const male=["male","m","ಗಂಡು","ಪುರುಷ"].includes(g);
+   const female=["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g);
+   const appeared=d.items.some(x=>x.mark!==""&&x.mark!==null&&x.mark!==undefined);
+   if(appeared){
+     if(male)out.appeared.m++;
+     else if(female)out.appeared.f++;
+   }
+   if(d.resultText==="PASS"){
+     if(male)out.passed.m++;
+     else if(female)out.passed.f++;
+   }else if(d.resultText==="FAIL"){
+     if(male)out.failed.m++;
+     else if(female)out.failed.f++;
+   }
+ });
+ ["appeared","passed","failed"].forEach(k=>out[k].t=out[k].m+out[k].f);
+ return out;
+}
+function combinedSchoolHTML(allRowsByClass){
+ const allRows=[].concat(...Object.values(allRowsByClass));
+ const s=combinedExamStats(allRows);
+ let out=header("🏫 ಶಾಲಾ ಘೋಷವಾರು")+
+ `<div class="annual-note">8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ — ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</div>
+ <table class="announcement-stats">
+ <thead><tr>
+ <th rowspan="2">ತರಗತಿ</th>
+ <th colspan="3">ದಾಖಲಾತಿ</th>
+ <th colspan="3">ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು</th>
+ <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು</th>
+ <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು</th>
+ </tr><tr>
+ <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ </tr></thead><tbody>`;
+
+ ["8","9","10"].forEach(c=>{
+   const rows=allRowsByClass[c]||[];
+   const cs=combinedExamStats(rows);
+   out+=`<tr>
+   <td><b>${c}ನೇ ತರಗತಿ</b></td>
+   <td>${cs.registered.m}</td><td>${cs.registered.f}</td><td>${cs.registered.t}</td>
+   <td>${cs.appeared.m}</td><td>${cs.appeared.f}</td><td>${cs.appeared.t}</td>
+   <td>${cs.passed.m}</td><td>${cs.passed.f}</td><td>${cs.passed.t}</td>
+   <td>${cs.failed.m}</td><td>${cs.failed.f}</td><td>${cs.failed.t}</td>
+   </tr>`;
+ });
+ out+=`<tr style="font-weight:700;background:#eef6fb">
+ <td>ಒಟ್ಟು ಶಾಲೆ</td>
+ <td>${s.registered.m}</td><td>${s.registered.f}</td><td>${s.registered.t}</td>
+ <td>${s.appeared.m}</td><td>${s.appeared.f}</td><td>${s.appeared.t}</td>
+ <td>${s.passed.m}</td><td>${s.passed.f}</td><td>${s.passed.t}</td>
+ <td>${s.failed.m}</td><td>${s.failed.f}</td><td>${s.failed.t}</td>
+ </tr></tbody></table>`;
+ return out;
+}
+function casteHTML(studentList){
+ /*
+   ಜಾತಿವಾರು ವರದಿ — ಬಳಕೆದಾರರು ನೀಡಿದ ಮಾದರಿಯಂತೆ.
+   ಜಾತಿಗಳು FIXED ಆಗಿ:
+   SC, ST, C-1, 2A, 2B, 3A, 3B
+   ಪ್ರತಿ ಜಾತಿಗೆ: ಗಂಡು / ಹೆಣ್ಣು / ಒಟ್ಟು
+   ಸಾಲುಗಳು: 8ನೇ, 9ನೇ, 10ನೇ ಮತ್ತು ಒಟ್ಟು
+   Data source: Students Databaseನ `caste` column ಮಾತ್ರ.
+ */
+ const CASTES = ["SC","ST","C-1","2A","2B","3A","3B"];
+
+ const list=(studentList||[]).filter(s=>{
+   const c=classNumber(s.class_name||"");
+   return ["8","9","10"].includes(c) && s.is_active!==false;
+ });
+
+ const normCaste = v => String(v ?? "").trim().toUpperCase()
+   .replace(/\s+/g,"");
+
+ const normGender = v => String(v ?? "").trim().toLowerCase();
+
+ const rows = {
+   "8": Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+   "9": Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+   "10": Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]))
+ };
+
+ list.forEach(s=>{
+   // ONLY Students Database `caste` column.
+   const caste = normCaste(s.caste);
+   const cls = classNumber(s.class_name||"");
+
+   if(!CASTES.includes(caste) || !rows[cls]) return;
+
+   const g = normGender(s.gender);
+
+   if(["male","m","ಗಂಡು","ಪುರುಷ"].includes(g)){
+     rows[cls][caste].m++;
+   }else if(["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g)){
+     rows[cls][caste].f++;
+   }
+
+   rows[cls][caste].t =
+     rows[cls][caste].m + rows[cls][caste].f;
+ });
+
+ const total = Object.fromEntries(
+   CASTES.map(c=>[c,{m:0,f:0,t:0}])
+ );
+
+ ["8","9","10"].forEach(cls=>{
+   CASTES.forEach(c=>{
+     total[c].m += rows[cls][c].m;
+     total[c].f += rows[cls][c].f;
+     total[c].t += rows[cls][c].t;
+   });
+ });
+
+ let out = header("ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ");
+
+ out += `
+ <div class="annual-note">
+   8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ
+ </div>
+
+ <div style="overflow-x:auto">
+ <table class="announcement-stats caste-summary-table">
+   <thead>
+     <tr>
+       <th rowspan="2">ಕ್ರ.ಸಂ</th>
+       <th rowspan="2">ತರಗತಿ</th>
+       ${CASTES.map(c=>`<th colspan="3">${c}</th>`).join("")}
+       <th colspan="3">ಒಟ್ಟು</th>
+     </tr>
+     <tr>
+       ${CASTES.map(()=>`
+         <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+       `).join("")}
+       <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+     </tr>
+   </thead>
+   <tbody>`;
+
+ const classRows = [
+   ["01","8","8ನೇ ತರಗತಿ"],
+   ["02","9","9ನೇ ತರಗತಿ"],
+   ["03","10","10ನೇ ತರಗತಿ"]
+ ];
+
+ classRows.forEach(([no,cls,label])=>{
+   let cm=0,cf=0,ct=0;
+
+   out += `<tr>
+     <td>${no}</td>
+     <td class="left">${label}</td>`;
+
+   CASTES.forEach(c=>{
+     const x=rows[cls][c];
+     cm+=x.m; cf+=x.f; ct+=x.t;
+     out += `<td>${x.m}</td><td>${x.f}</td><td>${x.t}</td>`;
+   });
+
+   out += `<td>${cm}</td><td>${cf}</td><td>${ct}</td></tr>`;
+ });
+
+ out += `<tr style="font-weight:700;background:#eef6fb">
+   <td></td>
+   <td class="left">ಒಟ್ಟು</td>`;
+
+ let gm=0,gf=0,gt=0;
+
+ CASTES.forEach(c=>{
+   const x=total[c];
+   gm+=x.m; gf+=x.f; gt+=x.t;
+   out += `<td>${x.m}</td><td>${x.f}</td><td>${x.t}</td>`;
+ });
+
+ out += `<td>${gm}</td><td>${gf}</td><td>${gt}</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>`;
+
+ return out;
+}
 function subjectStats(rows, sub){
  const out={registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}};
  rows.forEach(d=>{
@@ -447,10 +681,73 @@ function subjectHTML(rows){
 async function generate(){
  try{
   msg("Report loading...","info");
+  reportType=$("reportType").value;
+
+  // School Announcement and Caste Report combine 8, 9 and 10.
+  if(reportType==="school" || reportType==="caste"){
+    currentExam="ANNUAL";
+    const combined={8:[],9:[],10:[]};
+    const savedClass=currentClass;
+    for(const c of ["8","9","10"]){
+      currentClass=c;
+      const sr=await db.from("students").select("*");
+      if(sr.error)throw sr.error;
+      const clsStudents=(sr.data||[]).filter(s=>{
+        const sc=classNumber(s.class_name||s.class||s.standard||"");
+        return sc===c && s.is_active!==false;
+      });
+      const subs=await db.from("subjects").select("*").eq("is_active",true);
+      if(subs.error)throw subs.error;
+      currentSubjects=uniqueSubjects((subs.data||[]).filter(s=>classNumber(s.class_name||s.class||s.standard||"")===c));
+      const ids=clsStudents.map(s=>s.id);
+      let results=[];
+      if(ids.length){
+        const rr=await db.from("exam_results").select("id,student_id,exam_type,published").in("student_id",ids).eq("exam_type","ANNUAL");
+        if(rr.error)throw rr.error;
+        const rids=(rr.data||[]).map(r=>r.id);
+        let marks=[];
+        if(rids.length){
+          const mr=await db.from("result_marks").select("exam_result_id,subject_id,marks").in("exam_result_id",rids);
+          if(mr.error)throw mr.error;
+          marks=mr.data||[];
+        }
+        const map={}; marks.forEach(m=>map[`${m.exam_result_id}_${m.subject_id}`]=m.marks);
+        results=clsStudents.map(s=>{
+          const r=(rr.data||[]).find(x=>String(x.student_id)===String(s.id));
+          let total=0,max=0,entered=0;
+          const items=currentSubjects.map(sub=>{
+            const value=r?map[`${r.id}_${sub.id}`]:"";
+            const mm=maxMarks(sub); max+=mm;
+            if(value!==""&&value!==null&&value!==undefined){total+=Number(value);entered++}
+            return {subject:subjectName(sub),code:subjectCode(sub),mark:value??"",max:mm,grade:value===""||value===null?"":subjectGrade(value,mm,sub),subjectId:sub.id};
+          });
+          const pct=max?total/max*100:0;
+          return {student:s,result:r,items,total,max,percentage:pct,grade:entered===currentSubjects.length?overallGrade(pct):"-",resultText:entered===currentSubjects.length?passResult(pct):"PENDING"};
+        });
+      }
+      combined[c]=results;
+    }
+    currentClass=savedClass;
+    currentRows=[].concat(...Object.values(combined));
+    if(reportType==="school"){
+      $("reportArea").innerHTML=combinedSchoolHTML(combined);
+    }else{
+      // Caste report uses ONLY the students table and ONLY its `caste` column.
+      const cr=await db.from("students")
+        .select("id,class_name,gender,caste,is_active");
+      if(cr.error) throw cr.error;
+
+      $("reportArea").innerHTML=casteHTML(cr.data||[]);
+    }
+
+    msg("✅ Report ಸಿದ್ಧವಾಗಿದೆ.","success");
+    return;
+  }
+
   await loadBase();
 
-  // The three report types are annual-only.
-  if((reportType==="progress"||reportType==="school"||reportType==="subject") && currentExam!=="ANNUAL"){
+  // Progress and Subject-wise Announcement are annual-only.
+  if((reportType==="progress"||reportType==="subject") && currentExam!=="ANNUAL"){
    msg("ಈ reportಗೆ ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ ಮಾತ್ರ ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ. Excel/PDF/Printಗೆ ಅರ್ಧವಾರ್ಷಿಕ ಆಯ್ಕೆ ಮಾಡಬಹುದು.","error");
    return;
   }
@@ -520,8 +817,12 @@ $("divisionSelect").onchange=()=>{currentRows=[]};
 $("examSelect").onchange=()=>{currentRows=[]};
 $("reportType").onchange=()=>{
  currentRows=[];
- // For the three requested reports, automatically switch to Annual.
- if(["progress","school","subject"].includes($("reportType").value)) $("examSelect").value="ANNUAL";
+ const type=$("reportType").value;
+ if(["progress","school","subject","caste"].includes(type)) $("examSelect").value="ANNUAL";
+ const combined=(type==="school"||type==="caste");
+ $("classBox").style.opacity=combined?"0.55":"1";
+ $("classSelect").disabled=combined;
+ $("divisionSelect").disabled=combined;
 };
 
 loadSettings().catch(e=>console.warn(e));
