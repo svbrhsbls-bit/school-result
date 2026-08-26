@@ -67,7 +67,6 @@
             border-radius: 50%;
 
             background: #17365d;
-
             color: #ffffff;
 
             display: flex;
@@ -84,7 +83,6 @@
             color: #17365d;
 
             font-size: 24px;
-
             line-height: 1.5;
         }
 
@@ -130,7 +128,8 @@
 
             padding: 13px 14px;
 
-            border: 1px solid #cbd5e1;
+            border:
+                1px solid #cbd5e1;
 
             border-radius: 9px;
 
@@ -139,13 +138,16 @@
             outline: none;
 
             transition: 0.2s;
+
+            background: #ffffff;
         }
 
         input:focus {
             border-color: #2e75b6;
 
             box-shadow:
-                0 0 0 3px rgba(46,117,182,0.12);
+                0 0 0 3px
+                rgba(46,117,182,0.12);
         }
 
         .password-box {
@@ -162,7 +164,8 @@
             right: 12px;
             top: 50%;
 
-            transform: translateY(-50%);
+            transform:
+                translateY(-50%);
 
             border: none;
 
@@ -230,7 +233,8 @@
 
             color: #991b1b;
 
-            border: 1px solid #fecaca;
+            border:
+                1px solid #fecaca;
         }
 
         .success {
@@ -240,7 +244,8 @@
 
             color: #166534;
 
-            border: 1px solid #bbf7d0;
+            border:
+                1px solid #bbf7d0;
         }
 
         .footer {
@@ -270,30 +275,45 @@
     </style>
 </head>
 
+
 <body>
 
 <div class="login-container">
 
     <div class="login-card">
 
+        <!-- School Icon -->
         <div class="school-icon">
             SR
         </div>
 
+
+        <!-- School Name -->
         <h1>
             ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ
         </h1>
+
 
         <div class="system-title">
             ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು
         </div>
 
+
+        <!-- System Title -->
         <div class="login-title">
             School Result Management System
         </div>
 
-        <form id="loginForm">
 
+        <!-- LOGIN FORM -->
+        <form
+            id="loginForm"
+            autocomplete="off"
+            novalidate
+        >
+
+
+            <!-- EMAIL -->
             <div class="form-group">
 
                 <label for="email">
@@ -303,14 +323,22 @@
                 <input
                     type="email"
                     id="email"
+                    name="login_email_unique"
                     placeholder="ನಿಮ್ಮ Email ನಮೂದಿಸಿ"
-                    autocomplete="username"
+
+                    autocomplete="off"
+
+                    autocapitalize="none"
+                    autocorrect="off"
+                    spellcheck="false"
+
                     required
                 >
 
             </div>
 
 
+            <!-- PASSWORD -->
             <div class="form-group">
 
                 <label for="password">
@@ -322,16 +350,25 @@
                     <input
                         type="password"
                         id="password"
+                        name="login_password_unique"
                         placeholder="Password ನಮೂದಿಸಿ"
-                        autocomplete="current-password"
+
+                        autocomplete="new-password"
+
+                        autocapitalize="none"
+                        autocorrect="off"
+                        spellcheck="false"
+
                         required
                     >
+
 
                     <button
                         type="button"
                         class="show-password"
                         id="showPassword"
                         title="Password ತೋರಿಸಿ"
+                        aria-label="Password ತೋರಿಸಿ"
                     >
                         👁
                     </button>
@@ -341,6 +378,7 @@
             </div>
 
 
+            <!-- LOGIN BUTTON -->
             <button
                 type="submit"
                 class="login-button"
@@ -352,12 +390,14 @@
         </form>
 
 
+        <!-- MESSAGE -->
         <div
             id="message"
             class="message"
         ></div>
 
 
+        <!-- FOOTER -->
         <div class="footer">
             © School Result Management System
         </div>
@@ -367,269 +407,293 @@
 </div>
 
 
+
 <script>
 
-    /* =====================================================
-       SUPABASE CONFIGURATION
-       ===================================================== */
+/* =========================================================
+   SUPABASE CONFIGURATION
+   ========================================================= */
 
-    const SUPABASE_URL =
-        "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_URL =
+    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
 
-    const SUPABASE_ANON_KEY =
-        "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
-
-
-    /* =====================================================
-       CREATE SUPABASE CLIENT
-       ===================================================== */
-
-    const supabaseClient =
-        window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_ANON_KEY
-        );
+const SUPABASE_ANON_KEY =
+    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
 
-    /* =====================================================
-       ELEMENTS
-       ===================================================== */
+/* =========================================================
+   CREATE SUPABASE CLIENT
+   ========================================================= */
 
-    const loginForm =
-        document.getElementById("loginForm");
-
-    const emailInput =
-        document.getElementById("email");
-
-    const passwordInput =
-        document.getElementById("password");
-
-    const loginButton =
-        document.getElementById("loginButton");
-
-    const message =
-        document.getElementById("message");
-
-    const showPassword =
-        document.getElementById("showPassword");
-
-
-    /* =====================================================
-       SHOW / HIDE PASSWORD
-       ===================================================== */
-
-    showPassword.addEventListener(
-        "click",
-        function () {
-
-            if (
-                passwordInput.type === "password"
-            ) {
-
-                passwordInput.type =
-                    "text";
-
-                showPassword.textContent =
-                    "🙈";
-
-                showPassword.title =
-                    "Password ಮರೆಮಾಡಿ";
-
-            } else {
-
-                passwordInput.type =
-                    "password";
-
-                showPassword.textContent =
-                    "👁";
-
-                showPassword.title =
-                    "Password ತೋರಿಸಿ";
-            }
-
-        }
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
     );
 
 
-    /* =====================================================
-       MESSAGE FUNCTION
-       ===================================================== */
+/* =========================================================
+   GET ELEMENTS
+   ========================================================= */
 
-    function showMessage(
-        text,
-        type
-    ) {
+const loginForm =
+    document.getElementById("loginForm");
 
-        message.textContent =
-            text;
+const emailInput =
+    document.getElementById("email");
 
-        message.className =
-            "message " + type;
+const passwordInput =
+    document.getElementById("password");
+
+const loginButton =
+    document.getElementById("loginButton");
+
+const message =
+    document.getElementById("message");
+
+const showPassword =
+    document.getElementById("showPassword");
+
+
+/* =========================================================
+   IMPORTANT:
+   CLEAR INPUTS WHEN PAGE LOADS
+   ========================================================= */
+
+window.addEventListener(
+    "load",
+    function () {
+
+        emailInput.value = "";
+        passwordInput.value = "";
+
+        emailInput.setAttribute(
+            "autocomplete",
+            "off"
+        );
+
+        passwordInput.setAttribute(
+            "autocomplete",
+            "new-password"
+        );
 
     }
+);
 
 
-    /* =====================================================
-       LOGIN
-       ===================================================== */
+/* =========================================================
+   SHOW / HIDE PASSWORD
+   ========================================================= */
 
-    loginForm.addEventListener(
-        "submit",
-        async function (event) {
+showPassword.addEventListener(
+    "click",
+    function () {
 
-            event.preventDefault();
+        if (
+            passwordInput.type === "password"
+        ) {
 
+            passwordInput.type = "text";
 
-            const email =
-                emailInput.value.trim();
+            showPassword.textContent = "🙈";
 
-            const password =
-                passwordInput.value;
+            showPassword.title =
+                "Password ಮರೆಮಾಡಿ";
 
+        } else {
 
-            if (!email) {
+            passwordInput.type = "password";
 
-                showMessage(
-                    "ದಯವಿಟ್ಟು Email ನಮೂದಿಸಿ.",
-                    "error"
-                );
+            showPassword.textContent = "👁";
 
-                emailInput.focus();
+            showPassword.title =
+                "Password ತೋರಿಸಿ";
+        }
 
-                return;
-            }
-
-
-            if (!password) {
-
-                showMessage(
-                    "ದಯವಿಟ್ಟು Password ನಮೂದಿಸಿ.",
-                    "error"
-                );
-
-                passwordInput.focus();
-
-                return;
-            }
+    }
+);
 
 
-            /* Disable button */
+/* =========================================================
+   MESSAGE FUNCTION
+   ========================================================= */
 
-            loginButton.disabled =
-                true;
+function showMessage(
+    text,
+    type
+) {
 
-            loginButton.textContent =
-                "Login ಆಗುತ್ತಿದೆ...";
+    message.textContent = text;
 
+    message.className =
+        "message " + type;
+
+}
+
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+
+loginForm.addEventListener(
+    "submit",
+    async function (event) {
+
+        event.preventDefault();
+
+
+        const email =
+            emailInput.value.trim();
+
+        const password =
+            passwordInput.value;
+
+
+        /* -----------------------------------------
+           VALIDATE EMAIL
+           ----------------------------------------- */
+
+        if (!email) {
 
             showMessage(
-                "ದಯವಿಟ್ಟು ಕಾಯಿರಿ...",
-                "success"
+                "ದಯವಿಟ್ಟು Email ನಮೂದಿಸಿ.",
+                "error"
             );
 
+            emailInput.focus();
 
-            try {
-
-                const {
-                    data,
-                    error
-                } =
-                    await supabaseClient.auth.signInWithPassword(
-                        {
-                            email: email,
-                            password: password
-                        }
-                    );
+            return;
+        }
 
 
-                /* =============================================
-                   LOGIN ERROR
-                   ============================================= */
+        /* -----------------------------------------
+           VALIDATE PASSWORD
+           ----------------------------------------- */
 
-                if (error) {
+        if (!password) {
 
-                    console.error(
-                        "Login Error:",
-                        error
-                    );
+            showMessage(
+                "ದಯವಿಟ್ಟು Password ನಮೂದಿಸಿ.",
+                "error"
+            );
 
+            passwordInput.focus();
 
-                    showMessage(
-                        "Login ವಿಫಲವಾಗಿದೆ. Email ಅಥವಾ Password ಪರಿಶೀಲಿಸಿ.",
-                        "error"
-                    );
-
-
-                    loginButton.disabled =
-                        false;
-
-                    loginButton.textContent =
-                        "Login";
+            return;
+        }
 
 
-                    return;
-                }
+        /* -----------------------------------------
+           DISABLE BUTTON
+           ----------------------------------------- */
+
+        loginButton.disabled = true;
+
+        loginButton.textContent =
+            "Login ಆಗುತ್ತಿದೆ...";
 
 
-                /* =============================================
-                   LOGIN SUCCESS
-                   ============================================= */
-
-                if (
-                    data &&
-                    data.session
-                ) {
-
-                    showMessage(
-                        "Login ಯಶಸ್ವಿಯಾಗಿದೆ. Dashboard ತೆರೆಯುತ್ತಿದೆ...",
-                        "success"
-                    );
+        showMessage(
+            "ದಯವಿಟ್ಟು ಕಾಯಿರಿ...",
+            "success"
+        );
 
 
-                    /*
-                     Give the success message
-                     a short time to appear.
-                    */
+        try {
 
-                    setTimeout(
-                        function () {
+            /* -------------------------------------
+               SUPABASE LOGIN
+               ------------------------------------- */
 
-                            window.location.replace(
-                                "dashboard.html"
-                            );
+            const {
+                data,
+                error
+            } =
+                await supabaseClient.auth
+                    .signInWithPassword({
 
-                        },
-                        500
-                    );
+                        email: email,
 
+                        password: password
 
-                } else {
-
-                    showMessage(
-                        "Login session ಸಿಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
-                        "error"
-                    );
+                    });
 
 
-                    loginButton.disabled =
-                        false;
+            /* -------------------------------------
+               LOGIN ERROR
+               ------------------------------------- */
 
-                    loginButton.textContent =
-                        "Login";
-
-                }
-
-
-            } catch (error) {
+            if (error) {
 
                 console.error(
-                    "Unexpected Login Error:",
+                    "Login Error:",
                     error
                 );
 
 
                 showMessage(
-                    "Login ಮಾಡುವಾಗ ದೋಷ ಸಂಭವಿಸಿದೆ. Internet connection ಪರಿಶೀಲಿಸಿ.",
+                    "Login ವಿಫಲವಾಗಿದೆ. Email ಅಥವಾ Password ಪರಿಶೀಲಿಸಿ.",
+                    "error"
+                );
+
+
+                loginButton.disabled =
+                    false;
+
+                loginButton.textContent =
+                    "Login";
+
+
+                /*
+                 * Password ಅನ್ನು ಖಾಲಿ ಮಾಡುತ್ತೇವೆ.
+                 */
+                passwordInput.value = "";
+
+                return;
+            }
+
+
+            /* -------------------------------------
+               LOGIN SUCCESS
+               ------------------------------------- */
+
+            if (
+                data &&
+                data.session
+            ) {
+
+                showMessage(
+                    "Login ಯಶಸ್ವಿಯಾಗಿದೆ. Dashboard ತೆರೆಯುತ್ತಿದೆ...",
+                    "success"
+                );
+
+
+                /*
+                 * Login credentials
+                 * screenನಲ್ಲಿ ಉಳಿಯದಂತೆ
+                 * inputಗಳನ್ನು clear ಮಾಡುತ್ತೇವೆ.
+                 */
+
+                emailInput.value = "";
+                passwordInput.value = "";
+
+
+                setTimeout(
+                    function () {
+
+                        window.location.replace(
+                            "dashboard.html"
+                        );
+
+                    },
+                    500
+                );
+
+
+            } else {
+
+                showMessage(
+                    "Login session ಸಿಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
                     "error"
                 );
 
@@ -642,53 +706,102 @@
 
             }
 
-        }
-    );
-
-
-    /* =====================================================
-       IF USER IS ALREADY LOGGED IN
-       ===================================================== */
-
-    async function checkExistingSession() {
-
-        try {
-
-            const {
-                data
-            } =
-                await supabaseClient.auth.getSession();
-
-
-            if (
-                data &&
-                data.session
-            ) {
-
-                /*
-                 Already logged in.
-                 Send directly to Dashboard.
-                */
-
-                window.location.replace(
-                    "dashboard.html"
-                );
-
-            }
 
         } catch (error) {
 
             console.error(
-                "Session check error:",
+                "Unexpected Login Error:",
                 error
             );
+
+
+            showMessage(
+                "Login ಮಾಡುವಾಗ ದೋಷ ಸಂಭವಿಸಿದೆ. Internet connection ಪರಿಶೀಲಿಸಿ.",
+                "error"
+            );
+
+
+            loginButton.disabled =
+                false;
+
+            loginButton.textContent =
+                "Login";
+
+
+            passwordInput.value = "";
 
         }
 
     }
+);
 
 
-    checkExistingSession();
+/* =========================================================
+   CHECK EXISTING LOGIN SESSION
+   ========================================================= */
+
+async function checkExistingSession() {
+
+    try {
+
+        const {
+            data
+        } =
+            await supabaseClient.auth
+                .getSession();
+
+
+        if (
+            data &&
+            data.session
+        ) {
+
+            /*
+             * Already logged in
+             * Dashboardಗೆ ಹೋಗುತ್ತದೆ.
+             */
+
+            window.location.replace(
+                "dashboard.html"
+            );
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Session check error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   START SESSION CHECK
+   ========================================================= */
+
+checkExistingSession();
+
+
+/* =========================================================
+   PREVENT BROWSER BACK CACHE
+   ========================================================= */
+
+window.addEventListener(
+    "pageshow",
+    function (event) {
+
+        if (event.persisted) {
+
+            checkExistingSession();
+
+        }
+
+    }
+);
 
 </script>
 
