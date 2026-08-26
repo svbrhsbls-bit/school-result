@@ -260,6 +260,30 @@ td.subject{text-align:left;font-weight:700}
     table{min-width:0;font-size:11px}
     th,td{padding:5px}
 }
+
+/* Mobile DOB input: numbers only + automatic spaces + calendar button */
+@media(max-width:700px){
+    .dob-wrap{min-width:0;width:100%;}
+    #dob{
+        width:100%;
+        min-height:46px;
+        font-size:16px;
+        letter-spacing:1px;
+        padding:11px 48px 11px 12px;
+    }
+    .dob-calendar{
+        width:42px;
+        height:42px;
+        font-size:22px;
+        right:2px;
+    }
+    .dob-help{font-size:11px;}
+}
+
+@media(max-width:380px){
+    #dob{font-size:15px;padding-left:10px;padding-right:44px;}
+    .dob-calendar{font-size:20px;width:38px;}
+}
 </style>
 </head>
 
@@ -504,6 +528,7 @@ function hideMessage(){
 function clearResult(){
     $("rollNumber").value="";
     $("dob").value="";
+    if($("dobPicker")) $("dobPicker").value="";
     $("resultArea").innerHTML="";
     hideMessage();
 }
@@ -626,26 +651,43 @@ function getExamHeaderName(results){
 ========================================================= */
 
 function formatDobInput(value){
+    /* User types ONLY numbers. Spaces are inserted automatically:
+       28082026 -> 28 08 2026 */
     const digits=String(value||"").replace(/\D/g,"").slice(0,8);
-    if(digits.length>4) return digits.slice(0,2)+" "+digits.slice(2,4)+" "+digits.slice(4);
-    if(digits.length>2) return digits.slice(0,2)+" "+digits.slice(2);
+
+    if(digits.length>4)
+        return digits.slice(0,2)+" "+digits.slice(2,4)+" "+digits.slice(4);
+
+    if(digits.length>2)
+        return digits.slice(0,2)+" "+digits.slice(2);
+
     return digits;
 }
+
 $("dob").addEventListener("input",function(){
     this.value=formatDobInput(this.value);
 });
+
 function openDobCalendar(){
     const picker=$("dobPicker");
     const text=$("dob").value.trim();
     const m=text.match(/^(\d{2})\s(\d{2})\s(\d{4})$/);
-    if(m) picker.value=`${m[3]}-${m[2]}-${m[1]}`;
-    if(typeof picker.showPicker==="function") picker.showPicker();
-    else picker.click();
+
+    if(m)
+        picker.value=`${m[3]}-${m[2]}-${m[1]}`;
+
+    if(typeof picker.showPicker==="function")
+        picker.showPicker();
+    else
+        picker.click();
 }
+
 $("dobPicker").addEventListener("change",function(){
     if(!this.value) return;
+
     const p=this.value.split("-");
-    if(p.length===3) $("dob").value=`${p[2]} ${p[1]} ${p[0]}`;
+    if(p.length===3)
+        $("dob").value=`${p[2]} ${p[1]} ${p[0]}`;
 });
 
 async function viewResult(){
@@ -657,7 +699,25 @@ async function viewResult(){
     const roll=$("rollNumber").value.trim();
     const dobText=$("dob").value.trim();
     const dobMatch=dobText.match(/^(\d{2})\s(\d{2})\s(\d{4})$/);
-    const dob=dobMatch ? `${dobMatch[3]}-${dobMatch[2]}-${dobMatch[1]}` : dobText;
+
+    if(!dobMatch){
+        showMessage("Date of Birth ಅನ್ನು 28 08 2026 ಈ ರೀತಿಯಲ್ಲಿ ನಮೂದಿಸಿ.","error");
+        $("dob").focus();
+        return;
+    }
+
+    const day=Number(dobMatch[1]);
+    const month=Number(dobMatch[2]);
+    const year=Number(dobMatch[3]);
+    const test=new Date(year,month-1,day);
+
+    if(test.getFullYear()!==year || test.getMonth()!==month-1 || test.getDate()!==day){
+        showMessage("ಸರಿಯಾದ Date of Birth ನಮೂದಿಸಿ.","error");
+        $("dob").focus();
+        return;
+    }
+
+    const dob=`${dobMatch[3]}-${dobMatch[2]}-${dobMatch[1]}`;
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
