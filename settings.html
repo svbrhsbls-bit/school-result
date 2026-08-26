@@ -42,10 +42,26 @@ label{display:block;font-weight:700;margin-bottom:7px}
 input{
     width:100%;
     padding:13px;
-    border:1px solid #b9c9d3;
+    border:1px solid #d7e1e7;
     border-radius:8px;
     font-size:16px;
     outline:none;
+    background:#f4f7f9;
+    color:#17324d;
+    cursor:default;
+    transition:.2s;
+}
+input:read-only{
+    background:#f4f7f9;
+    border-color:#d7e1e7;
+    color:#17324d;
+    cursor:not-allowed;
+}
+input:not(:read-only){
+    background:#fff;
+    border-color:#087db5;
+    cursor:text;
+    box-shadow:0 0 0 2px rgba(8,125,181,.08);
 }
 input:focus{
     border-color:#087db5;
@@ -78,6 +94,11 @@ button{
     cursor:pointer;
 }
 .btn-save{background:#168a52;color:#fff}
+.btn-save:disabled{
+    background:#a9b7c0;
+    cursor:not-allowed;
+    opacity:.75;
+}
 .btn-edit{background:#087db5;color:#fff}
 .btn-reset{background:#687582;color:#fff}
 .status{
@@ -121,6 +142,10 @@ button{
 <div class="card">
 
     <h2>🏫 ಶಾಲೆಯ ಮಾಹಿತಿ</h2>
+
+    <div id="lockNote" class="small" style="margin:-4px 0 18px;color:#087db5;font-weight:700;">
+        🔒 ಮಾಹಿತಿ Lock ಆಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಲು “Edit / Unlock” ಒತ್ತಿರಿ.
+    </div>
 
     <div id="status" class="status"></div>
 
@@ -179,16 +204,16 @@ button{
     </div>
 
     <div class="button-row">
-        <button type="button" class="btn-save" onclick="saveSettings()">
+        <button type="button" class="btn-save" id="saveBtn" onclick="saveSettings()" disabled>
             💾 Save / Update
         </button>
 
-        <button type="button" class="btn-edit" onclick="loadSettings()">
-            ✏️ Edit / Reload
+        <button type="button" class="btn-edit" id="editBtn" onclick="enableEdit()">
+            ✏️ Edit / Unlock
         </button>
 
-        <button type="button" class="btn-reset" onclick="resetForm()">
-            ↺ Reset
+        <button type="button" class="btn-reset" id="resetBtn" onclick="cancelEdit()">
+            ↺ Cancel
         </button>
     </div>
 
@@ -231,6 +256,33 @@ const supabaseClient =
 
 function $(id){
     return document.getElementById(id);
+}
+
+const FIELD_IDS = [
+    "schoolName",
+    "headTeacherName",
+    "classTeacher8",
+    "classTeacher9",
+    "classTeacher10",
+    "academicYear"
+];
+
+let editMode = false;
+
+function setLocked(locked){
+    FIELD_IDS.forEach(id => {
+        $(id).readOnly = locked;
+    });
+
+    editMode = !locked;
+
+    $("saveBtn").disabled = locked;
+    $("editBtn").disabled = !locked;
+    $("resetBtn").textContent = locked ? "↺ Reload" : "✖ Cancel";
+
+    $("lockNote").textContent = locked
+        ? "🔒 ಮಾಹಿತಿ Lock ಆಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಲು “Edit / Unlock” ಒತ್ತಿರಿ."
+        : "✏️ Edit Mode: ಈಗ ಮಾಹಿತಿಯನ್ನು ಬದಲಾಯಿಸಬಹುದು. ಮುಗಿದ ನಂತರ Save / Update ಒತ್ತಿರಿ.";
 }
 
 function showStatus(message,type="info"){
@@ -293,12 +345,30 @@ function setFormData(data){
 }
 
 
+function enableEdit(){
+    setLocked(false);
+    hideStatus();
+
+    $("schoolName").focus();
+
+    showStatus(
+        "✏️ Edit Mode ಆರಂಭವಾಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಿದ ನಂತರ Save / Update ಒತ್ತಿರಿ.",
+        "info"
+    );
+}
+
+async function cancelEdit(){
+    setLocked(true);
+    await loadSettings();
+}
+
 /* =========================================================
    LOAD SETTINGS
 ========================================================= */
 
 async function loadSettings(){
 
+    setLocked(true);
     hideStatus();
 
     showStatus(
@@ -328,6 +398,7 @@ async function loadSettings(){
                 class_teacher_10:"",
                 academic_year:"2026-27"
             });
+            setLocked(true);
 
             showStatus(
                 "Settings record ಸಿಗಲಿಲ್ಲ. ಹೊಸ ಮಾಹಿತಿಯನ್ನು Save ಮಾಡಬಹುದು.",
@@ -362,6 +433,14 @@ async function loadSettings(){
 ========================================================= */
 
 async function saveSettings(){
+
+    if(!editMode){
+        showStatus(
+            "🔒 ಮೊದಲು Edit / Unlock ಒತ್ತಿ ನಂತರ ಮಾಹಿತಿಯನ್ನು ಬದಲಾಯಿಸಿ.",
+            "info"
+        );
+        return;
+    }
 
     hideStatus();
 
@@ -419,9 +498,10 @@ async function saveSettings(){
             throw error;
 
         setFormData(updated);
+        setLocked(true);
 
         showStatus(
-            "✅ Settings ಯಶಸ್ವಿಯಾಗಿ Save / Update ಆಗಿದೆ.",
+            "✅ Settings ಯಶಸ್ವಿಯಾಗಿ Save / Update ಆಗಿದೆ. ಮಾಹಿತಿ ಮತ್ತೆ Lock ಮಾಡಲಾಗಿದೆ.",
             "success"
         );
 
@@ -442,18 +522,21 @@ async function saveSettings(){
    RESET
 ========================================================= */
 
-function resetForm(){
+async function cancelEdit(){
 
-    setFormData({
-        school_name:"",
-        head_teacher_name:"",
-        class_teacher_8:"",
-        class_teacher_9:"",
-        class_teacher_10:"",
-        academic_year:"2026-27"
-    });
+    if(!editMode){
+        await loadSettings();
+        return;
+    }
 
-    hideStatus();
+    const confirmed = confirm(
+        "ನೀವು ಮಾಡಿದ ಬದಲಾವಣೆಗಳನ್ನು Cancel ಮಾಡಿ ಹಳೆಯ ಮಾಹಿತಿಯನ್ನು ಮರುಲೋಡ್ ಮಾಡಬೇಕೇ?"
+    );
+
+    if(!confirmed) return;
+
+    setLocked(true);
+    await loadSettings();
 }
 
 
@@ -463,7 +546,10 @@ function resetForm(){
 
 document.addEventListener(
     "DOMContentLoaded",
-    loadSettings
+    () => {
+        setLocked(true);
+        loadSettings();
+    }
 );
 </script>
 
