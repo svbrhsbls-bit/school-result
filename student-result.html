@@ -1028,10 +1028,37 @@ function renderExam(student,subjects,result,marksMap){
             entered++;
         }
 
+        const subjectNameKey = String(
+            subject.subject_name ?? ""
+        ).trim().toLowerCase();
+
+        const subjectNameMap = {
+            "ಕನ್ನಡ": "ಕನ್ನಡ / KANNADA",
+            "kannada": "ಕನ್ನಡ / KANNADA",
+            "ಇಂಗ್ಲಿಷ್": "ಇಂಗ್ಲಿಷ್ / ENGLISH",
+            "english": "ಇಂಗ್ಲಿಷ್ / ENGLISH",
+            "ಹಿಂದಿ": "ಹಿಂದಿ / HINDI",
+            "hindi": "ಹಿಂದಿ / HINDI",
+            "ಗಣಿತ": "ಗಣಿತ / MATHEMATICS",
+            "mathematics": "ಗಣಿತ / MATHEMATICS",
+            "math": "ಗಣಿತ / MATHEMATICS",
+            "maths": "ಗಣಿತ / MATHEMATICS",
+            "ವಿಜ್ಞಾನ": "ವಿಜ್ಞಾನ / SCIENCE",
+            "science": "ವಿಜ್ಞಾನ / SCIENCE",
+            "ಸಮಾಜ ವಿಜ್ಞಾನ": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE",
+            "social science": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE",
+            "social studies": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE"
+        };
+
+        const displaySubjectName =
+            subjectNameMap[subjectNameKey] ||
+            subject.subject_name ||
+            "-";
+
         rows+=`
         <tr>
             <td class="subject">
-                ${esc(subject.subject_name)}
+                ${esc(displaySubjectName)}
             </td>
 
             <td>
@@ -1095,7 +1122,7 @@ function renderExam(student,subjects,result,marksMap){
                 <thead>
                     <tr>
                         <th>ವಿಷಯ</th>
-                        <th>Subject Code</th>
+                        <th>ವಿಷಯ ಕೋಡ್</th>
                         <th>ಅಂಕ</th>
                         <th>ಗರಿಷ್ಠ</th>
                         <th>Grade</th>
@@ -1121,17 +1148,17 @@ function renderExam(student,subjects,result,marksMap){
             </div>
 
             <div class="summary-box">
-                Percentage
+                ಶೇಕಡಾವಾರು
                 <b>${percentage.toFixed(2)}%</b>
             </div>
 
             <div class="summary-box">
-                Overall Grade
+                ಒಟ್ಟು ಶ್ರೇಣಿ
                 <b>${finalGrade}</b>
             </div>
 
             <div class="summary-box">
-                Result
+                ಫಲಿತಾಂಶ
                 <b class="${resultClass}">
                     ${resultText}
                 </b>
