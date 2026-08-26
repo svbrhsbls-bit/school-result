@@ -248,8 +248,9 @@ th{
 <body>
 
 <header>
-    <h1>📝 Marks Entry</h1>
-    <div>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</div>
+    <h1 id="schoolNameHeader">Marks Entry</h1>
+    <div id="examNameHeader">Marks Entry</div>
+    <div id="academicYearHeader"></div>
 </header>
 
 <div class="container">
@@ -784,9 +785,81 @@ function showMessage(text,type){
    LOAD STUDENTS
 ===================================================== */
 
+/* =====================================================
+   SETTINGS — LIVE FROM SETTINGS TABLE
+===================================================== */
+let appSettings = { school_name:"", school_address:"", exam_name:"", academic_year:"", head_teacher_name:"", class_teacher_8:"", class_teacher_9:"", class_teacher_10:"" };
+
+async function loadAppSettings(){
+    try{
+        const {data,error}=await supabaseClient.from("settings").select("*").order("id",{ascending:true}).limit(1).maybeSingle();
+        if(error) throw error;
+        if(!data) return;
+        appSettings={
+            school_name:String(data.school_name??"").trim(),
+            school_address:String(data.school_address??"").trim(),
+            exam_name:String(data.exam_name??"").trim(),
+            academic_year:String(data.academic_year??data.school_year??"").trim(),
+            head_teacher_name:String(data.head_teacher_name??"").trim(),
+            class_teacher_8:String(data.class_teacher_8??"").trim(),
+            class_teacher_9:String(data.class_teacher_9??"").trim(),
+            class_teacher_10:String(data.class_teacher_10??"").trim()
+        };
+        const school=document.getElementById("schoolNameHeader");
+        const exam=document.getElementById("examNameHeader");
+        const year=document.getElementById("academicYearHeader");
+        if(school) school.textContent=appSettings.school_name||"Marks Entry";
+        if(exam) exam.textContent=appSettings.exam_name||"Marks Entry";
+        if(year) year.textContent=appSettings.academic_year ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+appSettings.academic_year : "";
+    }catch(error){ console.warn("Settings Load Error:",error.message||error); }
+}
+
+/* =====================================================
+   SUBJECT MASTER — CURRENT SUBJECTS ONLY
+   Old bilingual/English duplicate rows are collapsed.
+===================================================== */
+function normalizeSubjectKey(name){
+    const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+    const map={
+        "ಕನ್ನಡ":"kannada","kannada":"kannada",
+        "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
+        "ಹಿಂದಿ":"hindi","hindi":"hindi",
+        "ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics",
+        "ವಿಜ್ಞಾನ":"science","science":"science",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science","social science":"social science","socialscience":"social science"
+    };
+    return map[n]||n;
+}
+function chooseLatestSubject(group){
+    return [...group].sort((a,b)=>{
+        const aid=Number(a.id),bid=Number(b.id);
+        if(Number.isFinite(aid)&&Number.isFinite(bid)&&aid!==bid)return bid-aid;
+        const at=new Date(a.updated_at||a.created_at||0).getTime();
+        const bt=new Date(b.updated_at||b.created_at||0).getTime();
+        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return bt-at;
+        return Number(a.display_order||999)-Number(b.display_order||999);
+    })[0];
+}
+function uniqueCurrentSubjects(rows){
+    const groups=new Map();
+    (rows||[]).filter(r=>r.is_active!==false).forEach(row=>{
+        const key=normalizeSubjectKey(subjectName(row));
+        if(!key)return;
+        if(!groups.has(key))groups.set(key,[]);
+        groups.get(key).push(row);
+    });
+    return Array.from(groups.values()).map(chooseLatestSubject).sort((a,b)=>{
+        const ao=Number(a.display_order||999),bo=Number(b.display_order||999);
+        if(ao!==bo)return ao-bo;
+        return Number(a.id||999999)-Number(b.id||999999);
+    });
+}
+
 async function loadStudents(){
 
     try{
+
+        await loadAppSettings();
 
         currentClass =
             classNumber(
@@ -897,74 +970,24 @@ async function loadStudents(){
         }
 
 
-        /* SUBJECTS */
+        /* SUBJECTS — active Subject Master rows, class filtered, duplicates removed */
+        const subjectResponse = await supabaseClient
+            .from("subjects")
+            .select("*")
+            .eq("is_active",true);
 
-        const subjectResponse =
-            await supabaseClient
-                .from("subjects")
-                .select("*");
+        if(subjectResponse.error) throw subjectResponse.error;
 
+        const classSubjectRows=(subjectResponse.data||[]).filter(subject=>{
+            const cls=classNumber(getValue(subject,["class_name","class","standard","className"]));
+            return cls===currentClass;
+        });
 
-        if(subjectResponse.error){
-            throw subjectResponse.error;
-        }
-
-
-        subjects =
-            (subjectResponse.data || [])
-            .filter(subject => {
-
-                const cls =
-                    getValue(
-                        subject,
-                        [
-                            "class_name",
-                            "class",
-                            "standard",
-                            "className"
-                        ]
-                    );
-
-                return(
-                    cls === "" ||
-                    classNumber(cls) === currentClass
-                );
-            });
-
-
-        /*
-          Duplicate subject rows ಇದ್ದರೂ
-          Subject Name ಆಧಾರದಲ್ಲಿ ಒಂದೇ ಬಾರಿ.
-        */
-
-        const seen = new Set();
-
-        subjects =
-            subjects.filter(subject => {
-
-                const key =
-                    subjectName(subject)
-                    .trim()
-                    .toLowerCase()
-                    .replace(/\s+/g," ");
-
-                if(seen.has(key)){
-                    return false;
-                }
-
-                seen.add(key);
-
-                return true;
-            });
-
+        subjects=uniqueCurrentSubjects(classSubjectRows);
 
         if(!subjects.length){
-
-            throw new Error(
-                "Subjects tableನಲ್ಲಿ subjects ಸಿಗಲಿಲ್ಲ."
-            );
+            throw new Error("Subject Masterನಲ್ಲಿ ಈ ತರಗತಿಗೆ active subjects ಸಿಗಲಿಲ್ಲ.");
         }
-
 
         await loadSavedMarks();
 
@@ -3343,6 +3366,8 @@ async function handleExcelUpload(event){
     }
 }
 
+
+loadAppSettings();
 </script>
 
 </body>
