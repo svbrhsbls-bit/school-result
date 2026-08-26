@@ -66,30 +66,67 @@ th{background:#087db5;color:#fff}
 .caste-summary-table{
   width:100%;
   border-collapse:collapse;
-  table-layout:fixed;
-  font-size:12px;
+  table-layout:auto;
+  font-size:11px;
 }
 .caste-summary-table th,
 .caste-summary-table td{
   border:1px solid #333;
   text-align:center;
-  padding:6px 3px;
+  padding:4px 3px;
   vertical-align:middle;
+  white-space:nowrap;
+}
+.caste-summary-table th:first-child,
+.caste-summary-table td:first-child{
+  width:1%;
+  min-width:34px;
+  padding-left:4px;
+  padding-right:4px;
+}
+.caste-summary-table th:nth-child(2),
+.caste-summary-table td:nth-child(2){
+  width:1%;
+  min-width:58px;
+  padding-left:5px;
+  padding-right:5px;
+}
+.caste-summary-table th:nth-child(n+3),
+.caste-summary-table td:nth-child(n+3){
+  width:auto;
+  min-width:0;
 }
 .caste-summary-table th{
   font-weight:700;
+  font-size:10px;
+}
+.caste-summary-table td{
+  font-size:10px;
 }
 .caste-summary-table .left{
-  text-align:left;
-  padding-left:6px;
+  text-align:center;
+}
+.caste-summary-table .gender-head{
+  min-width:38px;
+  width:38px;
+  white-space:nowrap;
+  overflow:visible;
 }
 @media print{
   .caste-summary-table{
-    font-size:10px;
+    width:100%;
+    table-layout:auto;
+    font-size:8px;
   }
   .caste-summary-table th,
   .caste-summary-table td{
-    padding:4px 2px;
+    padding:3px 2px;
+  }
+  .caste-summary-table th{
+    font-size:8px;
+  }
+  .caste-summary-table td{
+    font-size:8px;
   }
 }
 
@@ -169,6 +206,8 @@ let currentExam="ANNUAL";
 let currentClass="8";
 let currentDivision="A";
 let reportType="progress";
+let currentCasteStudents=[];
+let currentCombinedSchool={8:[],9:[],10:[]};
 
 const $=id=>document.getElementById(id);
 
@@ -391,7 +430,7 @@ function statTable(title, rows){
  return `<h3 style="text-align:center">${title}</h3>
  <table class="announcement-stats">
  <thead><tr>
- <th>ವಿವರ</th><th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ <th>ವಿವರ</th><th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
  </tr></thead><tbody>
  <tr><td class="left">ದಾಖಲಾತಿ</td><td>${s.registered.m}</td><td>${s.registered.f}</td><td>${s.registered.t}</td></tr>
  <tr><td class="left">ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು</td><td>${s.appeared.m}</td><td>${s.appeared.f}</td><td>${s.appeared.t}</td></tr>
@@ -455,10 +494,10 @@ function combinedSchoolHTML(allRowsByClass){
  <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು</th>
  <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು</th>
  </tr><tr>
- <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
- <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
- <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
- <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+ <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+ <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+ <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+ <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
  </tr></thead><tbody>`;
 
  ["8","9","10"].forEach(c=>{
@@ -557,9 +596,9 @@ function casteHTML(studentList){
      </tr>
      <tr>
        ${CASTES.map(()=>`
-         <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+         <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
        `).join("")}
-       <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+       <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
      </tr>
    </thead>
    <tbody>`;
@@ -647,10 +686,10 @@ function subjectHTML(rows){
      <th colspan="3">ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು</th>
    </tr>
    <tr>
-     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
-     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
-     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
-     <th>ಗಂಡು</th><th>ಹೆಣ್ಣು</th><th>ಒಟ್ಟು</th>
+     <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+     <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+     <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
+     <th class="gender-head">ಗಂಡು</th><th class="gender-head">ಹೆಣ್ಣು</th><th class="gender-head">ಒಟ್ಟು</th>
    </tr>
  </thead>
  <tbody>`;
@@ -686,12 +725,15 @@ async function generate(){
   // School Announcement and Caste Report combine 8, 9 and 10.
   if(reportType==="school" || reportType==="caste"){
     currentExam="ANNUAL";
+    currentCasteStudents=[];
+    currentCombinedSchool={8:[],9:[],10:[]};
     const combined={8:[],9:[],10:[]};
     const savedClass=currentClass;
     for(const c of ["8","9","10"]){
       currentClass=c;
       const sr=await db.from("students").select("*");
       if(sr.error)throw sr.error;
+      if(!allStudents.length) allStudents=(sr.data||[]).filter(s=>s.is_active!==false);
       const clsStudents=(sr.data||[]).filter(s=>{
         const sc=classNumber(s.class_name||s.class||s.standard||"");
         return sc===c && s.is_active!==false;
@@ -727,6 +769,7 @@ async function generate(){
       }
       combined[c]=results;
     }
+    currentCombinedSchool=combined;
     currentClass=savedClass;
     currentRows=[].concat(...Object.values(combined));
     if(reportType==="school"){
@@ -736,8 +779,9 @@ async function generate(){
       const cr=await db.from("students")
         .select("id,class_name,gender,caste,is_active");
       if(cr.error) throw cr.error;
+      currentCasteStudents=cr.data||[];
 
-      $("reportArea").innerHTML=casteHTML(cr.data||[]);
+      $("reportArea").innerHTML=casteHTML(currentCasteStudents);
     }
 
     msg("✅ Report ಸಿದ್ಧವಾಗಿದೆ.","success");
@@ -772,34 +816,193 @@ async function generate(){
  }
 }
 
-function exportExcel(){
- if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
- const data=[];
- if(reportType==="progress"){
-  currentRows.forEach((d,i)=>d.items.forEach(x=>data.push({
-   "Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student),
-   "ತರಗತಿ":currentClass,"ವಿಭಾಗ":currentDivision,"ಪರೀಕ್ಷೆ":currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
-   "ವಿಷಯ":x.subject,"Subject Code":x.code,"ಅಂಕ":x.mark,"ಗರಿಷ್ಠ ಅಂಕ":x.max,"Grade":x.grade
-  })));
- }else if(reportType==="school"){
-  currentRows.forEach((d,i)=>data.push({
-   "ಕ್ರಮ":i+1,"Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student),
-   "ತರಗತಿ":currentClass,"ವಿಭಾಗ":currentDivision,"ಪರೀಕ್ಷೆ":currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
-   "ಒಟ್ಟು":d.total,"ಗರಿಷ್ಠ":d.max,"Percentage":Number(d.percentage.toFixed(2)),"Grade":d.grade,"Result":d.resultText
-  }));
- }else{
-  currentRows.forEach((d,i)=>{
-   const r={"Roll No":roll(d.student,i),"ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು":studentName(d.student)};
-   d.items.forEach(x=>{r[`${x.subject} [${x.code}]`]=x.mark;r[`${x.subject} Grade`]=x.grade});
-   r["Total"]=d.total;r["Maximum"]=d.max;r["Percentage"]=Number(d.percentage.toFixed(2));r["Grade"]=d.grade;r["Result"]=d.resultText;
-   data.push(r);
-  });
- }
- const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();
- XLSX.utils.book_append_sheet(wb,ws,"Report");
- XLSX.writeFile(wb,`Report_${currentClass}_${currentExam}.xlsx`);
- msg("✅ Excel Download ಆರಂಭವಾಗಿದೆ.","success");
+function addSheet(wb, data, sheetName){
+ const ws=XLSX.utils.aoa_to_sheet(data);
+ ws["!cols"] = data.length ? Array.from({length:data[0].length},()=>({wch:16})) : [];
+ XLSX.utils.book_append_sheet(wb,ws,sheetName);
 }
+
+function genderLabel(g){
+ const x=String(g||"").trim().toLowerCase();
+ if(["male","m","ಗಂಡು","ಪುರುಷ"].includes(x)) return "ಗಂಡು";
+ if(["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(x)) return "ಹೆಣ್ಣು";
+ return "";
+}
+
+function casteExcelData(studentList){
+ const CASTES=["SC","ST","C-1","2A","2B","3A","3B"];
+ const normCaste=v=>String(v??"").trim().toUpperCase().replace(/\s+/g,"");
+ const rows={
+  "8":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+  "9":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+  "10":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]))
+ };
+ (studentList||[]).forEach(s=>{
+  const cls=classNumber(s.class_name||"");
+  const caste=normCaste(s.caste); // Students Database caste column only
+  if(!rows[cls] || !CASTES.includes(caste)) return;
+  const g=genderLabel(s.gender);
+  if(g==="ಗಂಡು") rows[cls][caste].m++;
+  if(g==="ಹೆಣ್ಣು") rows[cls][caste].f++;
+  rows[cls][caste].t=rows[cls][caste].m+rows[cls][caste].f;
+ });
+
+ const total=Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]));
+ ["8","9","10"].forEach(cls=>CASTES.forEach(c=>{
+  total[c].m+=rows[cls][c].m;
+  total[c].f+=rows[cls][c].f;
+  total[c].t+=rows[cls][c].t;
+ }));
+
+ const data=[];
+ data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
+ data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳು"]);
+ data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",
+  ...CASTES.flatMap(c=>[c+" - ಗಂಡು",c+" - ಹೆಣ್ಣು",c+" - ಒಟ್ಟು"]),
+  "ಒಟ್ಟು - ಗಂಡು","ಒಟ್ಟು - ಹೆಣ್ಣು","ಒಟ್ಟು - ಒಟ್ಟು"
+ ]);
+ [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
+  let gm=0,gf=0,gt=0;
+  const row=[no,label];
+  CASTES.forEach(c=>{
+   const x=rows[cls][c];
+   gm+=x.m;gf+=x.f;gt+=x.t;
+   row.push(x.m,x.f,x.t);
+  });
+  row.push(gm,gf,gt);
+  data.push(row);
+ });
+ const totalRow=["","ಒಟ್ಟು"];
+ let gm=0,gf=0,gt=0;
+ CASTES.forEach(c=>{
+  const x=total[c];
+  gm+=x.m;gf+=x.f;gt+=x.t;
+  totalRow.push(x.m,x.f,x.t);
+ });
+ totalRow.push(gm,gf,gt);
+ data.push(totalRow);
+ return data;
+}
+
+function schoolExcelData(){
+ const data=[];
+ data.push(["ಶಾಲಾ ಘೋಷವಾರು"]);
+ data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
+ data.push([
+  "ತರಗತಿ",
+  "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
+ ]);
+ const total={
+  registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}
+ };
+ ["8","9","10"].forEach(c=>{
+  const s=combinedExamStats(currentCombinedSchool[c]||[]);
+  ["registered","appeared","passed","failed"].forEach(k=>{
+   total[k].m+=s[k].m;total[k].f+=s[k].f;total[k].t+=s[k].t;
+  });
+  data.push([
+   c+"ನೇ ತರಗತಿ",
+   s.registered.m,s.registered.f,s.registered.t,
+   s.appeared.m,s.appeared.f,s.appeared.t,
+   s.passed.m,s.passed.f,s.passed.t,
+   s.failed.m,s.failed.f,s.failed.t
+  ]);
+ });
+ data.push([
+  "ಒಟ್ಟು ಶಾಲೆ",
+  total.registered.m,total.registered.f,total.registered.t,
+  total.appeared.m,total.appeared.f,total.appeared.t,
+  total.passed.m,total.passed.f,total.passed.t,
+  total.failed.m,total.failed.f,total.failed.t
+ ]);
+ return data;
+}
+
+function subjectExcelData(){
+ const data=[];
+ data.push(["ವಿಷಯವಾರು ಘೋಷವಾರು"]);
+ data.push(["ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
+ data.push([
+  "ವಿಷಯ",
+  "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
+  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
+ ]);
+ currentSubjects.forEach(sub=>{
+  const s=subjectStats(currentRows,sub);
+  data.push([
+   subjectName(sub)+(subjectCode(sub)?` [${subjectCode(sub)}]`:""),
+   s.registered.m,s.registered.f,s.registered.t,
+   s.appeared.m,s.appeared.f,s.appeared.t,
+   s.passed.m,s.passed.f,s.passed.t,
+   s.failed.m,s.failed.f,s.failed.t
+  ]);
+ });
+ return data;
+}
+
+function progressExcelData(){
+ const data=[];
+ data.push(["ಪ್ರಗತಿ ವರದಿ"]);
+ data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,
+            "ಪರೀಕ್ಷೆ",currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
+ data.push([
+  "Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ",
+  "ವಿಷಯ","Subject Code","ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"
+ ]);
+ currentRows.forEach(d=>{
+  d.items.forEach(x=>{
+   data.push([
+    roll(d.student,0),studentName(d.student),
+    d.student.class_name||currentClass,division(d.student)||currentDivision,
+    x.subject,x.code,x.mark===""?"":Number(x.mark),x.max,x.grade||""
+   ]);
+  });
+  data.push([
+   "","","","",
+   "ಒಟ್ಟು","",Number(d.total.toFixed(2)),Number(d.max.toFixed(2)),
+   d.grade||"-"
+  ]);
+  data.push([
+   "","","","",
+   "Percentage","",Number(d.percentage.toFixed(2)),"Result",d.resultText
+  ]);
+  data.push([]);
+ });
+ return data;
+}
+
+function exportExcel(){
+ const wb=XLSX.utils.book_new();
+ let filename="Report.xlsx";
+
+ if(reportType==="caste"){
+  addSheet(wb,casteExcelData(currentCasteStudents),"ಜಾತಿವಾರು");
+  filename="Caste_Report.xlsx";
+ }else if(reportType==="school"){
+  addSheet(wb,schoolExcelData(),"ಶಾಲಾ ಘೋಷವಾರು");
+  filename="School_Announcement.xlsx";
+ }else if(reportType==="subject"){
+  if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+  addSheet(wb,subjectExcelData(),"ವಿಷಯವಾರು");
+  filename="Subject_Announcement.xlsx";
+ }else if(reportType==="progress"){
+  if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+  addSheet(wb,progressExcelData(),"ಪ್ರಗತಿ ವರದಿ");
+  filename=`Progress_Report_${currentClass}_${currentDivision}.xlsx`;
+ }else{
+  msg("ಈ reportಗೆ Excel format ಸಿದ್ಧವಾಗಿಲ್ಲ.","error");
+  return;
+ }
+
+ XLSX.writeFile(wb,filename);
+ msg("✅ ಆಯ್ಕೆ ಮಾಡಿದ reportನ ಸಂಪೂರ್ಣ Excel format Download ಆಗುತ್ತದೆ.","success");
+}
+
 function printReport(){
  if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
  window.print();
