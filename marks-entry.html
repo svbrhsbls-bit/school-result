@@ -525,246 +525,84 @@ function isKannada(subject){
 ===================================================== */
 
 function maximumMarks(subject){
+    /* Maximum Marks are taken from Subject Master.
+       Exam-wise values are stored in localStorage by subject.html. */
+    const cls=currentClass;
+    const exam=currentExam;
+    const code=String(subjectCode(subject)||'');
+    const saved=localStorage.getItem("subject_marks_" + (
+        cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
+    ) + "_" + exam + "_" + code);
 
-    /* 8ನೇ ತರಗತಿ */
-
-    if(currentClass === "8"){
-
-        if(currentExam === "HALF_YEARLY"){
-            return 50;
-        }
-
-        if(currentExam === "ANNUAL"){
-            return 100;
-        }
+    if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
+        return Number(saved);
     }
 
-
-    /* 9 ಮತ್ತು 10 */
-
-    if(
-        currentClass === "9" ||
-        currentClass === "10"
-    ){
-
-        if(currentExam === "HALF_YEARLY"){
-
-            if(isKannada(subject)){
-                return 100;
-            }
-
-            return 80;
-        }
-
-
-        if(currentExam === "ANNUAL"){
-
-            if(isKannada(subject)){
-                return 125;
-            }
-
-            return 100;
-        }
+    /* Backward-compatible fallback to existing defaults. */
+    if(cls === "8") return 100;
+    if(cls === "9" || cls === "10"){
+        if(exam === "HALF_YEARLY") return isKannada(subject) ? 100 : 80;
+        if(exam === "ANNUAL") return isKannada(subject) ? 125 : 100;
     }
-
-    return 50;
+    return 100;
 }
 
-
 /* =====================================================
-   8TH GRADE
+   PERCENTAGE BASED GRADING
 ===================================================== */
+function percentageOf(mark,max){
+    const m=Number(mark), mx=Number(max);
+    if(!Number.isFinite(m) || !Number.isFinite(mx) || mx<=0) return null;
+    return (m/mx)*100;
+}
+
+function gradeByPercentage(mark,max, bands){
+    const p=percentageOf(mark,max);
+    if(p===null) return "";
+    for(const band of bands){
+        if(p >= band.min) return band.grade;
+    }
+    return bands[bands.length-1]?.grade || "";
+}
+
+const GRADE_8 = [
+    {min:90,grade:"A+"},
+    {min:70,grade:"A"},
+    {min:50,grade:"B+"},
+    {min:30,grade:"B"},
+    {min:0,grade:"C"}
+];
+
+const GRADE_910 = [
+    {min:90,grade:"A+"},
+    {min:80,grade:"A"},
+    {min:70,grade:"B+"},
+    {min:60,grade:"B"},
+    {min:50,grade:"C+"},
+    {min:35,grade:"C"},
+    {min:0,grade:"NC"}
+];
 
 function grade8(mark,max){
-
-    const m = Number(mark);
-
-    if(!Number.isFinite(m)){
-        return "";
-    }
-
-    /*
-    ==========================================
-    8ನೇ ತರಗತಿ - ಅರ್ಧವಾರ್ಷಿಕ
-    50 Marks
-    ==========================================
-    */
-
-    if(
-        currentExam === "HALF_YEARLY" &&
-        max === 50
-    ){
-
-        if(m >= 45) return "A+";
-        if(m >= 35) return "A";
-        if(m >= 25) return "B+";
-        if(m >= 15) return "B";
-
-        return "C";
-    }
-
-
-    /*
-    ==========================================
-    8ನೇ ತರಗತಿ - ವಾರ್ಷಿಕ
-    100 Marks
-    ==========================================
-    */
-
-    if(
-        currentExam === "ANNUAL" &&
-        max === 100
-    ){
-
-        if(m >= 90) return "A+";
-        if(m >= 70) return "A";
-        if(m >= 50) return "B+";
-        if(m >= 30) return "B";
-
-        return "C";
-    }
-
-
-    return "";
+    return gradeByPercentage(mark,max,GRADE_8);
 }
-
-
-/* =====================================================
-   9TH / 10TH GRADE
-===================================================== */
 
 function grade910(mark,subject){
-
-    const m = Number(mark);
-
-    if(!Number.isFinite(m)){
-        return "";
-    }
-
-
-    const kannada =
-        isKannada(subject);
-
-
-    /* ---------------------------------------------
-       HALF YEARLY
-    --------------------------------------------- */
-
-    if(currentExam === "HALF_YEARLY"){
-
-        /* Kannada - 100 */
-
-        if(kannada){
-
-            if(m >= 90) return "A+";
-            if(m >= 80) return "A";
-            if(m >= 70) return "B+";
-            if(m >= 60) return "B";
-            if(m >= 50) return "C+";
-            if(m >= 35) return "C";
-
-            return "NC";
-        }
-
-
-        /* Other five subjects - 80 */
-
-        if(m >= 72) return "A+";
-        if(m >= 64) return "A";
-        if(m >= 56) return "B+";
-        if(m >= 48) return "B";
-        if(m >= 40) return "C+";
-        if(m >= 28) return "C";
-
-        return "NC";
-    }
-
-
-    /* ---------------------------------------------
-       ANNUAL
-    --------------------------------------------- */
-
-    if(currentExam === "ANNUAL"){
-
-        /* Kannada */
-
-        if(kannada){
-
-            if(m >= 112 && m <= 125) return "A+";
-            if(m >= 100) return "A";
-            if(m >= 87) return "B+";
-            if(m >= 75) return "B";
-            if(m >= 63) return "C+";
-            if(m >= 44) return "C";
-
-            return "NC";
-        }
-
-
-        /* Other five subjects */
-
-        if(m >= 90) return "A+";
-        if(m >= 80) return "A";
-        if(m >= 70) return "B+";
-        if(m >= 60) return "B";
-        if(m >= 50) return "C+";
-        if(m >= 35) return "C";
-
-        return "NC";
-    }
-
-
-    return "";
+    /* Kannada and the other five subjects now use the same
+       percentage grading scale. Maximum Marks comes from Subject Master. */
+    return gradeByPercentage(mark,maximumMarks(subject),GRADE_910);
 }
-
-
-/* =====================================================
-   OVERALL GRADE
-===================================================== */
 
 function overallGrade(percentage){
-
-    const p = Number(percentage);
-
-
-    if(currentClass === "8"){
-
-        if(p >= 90) return "A+";
-        if(p >= 70) return "A";
-        if(p >= 50) return "B+";
-        if(p >= 30) return "B";
-
-        return "C";
-    }
-
-
-    if(p >= 90) return "A+";
-    if(p >= 80) return "A";
-    if(p >= 70) return "B+";
-    if(p >= 60) return "B";
-    if(p >= 50) return "C+";
-    if(p >= 35) return "C";
-
-    return "NC";
+    if(currentClass === "8") return gradeByPercentage(percentage,100,GRADE_8);
+    return gradeByPercentage(percentage,100,GRADE_910);
 }
-
 
 function subjectGrade(mark,max,subject){
-
-    if(currentClass === "8"){
-        return grade8(mark,max);
-    }
-
-    if(
-        currentClass === "9" ||
-        currentClass === "10"
-    ){
-        return grade910(mark,subject);
-    }
-
+    if(currentClass === "8") return grade8(mark,max);
+    if(currentClass === "9" || currentClass === "10") return grade910(mark,subject);
     return "";
 }
-
 
 /* =====================================================
    MESSAGE
