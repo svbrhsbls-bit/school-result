@@ -49,16 +49,20 @@ th{background:#087db5;color:#fff}
  .student-page{
    page-break-after:always;
    break-after:page;
-   min-height:270mm;
-   display:flex;
-   flex-direction:column;
+   height:277mm;
+   min-height:277mm;
+   position:relative;
+   display:block;
  }
  .student-page:last-child{page-break-after:auto;break-after:auto}
  .student-signatures{
-   margin-top:auto;
+   position:absolute;
+   left:0;
+   right:0;
+   bottom:5mm;
    display:flex;
    justify-content:space-between;
-   padding-top:25mm;
+   padding-top:0;
    font-weight:700;
  }
  @page{size:A4 portrait;margin:10mm}
