@@ -859,41 +859,79 @@ async function generate(){
  }
 }
 
-
-function mergeExcelHeaderGroups(ws, groups){
-  ws["!merges"] = ws["!merges"] || [];
-  groups.forEach(g=>{
-    ws["!merges"].push({s:{r:g.row,c:g.start},e:{r:g.row,c:g.end}});
-  });
-}
-
-function addSheet(wb, data, sheetName){
+function addSheet(wb, data, sheetName, options={}){
   const ws=XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"] = data.length ? Array.from({length:data[0].length},()=>({wch:16})) : [];
 
-  if(sheetName==="ಶಾಲಾ ಘೋಷವಾರು" || sheetName==="ವಿಷಯವಾರು"){
-    mergeExcelHeaderGroups(ws,[
-      {row:2,start:1,end:3},
-      {row:2,start:4,end:6},
-      {row:2,start:7,end:9},
-      {row:2,start:10,end:12}
-    ]);
-    ws["!merges"].push({s:{r:2,c:0},e:{r:3,c:0}});
-  }
+  const cols=options.cols || (data.length ? data[0].length : 1);
+  ws["!cols"]=Array.from({length:cols},(_,i)=>({
+    wch:(options.widths && options.widths[i]) || (i===0 ? 22 : 13)
+  }));
 
-  if(sheetName==="ಜಾತಿವಾರು"){
-    const groups=[];
-    for(let i=0;i<7;i++){
-      const start=2+(i*3);
-      groups.push({row:2,start:start,end:start+2});
-    }
-    groups.push({row:2,start:23,end:25});
-    mergeExcelHeaderGroups(ws,groups);
-    ws["!merges"].push({s:{r:2,c:0},e:{r:3,c:0}});
-    ws["!merges"].push({s:{r:2,c:1},e:{r:3,c:1}});
+  if(options.merges) ws["!merges"]=options.merges;
+
+  if(options.rowHeights){
+    ws["!rows"]=options.rowHeights.map(h=>({hpt:h}));
   }
 
   XLSX.utils.book_append_sheet(wb,ws,sheetName);
+}
+
+function mergeRange(r1,c1,r2,c2){
+  return {
+    s:{r:r1-1,c:c1-1},
+    e:{r:r2-1,c:c2-1}
+  };
+}
+
+function groupedAnnouncementOptions(totalCols){
+  const merges=[
+    mergeRange(1,1,1,totalCols),
+    mergeRange(2,2,2,totalCols),
+    mergeRange(3,1,4,1)
+  ];
+
+  [[2,4],[5,7],[8,10],[11,13]].forEach(([s,e])=>{
+    merges.push(mergeRange(3,s,3,e));
+  });
+
+  return {
+    cols:totalCols,
+    widths:[
+      27,10,10,10,
+      12,12,12,
+      15,15,15,
+      16,16,16
+    ],
+    merges,
+    rowHeights:[28,24,28,25,22]
+  };
+}
+
+function groupedCasteOptions(totalCols){
+  const merges=[
+    mergeRange(1,1,1,totalCols),
+    mergeRange(2,1,2,totalCols),
+    mergeRange(3,1,4,1),
+    mergeRange(3,2,4,2)
+  ];
+
+  let start=3;
+  for(let i=0;i<8;i++){
+    merges.push(mergeRange(3,start,3,start+2));
+    start+=3;
+  }
+
+  return {
+    cols:totalCols,
+    widths:[
+      8,20,
+      9,9,9,9,9,9,9,9,9,
+      9,9,9,9,9,9,9,9,9,
+      9,9,9,9,9,9,9
+    ],
+    merges,
+    rowHeights:[28,24,28,25,22]
+  };
 }
 
 function genderLabel(g){
@@ -904,119 +942,151 @@ function genderLabel(g){
 }
 
 function casteExcelData(studentList){
- const CASTES=["SC","ST","C-1","2A","2B","3A","3B"];
- const normCaste=v=>String(v??"").trim().toUpperCase().replace(/\s+/g,"");
- const rows={
-  "8":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
-  "9":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
-  "10":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]))
- };
- (studentList||[]).forEach(s=>{
-  const cls=classNumber(s.class_name||"");
-  const caste=normCaste(s.caste); // Students Database caste column only
-  if(!rows[cls] || !CASTES.includes(caste)) return;
-  const g=genderLabel(s.gender);
-  if(g==="ಗಂಡು") rows[cls][caste].m++;
-  if(g==="ಹೆಣ್ಣು") rows[cls][caste].f++;
-  rows[cls][caste].t=rows[cls][caste].m+rows[cls][caste].f;
- });
+  const CASTES=["SC","ST","C-1","2A","2B","3A","3B"];
+  const normCaste=v=>String(v??"").trim().toUpperCase().replace(/\s+/g,"");
 
- const total=Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]));
- ["8","9","10"].forEach(cls=>CASTES.forEach(c=>{
-  total[c].m+=rows[cls][c].m;
-  total[c].f+=rows[cls][c].f;
-  total[c].t+=rows[cls][c].t;
- }));
+  const rows={
+    "8":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+    "9":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
+    "10":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]))
+  };
 
- const data=[];
- data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
- data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳು"]);
- data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",
-  ...CASTES.flatMap(c=>[c+" - ಗಂಡು",c+" - ಹೆಣ್ಣು",c+" - ಒಟ್ಟು"]),
-  "ಒಟ್ಟು - ಗಂಡು","ಒಟ್ಟು - ಹೆಣ್ಣು","ಒಟ್ಟು - ಒಟ್ಟು"
- ]);
- [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
-  let gm=0,gf=0,gt=0;
-  const row=[no,label];
-  CASTES.forEach(c=>{
-   const x=rows[cls][c];
-   gm+=x.m;gf+=x.f;gt+=x.t;
-   row.push(x.m,x.f,x.t);
+  (studentList||[]).forEach(s=>{
+    const cls=classNumber(s.class_name||"");
+    const caste=normCaste(s.caste);
+    if(!rows[cls] || !CASTES.includes(caste)) return;
+
+    const g=genderLabel(s.gender);
+    if(g==="ಗಂಡು") rows[cls][caste].m++;
+    if(g==="ಹೆಣ್ಣು") rows[cls][caste].f++;
+    rows[cls][caste].t=rows[cls][caste].m+rows[cls][caste].f;
   });
-  row.push(gm,gf,gt);
-  data.push(row);
- });
- const totalRow=["","ಒಟ್ಟು"];
- let gm=0,gf=0,gt=0;
- CASTES.forEach(c=>{
-  const x=total[c];
-  gm+=x.m;gf+=x.f;gt+=x.t;
-  totalRow.push(x.m,x.f,x.t);
- });
- totalRow.push(gm,gf,gt);
- data.push(totalRow);
- return data;
+
+  const total=Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]));
+  ["8","9","10"].forEach(cls=>CASTES.forEach(c=>{
+    total[c].m+=rows[cls][c].m;
+    total[c].f+=rows[cls][c].f;
+    total[c].t+=rows[cls][c].t;
+  }));
+
+  const data=[];
+  data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
+  data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
+  data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",...CASTES,"ಒಟ್ಟು"]);
+  data.push(["","",...CASTES.flatMap(()=>["ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]),"ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
+
+  [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
+    let gm=0,gf=0,gt=0;
+    const row=[no,label];
+
+    CASTES.forEach(c=>{
+      const x=rows[cls][c];
+      gm+=x.m; gf+=x.f; gt+=x.t;
+      row.push(x.m,x.f,x.t);
+    });
+
+    row.push(gm,gf,gt);
+    data.push(row);
+  });
+
+  const totalRow=["","ಒಟ್ಟು"];
+  let gm=0,gf=0,gt=0;
+  CASTES.forEach(c=>{
+    const x=total[c];
+    gm+=x.m; gf+=x.f; gt+=x.t;
+    totalRow.push(x.m,x.f,x.t);
+  });
+  totalRow.push(gm,gf,gt);
+  data.push(totalRow);
+
+  return data;
 }
 
 function schoolExcelData(){
- const data=[];
- data.push(["ಶಾಲಾ ಘೋಷವಾರು"]);
- data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
- data.push([
-  "ತರಗತಿ",
-  "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
- ]);
- const total={
-  registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}
- };
- ["8","9","10"].forEach(c=>{
-  const s=combinedExamStats(currentCombinedSchool[c]||[]);
-  ["registered","appeared","passed","failed"].forEach(k=>{
-   total[k].m+=s[k].m;total[k].f+=s[k].f;total[k].t+=s[k].t;
-  });
+  const data=[];
+  data.push(["ಶಾಲಾ ಘೋಷವಾರು"]);
+  data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
   data.push([
-   c+"ನೇ ತರಗತಿ",
-   s.registered.m,s.registered.f,s.registered.t,
-   s.appeared.m,s.appeared.f,s.appeared.t,
-   s.passed.m,s.passed.f,s.passed.t,
-   s.failed.m,s.failed.f,s.failed.t
+    "ತರಗತಿ",
+    "ದಾಖಲಾತಿ","","",
+    "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು","","",
+    "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು","","",
+    "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು","",""
   ]);
- });
- data.push([
-  "ಒಟ್ಟು ಶಾಲೆ",
-  total.registered.m,total.registered.f,total.registered.t,
-  total.appeared.m,total.appeared.f,total.appeared.t,
-  total.passed.m,total.passed.f,total.passed.t,
-  total.failed.m,total.failed.f,total.failed.t
- ]);
- return data;
+  data.push([
+    "",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"
+  ]);
+
+  const total={
+    registered:{m:0,f:0,t:0},
+    appeared:{m:0,f:0,t:0},
+    passed:{m:0,f:0,t:0},
+    failed:{m:0,f:0,t:0}
+  };
+
+  ["8","9","10"].forEach(c=>{
+    const s=combinedExamStats(currentCombinedSchool[c]||[]);
+    ["registered","appeared","passed","failed"].forEach(k=>{
+      total[k].m+=s[k].m;
+      total[k].f+=s[k].f;
+      total[k].t+=s[k].t;
+    });
+
+    data.push([
+      c+"ನೇ ತರಗತಿ",
+      s.registered.m,s.registered.f,s.registered.t,
+      s.appeared.m,s.appeared.f,s.appeared.t,
+      s.passed.m,s.passed.f,s.passed.t,
+      s.failed.m,s.failed.f,s.failed.t
+    ]);
+  });
+
+  data.push([
+    "ಒಟ್ಟು ಶಾಲೆ",
+    total.registered.m,total.registered.f,total.registered.t,
+    total.appeared.m,total.appeared.f,total.appeared.t,
+    total.passed.m,total.passed.f,total.passed.t,
+    total.failed.m,total.failed.f,total.failed.t
+  ]);
+
+  return data;
 }
 
 function subjectExcelData(){
- const data=[];
- data.push(["ವಿಷಯವಾರು ಘೋಷವಾರು"]);
- data.push(["ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
- data.push([
-  "ವಿಷಯ",
-  "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
-  "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
- ]);
- currentSubjects.forEach(sub=>{
-  const s=subjectStats(currentRows,sub);
+  const data=[];
+  data.push(["ವಿಷಯವಾರು ಘೋಷವಾರು"]);
+  data.push(["ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
   data.push([
-   subjectName(sub)+(subjectCode(sub)?` [${subjectCode(sub)}]`:""),
-   s.registered.m,s.registered.f,s.registered.t,
-   s.appeared.m,s.appeared.f,s.appeared.t,
-   s.passed.m,s.passed.f,s.passed.t,
-   s.failed.m,s.failed.f,s.failed.t
+    "ವಿಷಯ",
+    "ದಾಖಲಾತಿ","","",
+    "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು","","",
+    "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು","","",
+    "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು","",""
   ]);
- });
- return data;
+  data.push([
+    "",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು",
+    "ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"
+  ]);
+
+  currentSubjects.forEach(sub=>{
+    const s=subjectStats(currentRows,sub);
+    data.push([
+      subjectName(sub)+(subjectCode(sub)?` [${subjectCode(sub)}]`:""),
+      s.registered.m,s.registered.f,s.registered.t,
+      s.appeared.m,s.appeared.f,s.appeared.t,
+      s.passed.m,s.passed.f,s.passed.t,
+      s.failed.m,s.failed.f,s.failed.t
+    ]);
+  });
+
+  return data;
 }
 
 function progressExcelData(){
@@ -1055,14 +1125,14 @@ function exportExcel(){
  let filename="Report.xlsx";
 
  if(reportType==="caste"){
-  addSheet(wb,casteExcelData(currentCasteStudents),"ಜಾತಿವಾರು");
+  addSheet(wb,casteExcelData(currentCasteStudents),"ಜಾತಿವಾರು",groupedCasteOptions(26));
   filename="Caste_Report.xlsx";
  }else if(reportType==="school"){
-  addSheet(wb,schoolExcelData(),"ಶಾಲಾ ಘೋಷವಾರು");
+  addSheet(wb,schoolExcelData(),"ಶಾಲಾ ಘೋಷವಾರು",groupedAnnouncementOptions(13));
   filename="School_Announcement.xlsx";
  }else if(reportType==="subject"){
   if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
-  addSheet(wb,subjectExcelData(),"ವಿಷಯವಾರು");
+  addSheet(wb,subjectExcelData(),"ವಿಷಯವಾರು",groupedAnnouncementOptions(13));
   filename="Subject_Announcement.xlsx";
  }else if(reportType==="progress"){
   if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
