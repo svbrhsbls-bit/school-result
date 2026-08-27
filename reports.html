@@ -49,8 +49,8 @@ th{background:#087db5;color:#fff}
  .student-page{
    page-break-after:always;
    break-after:page;
-   height:260mm;
-   min-height:260mm;
+   height:270mm;
+   min-height:270mm;
    position:relative;
    display:block;
    overflow:hidden;
@@ -139,13 +139,14 @@ th{background:#087db5;color:#fff}
 
 
 @media print{
-  @page{
+  @page casteLandscape{
     size: A4 landscape;
     margin: 8mm;
   }
 
   body.caste-print-landscape{
     width:100%;
+    page: casteLandscape;
   }
 
   body.caste-print-landscape .caste-summary-table{
