@@ -314,6 +314,11 @@ function isKannada(s){
  return n.includes("kannada")||n.includes("ಕನ್ನಡ")||c==="1"||c==="01";
 }
 function maxMarks(s){
+ const cls=currentClass+"ನೇ ತರಗತಿ";
+ const code=subjectCode(s);
+ const key="subject_marks_"+cls+"_"+currentExam+"_"+code;
+ const saved=localStorage.getItem(key);
+ if(saved!==null && saved!=="" && Number.isFinite(Number(saved))) return Number(saved);
  if(currentClass==="8") return currentExam==="HALF_YEARLY"?50:100;
  if(currentClass==="9"||currentClass==="10"){
   if(currentExam==="HALF_YEARLY")return isKannada(s)?100:80;
@@ -447,7 +452,8 @@ function progressHTML(d){
  d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.max}</td><td>${x.grade||"-"}</td></tr>`).join("")+
  `</tbody></table>
  <div class="summary">
-  <div class="sum">ಒಟ್ಟು <b>${d.total.toFixed(2)} / ${d.max.toFixed(2)}</b></div>
+  <div class="sum">ಪಡೆದ ಅಂಕ <b>${Number.isInteger(d.total)?d.total:d.total.toFixed(2)}</b></div>
+  <div class="sum">ಒಟ್ಟು ಅಂಕ <b>${Number.isInteger(d.max)?d.max:d.max.toFixed(2)}</b></div>
   <div class="sum">Percentage <b>${d.percentage.toFixed(2)}%</b></div>
   <div class="sum">Grade <b>${d.grade}</b></div>
   <div class="sum">Result <b>${d.resultText}</b></div>
