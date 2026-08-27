@@ -257,7 +257,7 @@ function saveExamMarks(cls,exam,code,marks){
 function defaultMarks(cls,exam,code){
 
     if(cls==="8ನೇ ತರಗತಿ"){
-        return 100;
+        return exam==="HALF_YEARLY" ? 50 : 100;
     }
 
     if(cls==="9ನೇ ತರಗತಿ" || cls==="10ನೇ ತರಗತಿ"){
@@ -267,7 +267,7 @@ function defaultMarks(cls,exam,code){
         }
 
         if(exam==="ANNUAL"){
-            return code==="01K" ? 120 : 100;
+            return code==="01K" ? 125 : 100;
         }
     }
 
