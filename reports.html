@@ -49,8 +49,9 @@ th{background:#087db5;color:#fff}
  .student-page{
    page-break-after:always;
    break-after:page;
-   height:270mm;
-   min-height:0;
+   height:281mm;
+   min-height:281mm;
+   max-height:281mm;
    display:flex;
    flex-direction:column;
    break-inside:avoid;
@@ -137,11 +138,6 @@ th{background:#087db5;color:#fff}
 
 
 @media print{
-  @page{
-    size: A4 landscape;
-    margin: 8mm;
-  }
-
   body.caste-print-landscape{
     width:100%;
   }
@@ -1117,13 +1113,27 @@ function printReport(){
   const isCaste = reportType === "caste";
   document.body.classList.toggle("caste-print-landscape", isCaste);
 
-  // Give the browser a moment to apply the landscape print CSS.
+  // Progress/other reports: A4 portrait. Caste report: A4 landscape.
+  // The orientation is injected dynamically because @page cannot be scoped
+  // reliably with a body class. This prevents the student signature block
+  // from being pushed onto a second page.
+  let printOrientationStyle = document.getElementById("printOrientationStyle");
+  if(!printOrientationStyle){
+    printOrientationStyle = document.createElement("style");
+    printOrientationStyle.id = "printOrientationStyle";
+    document.head.appendChild(printOrientationStyle);
+  }
+  printOrientationStyle.textContent = isCaste
+    ? "@media print { @page { size: A4 landscape; margin: 8mm; } }"
+    : "@media print { @page { size: A4 portrait; margin: 8mm; } }";
+
   setTimeout(()=>{
     window.print();
     setTimeout(()=>{
       document.body.classList.remove("caste-print-landscape");
-    }, 500);
-  }, 50);
+      printOrientationStyle.textContent = "";
+    }, 700);
+  }, 80);
 }
 $("loadBtn").onclick=generate;
 $("excelBtn").onclick=exportExcel;
