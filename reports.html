@@ -46,25 +46,31 @@ th{background:#087db5;color:#fff}
  .container{width:100%;margin:0}
  .card{box-shadow:none;border:0;padding:0}
  .report{overflow:visible}
+ .report > hr{display:none!important;margin:0!important;padding:0!important;height:0!important;border:0!important}
  .student-page{
    page-break-after:always;
    break-after:page;
+   page-break-inside:avoid;
+   break-inside:avoid;
+   width:100%;
    height:270mm;
    min-height:270mm;
+   max-height:270mm;
    position:relative;
-   display:block;
+   display:flex;
+   flex-direction:column;
    overflow:hidden;
  }
  .student-page:last-child{page-break-after:auto;break-after:auto}
  .student-signatures{
-   position:absolute;
-   left:0;
-   right:0;
-   bottom:0;
+   margin-top:auto;
+   flex-shrink:0;
+   width:100%;
    display:flex;
    justify-content:space-between;
-   padding:0;
-   margin:0;
+   align-items:flex-end;
+   padding:0 2mm 1mm 2mm;
+   margin-bottom:0;
    font-weight:700;
  }
  @page{size:A4 portrait;margin:10mm}
