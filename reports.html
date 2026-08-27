@@ -6,7 +6,7 @@
 <title>Reports & Print</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="auth-guard.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef6fb;color:#17324d;font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif}
@@ -863,37 +863,43 @@ function addSheet(wb, data, sheetName, options={}){
   const ws=XLSX.utils.aoa_to_sheet(data);
   if(options.merges) ws["!merges"]=options.merges;
   if(options.cols) ws["!cols"]=options.cols;
-  else ws["!cols"]=data.length ? Array.from({length:data[0].length},()=>({wch:16})) : [];
+  else ws["!cols"]=data.length ? Array.from({length:data[0].length},()=>({wch:14})) : [];
   if(options.rows) ws["!rows"]=options.rows;
+  if(options.freeze) ws["!freeze"]=options.freeze;
+  if(options.pageSetup) ws["!pageSetup"]=options.pageSetup;
+  if(options.pageMargins) ws["!pageMargins"]=options.pageMargins;
+  ws["!sheetViews"]=[{showGridLines:false}];
   XLSX.utils.book_append_sheet(wb,ws,sheetName);
   return ws;
 }
 
-/* Excel export helpers — ONLY used by Excel Export.
-   Report screen / Print / PDF code is untouched. */
-function excelCol(n){
-  let s="";
-  while(n>0){let r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}
-  return s;
-}
+/* Excel Export only. The on-screen reports and print/PDF functions above are unchanged. */
 function mergeRange(r1,c1,r2,c2){
   return {s:{r:r1-1,c:c1-1},e:{r:r2-1,c:c2-1}};
 }
-function styleExcelSheet(ws, opts={}){
-  const maxCol=opts.maxCol||1, maxRow=opts.maxRow||1;
-  const merges=opts.merges||[];
-  ws["!merges"]=merges;
-  ws["!cols"]=opts.cols||Array.from({length:maxCol},()=>({wch:14}));
-  ws["!rows"]=opts.rows||Array.from({length:maxRow},()=>({hpt:20}));
-
-  /* These properties are supported by Excel/SheetJS for worksheet layout.
-     The content and headings remain exactly as generated below. */
-  ws["!pageSetup"]={orientation:opts.orientation||"landscape",paperSize:9,fitToWidth:1,fitToHeight:0};
-  ws["!pageMargins"]={left:0.25,right:0.25,top:0.35,bottom:0.35,header:0.15,footer:0.15};
-  ws["!sheetViews"]=[{showGridLines:false}];
-  if(opts.freeze) ws["!freeze"]=opts.freeze;
-  return ws;
+function excelStyle(range, style){
+  const s=range;
+  for(const cell of Object.keys(s)) s[cell].s=style;
 }
+function styleArea(ws, r1,c1,r2,c2, style){
+  for(let r=r1;r<=r2;r++){
+    for(let c=c1;c<=c2;c++){
+      const ref=XLSX.utils.encode_cell({r:r-1,c:c-1});
+      if(!ws[ref]) ws[ref]={v:"",t:"s"};
+      ws[ref].s=style;
+    }
+  }
+}
+const EX_BORDER={style:"thin",color:{rgb:"000000"}};
+const EX_ALL_BORDERS={top:EX_BORDER,bottom:EX_BORDER,left:EX_BORDER,right:EX_BORDER};
+const EX_TITLE={font:{name:"Nirmala UI",sz:14,bold:true},alignment:{horizontal:"center",vertical:"center"}};
+const EX_SUBTITLE={font:{name:"Nirmala UI",sz:12,bold:false},alignment:{horizontal:"left",vertical:"center"}};
+const EX_GROUP={font:{name:"Nirmala UI",sz:12,bold:true},alignment:{horizontal:"center",vertical:"center",wrapText:true},border:EX_ALL_BORDERS};
+const EX_SUBHEAD={font:{name:"Nirmala UI",sz:11,bold:true},alignment:{horizontal:"center",vertical:"center",wrapText:true},border:EX_ALL_BORDERS};
+const EX_DATA={font:{name:"Nirmala UI",sz:11},alignment:{horizontal:"center",vertical:"center"},border:EX_ALL_BORDERS};
+const EX_LEFT={font:{name:"Nirmala UI",sz:11,bold:true},alignment:{horizontal:"left",vertical:"center"},border:EX_ALL_BORDERS};
+const EX_TOTAL={font:{name:"Nirmala UI",sz:11,bold:true},alignment:{horizontal:"center",vertical:"center"},border:EX_ALL_BORDERS};
+
 function genderLabel(g){
   const x=String(g||"").trim().toLowerCase();
   if(["male","m","ಗಂಡು","ಪುರುಷ"].includes(x)) return "ಗಂಡು";
@@ -909,25 +915,20 @@ function casteExcelData(studentList){
    "9":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
    "10":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]))
   };
-
   (studentList||[]).forEach(s=>{
-   const cls=classNumber(s.class_name||"");
-   const caste=normCaste(s.caste);
-   if(!rows[cls] || !CASTES.includes(caste)) return;
-   const g=genderLabel(s.gender);
-   if(g==="ಗಂಡು") rows[cls][caste].m++;
-   if(g==="ಹೆಣ್ಣು") rows[cls][caste].f++;
-   rows[cls][caste].t=rows[cls][caste].m+rows[cls][caste].f;
+    const cls=classNumber(s.class_name||"");
+    const caste=normCaste(s.caste);
+    if(!rows[cls] || !CASTES.includes(caste)) return;
+    const g=genderLabel(s.gender);
+    if(g==="ಗಂಡು") rows[cls][caste].m++;
+    else if(g==="ಹೆಣ್ಣು") rows[cls][caste].f++;
+    rows[cls][caste].t=rows[cls][caste].m+rows[cls][caste].f;
   });
-
   const total=Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}]));
   ["8","9","10"].forEach(cls=>CASTES.forEach(c=>{
-   total[c].m+=rows[cls][c].m;
-   total[c].f+=rows[cls][c].f;
-   total[c].t+=rows[cls][c].t;
+    total[c].m+=rows[cls][c].m; total[c].f+=rows[cls][c].f; total[c].t+=rows[cls][c].t;
   }));
 
-  /* Same multi-row heading structure as the Caste Announcement Excel model. */
   const data=[];
   data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
   data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
@@ -935,53 +936,41 @@ function casteExcelData(studentList){
   data.push(["","",...CASTES.flatMap(()=>["ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]),"ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
 
   [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
-   let gm=0,gf=0,gt=0;
-   const row=[no,label];
-   CASTES.forEach(c=>{
-    const x=rows[cls][c];
-    gm+=x.m;gf+=x.f;gt+=x.t;
-    row.push(x.m,x.f,x.t);
-   });
-   row.push(gm,gf,gt);
-   data.push(row);
+    let gm=0,gf=0,gt=0;
+    const row=[no,label];
+    CASTES.forEach(c=>{
+      const x=rows[cls][c]; gm+=x.m; gf+=x.f; gt+=x.t; row.push(x.m,x.f,x.t);
+    });
+    row.push(gm,gf,gt); data.push(row);
   });
-
-  const totalRow=["","ಒಟ್ಟು"];
-  let gm=0,gf=0,gt=0;
-  CASTES.forEach(c=>{
-   const x=total[c];
-   gm+=x.m;gf+=x.f;gt+=x.t;
-   totalRow.push(x.m,x.f,x.t);
-  });
-  totalRow.push(gm,gf,gt);
-  data.push(totalRow);
-
+  const totalRow=["","ಒಟ್ಟು"]; let gm=0,gf=0,gt=0;
+  CASTES.forEach(c=>{const x=total[c];gm+=x.m;gf+=x.f;gt+=x.t;totalRow.push(x.m,x.f,x.t);});
+  totalRow.push(gm,gf,gt); data.push(totalRow);
   return data;
 }
 
 function casteExcelSheet(wb, studentList){
   const data=casteExcelData(studentList);
-  const ws=addSheet(wb,data,"ಜಾತಿವಾರು");
-  const merges=[
-    mergeRange(1,1,1,26),
-    mergeRange(2,1,2,26),
-    mergeRange(3,1,4,1),
-    mergeRange(3,2,4,2)
-  ];
-  /* 7 caste groups + overall, each 3 columns. */
-  for(let i=0;i<8;i++) merges.push(mergeRange(3,3+i*3,3,5+i*3));
-  styleExcelSheet(ws,{
-    maxCol:26,maxRow:data.length,merges,
-    orientation:"landscape",
-    cols:[
-      {wch:8},{wch:16},
-      ...Array.from({length:24},()=>({wch:8}))
+  const ws=addSheet(wb,data,"ಜಾತಿವಾರು",{
+    merges:[
+      mergeRange(1,1,1,26),
+      mergeRange(2,1,2,26),
+      mergeRange(3,1,4,1),
+      mergeRange(3,2,4,2),
+      ...Array.from({length:8},(_,i)=>mergeRange(3,3+i*3,3,5+i*3))
     ],
-    rows:[
-      {hpt:28},{hpt:24},{hpt:24},{hpt:22},
-      {hpt:22},{hpt:22},{hpt:22},{hpt:22}
-    ]
+    cols:[{wch:8},{wch:16},...Array.from({length:24},()=>({wch:8}))],
+    rows:[{hpt:28},{hpt:25},{hpt:25},{hpt:24},{hpt:22},{hpt:22},{hpt:22},{hpt:22}],
+    pageSetup:{orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0},
+    pageMargins:{left:0.2,right:0.2,top:0.3,bottom:0.3,header:0.1,footer:0.1}
   });
+  styleArea(ws,1,1,1,26,EX_TITLE);
+  styleArea(ws,2,1,2,26,EX_SUBTITLE);
+  styleArea(ws,3,1,4,26,EX_SUBHEAD);
+  styleArea(ws,3,3,3,26,EX_GROUP);
+  styleArea(ws,5,1,data.length,26,EX_DATA);
+  for(let r=5;r<=data.length;r++) styleArea(ws,r,2,r,2,EX_LEFT);
+  styleArea(ws,data.length,1,data.length,26,EX_TOTAL);
   return ws;
 }
 
@@ -989,48 +978,23 @@ function schoolExcelData(){
   const data=[];
   data.push(["ಶಾಲಾ ಘೋಷವಾರು"]);
   data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
-  data.push([
-   "ತರಗತಿ",
-   "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
-  ]);
-  const total={
-   registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}
-  };
+  data.push(["ತರಗತಿ","","","ದಾಖಲಾತಿ","","","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು","","","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು","","","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು","",""]);
+  data.push(["","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
+  const total={registered:{m:0,f:0,t:0},appeared:{m:0,f:0,t:0},passed:{m:0,f:0,t:0},failed:{m:0,f:0,t:0}};
   ["8","9","10"].forEach(c=>{
-   const s=combinedExamStats(currentCombinedSchool[c]||[]);
-   ["registered","appeared","passed","failed"].forEach(k=>{
-    total[k].m+=s[k].m;total[k].f+=s[k].f;total[k].t+=s[k].t;
-   });
-   data.push([
-    c+"ನೇ ತರಗತಿ",
-    s.registered.m,s.registered.f,s.registered.t,
-    s.appeared.m,s.appeared.f,s.appeared.t,
-    s.passed.m,s.passed.f,s.passed.t,
-    s.failed.m,s.failed.f,s.failed.t
-   ]);
+    const s=combinedExamStats(currentCombinedSchool[c]||[]);
+    ["registered","appeared","passed","failed"].forEach(k=>{total[k].m+=s[k].m;total[k].f+=s[k].f;total[k].t+=s[k].t;});
+    data.push([c+"ನೇ ತರಗತಿ",s.registered.m,s.registered.f,s.registered.t,s.appeared.m,s.appeared.f,s.appeared.t,s.passed.m,s.passed.f,s.passed.t,s.failed.m,s.failed.f,s.failed.t]);
   });
-  data.push([
-   "ಒಟ್ಟು ಶಾಲೆ",
-   total.registered.m,total.registered.f,total.registered.t,
-   total.appeared.m,total.appeared.f,total.appeared.t,
-   total.passed.m,total.passed.f,total.passed.t,
-   total.failed.m,total.failed.f,total.failed.t
-  ]);
+  data.push(["ಒಟ್ಟು ಶಾಲೆ",total.registered.m,total.registered.f,total.registered.t,total.appeared.m,total.appeared.f,total.appeared.t,total.passed.m,total.passed.f,total.passed.t,total.failed.m,total.failed.f,total.failed.t]);
   return data;
 }
 
 function schoolExcelSheet(wb){
   const data=schoolExcelData();
-  const ws=addSheet(wb,data,"ಶಾಲಾ ಘೋಷವಾರು");
-  const merges=[mergeRange(1,1,1,13),mergeRange(2,1,2,13)];
-  styleExcelSheet(ws,{
-    maxCol:13,maxRow:data.length,merges,orientation:"landscape",
-    cols:[{wch:16},...Array.from({length:12},()=>({wch:16}))],
-    rows:[{hpt:28},{hpt:24},{hpt:34},{hpt:22},{hpt:22},{hpt:22}]
-  });
+  const merges=[mergeRange(1,1,1,13),mergeRange(2,1,2,13),mergeRange(3,1,4,1),mergeRange(3,2,3,4),mergeRange(3,5,3,7),mergeRange(3,8,3,10),mergeRange(3,11,3,13)];
+  const ws=addSheet(wb,data,"ಶಾಲಾ ಘೋಷವಾರು",{merges,cols:[{wch:16},...Array.from({length:12},()=>({wch:12}))],rows:[{hpt:28},{hpt:24},{hpt:25},{hpt:24},{hpt:22},{hpt:22},{hpt:22},{hpt:22}],pageSetup:{orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0},pageMargins:{left:0.2,right:0.2,top:0.3,bottom:0.3,header:0.1,footer:0.1}});
+  styleArea(ws,1,1,1,13,EX_TITLE); styleArea(ws,2,1,2,13,EX_SUBTITLE); styleArea(ws,3,1,4,13,EX_SUBHEAD); styleArea(ws,3,2,3,13,EX_GROUP); styleArea(ws,5,1,data.length,13,EX_DATA); styleArea(ws,data.length,1,data.length,13,EX_TOTAL); styleArea(ws,5,1,data.length,1,EX_LEFT);
   return ws;
 }
 
@@ -1038,106 +1002,72 @@ function subjectExcelData(){
   const data=[];
   data.push(["ವಿಷಯವಾರು ಘೋಷವಾರು"]);
   data.push(["ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ","ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
-  data.push([
-   "ವಿಷಯ",
-   "ದಾಖಲಾತಿ - ಗಂಡು","ದಾಖಲಾತಿ - ಹೆಣ್ಣು","ದಾಖಲಾತಿ - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಗಂಡು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು",
-   "ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಗಂಡು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಹೆಣ್ಣು","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು - ಒಟ್ಟು"
-  ]);
+  data.push(["ವಿಷಯ","ದಾಖಲಾತಿ","","","ಪರೀಕ್ಷೆಗೆ ಕುಳಿತವರು","","","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಉತ್ತೀರ್ಣರಾದವರು","","","ಪರೀಕ್ಷೆಯಲ್ಲಿ ಅನುತ್ತೀರ್ಣರಾದವರು","",""]);
+  data.push(["","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು","ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
   currentSubjects.forEach(sub=>{
-   const s=subjectStats(currentRows,sub);
-   data.push([
-    subjectName(sub)+(subjectCode(sub)?` [${subjectCode(sub)}]`:""),
-    s.registered.m,s.registered.f,s.registered.t,
-    s.appeared.m,s.appeared.f,s.appeared.t,
-    s.passed.m,s.passed.f,s.passed.t,
-    s.failed.m,s.failed.f,s.failed.t
-   ]);
+    const s=subjectStats(currentRows,sub);
+    data.push([subjectName(sub)+(subjectCode(sub)?` [${subjectCode(sub)}]`:""),s.registered.m,s.registered.f,s.registered.t,s.appeared.m,s.appeared.f,s.appeared.t,s.passed.m,s.passed.f,s.passed.t,s.failed.m,s.failed.f,s.failed.t]);
   });
   return data;
 }
 
 function subjectExcelSheet(wb){
   const data=subjectExcelData();
-  const ws=addSheet(wb,data,"ವಿಷಯವಾರು");
-  const merges=[
-    mergeRange(1,1,1,13),
-    mergeRange(2,1,2,2),
-    mergeRange(2,3,2,13)
-  ];
-  styleExcelSheet(ws,{
-    maxCol:13,maxRow:data.length,merges,orientation:"landscape",
-    cols:[{wch:25},...Array.from({length:12},()=>({wch:13}))],
-    rows:[
-      {hpt:28},{hpt:24},{hpt:34},
-      ...Array.from({length:Math.max(0,data.length-3)},()=>({hpt:22}))
-    ]
+  const ws=addSheet(wb,data,"ವಿಷಯವಾರು",{
+    merges:[mergeRange(1,1,1,13),mergeRange(2,1,2,1),mergeRange(2,2,2,13),mergeRange(3,1,4,1),mergeRange(3,2,3,4),mergeRange(3,5,3,7),mergeRange(3,8,3,10),mergeRange(3,11,3,13)],
+    cols:[{wch:26},...Array.from({length:12},()=>({wch:12}))],
+    rows:[{hpt:28},{hpt:25},{hpt:25},{hpt:24},...Array.from({length:Math.max(0,data.length-4)},()=>({hpt:22}))],
+    pageSetup:{orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0},
+    pageMargins:{left:0.2,right:0.2,top:0.3,bottom:0.3,header:0.1,footer:0.1}
   });
+  styleArea(ws,1,1,1,13,EX_TITLE);
+  styleArea(ws,2,1,2,13,EX_SUBTITLE);
+  styleArea(ws,3,1,4,13,EX_SUBHEAD);
+  styleArea(ws,3,2,3,13,EX_GROUP);
+  styleArea(ws,5,1,data.length,13,EX_DATA);
+  styleArea(ws,5,1,data.length,1,EX_LEFT);
   return ws;
 }
 
 function progressExcelData(){
   const data=[];
   data.push(["ಪ್ರಗತಿ ವರದಿ"]);
-  data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,
-             "ಪರೀಕ್ಷೆ",currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
-  data.push([
-   "Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ",
-   "ವಿಷಯ","Subject Code","ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"
-  ]);
+  data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,"ಪರೀಕ್ಷೆ",currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
+  data.push(["Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ","ವಿಷಯ","Subject Code","ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"]);
   currentRows.forEach(d=>{
-   d.items.forEach(x=>{
-    data.push([
-     roll(d.student,0),studentName(d.student),
-     d.student.class_name||currentClass,division(d.student)||currentDivision,
-     x.subject,x.code,x.mark===""?"":Number(x.mark),x.max,x.grade||""
-    ]);
-   });
-   data.push(["","","","","ಒಟ್ಟು","",Number(d.total.toFixed(2)),Number(d.max.toFixed(2)),d.grade||"-"]);
-   data.push(["","","","","Percentage","",Number(d.percentage.toFixed(2)),"Result",d.resultText]);
-   data.push([]);
+    d.items.forEach(x=>data.push([roll(d.student,0),studentName(d.student),d.student.class_name||currentClass,division(d.student)||currentDivision,x.subject,x.code,x.mark===""?"":Number(x.mark),x.max,x.grade||""]));
+    data.push(["","","","","ಒಟ್ಟು","",Number(d.total.toFixed(2)),Number(d.max.toFixed(2)),d.grade||"-"]);
+    data.push(["","","","","Percentage","",Number(d.percentage.toFixed(2)),"Result",d.resultText]);
+    data.push([]);
   });
   return data;
 }
 
 function progressExcelSheet(wb){
   const data=progressExcelData();
-  const ws=addSheet(wb,data,"ಪ್ರಗತಿ ವರದಿ");
-  styleExcelSheet(ws,{
-    maxCol:9,maxRow:data.length,merges:[mergeRange(1,1,1,9)],
-    orientation:"landscape",
-    cols:[{wch:12},{wch:25},{wch:12},{wch:10},{wch:25},{wch:14},{wch:10},{wch:14},{wch:12}],
-    rows:[{hpt:28},{hpt:24},{hpt:24},...Array.from({length:Math.max(0,data.length-3)},()=>({hpt:20}))]
-  });
+  const ws=addSheet(wb,data,"ಪ್ರಗತಿ ವರದಿ",{merges:[mergeRange(1,1,1,9)],cols:[{wch:12},{wch:25},{wch:12},{wch:10},{wch:25},{wch:14},{wch:10},{wch:14},{wch:12}],rows:[{hpt:28},{hpt:24},{hpt:24},...Array.from({length:Math.max(0,data.length-3)},()=>({hpt:20}))],pageSetup:{orientation:"landscape",paperSize:9,fitToWidth:1,fitToHeight:0},pageMargins:{left:0.2,right:0.2,top:0.3,bottom:0.3,header:0.1,footer:0.1}});
+  styleArea(ws,1,1,1,9,EX_TITLE); styleArea(ws,2,1,2,9,EX_SUBTITLE); styleArea(ws,3,1,3,9,EX_SUBHEAD); styleArea(ws,4,1,data.length,9,EX_DATA);
   return ws;
 }
 
 function exportExcel(){
   const wb=XLSX.utils.book_new();
   let filename="Report.xlsx";
-
   if(reportType==="caste"){
-   casteExcelSheet(wb,currentCasteStudents);
-   filename="Caste_Report.xlsx";
+    casteExcelSheet(wb,currentCasteStudents); filename="Caste_Report.xlsx";
   }else if(reportType==="school"){
-   schoolExcelSheet(wb);
-   filename="School_Announcement.xlsx";
+    schoolExcelSheet(wb); filename="School_Announcement.xlsx";
   }else if(reportType==="subject"){
-   if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
-   subjectExcelSheet(wb);
-   filename="Subject_Announcement.xlsx";
+    if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+    subjectExcelSheet(wb); filename="Subject_Announcement.xlsx";
   }else if(reportType==="progress"){
-   if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
-   progressExcelSheet(wb);
-   filename=`Progress_Report_${currentClass}_${currentDivision}.xlsx`;
+    if(!currentRows.length){msg("ಮೊದಲು Load Report ಮಾಡಿ.","error");return}
+    progressExcelSheet(wb); filename=`Progress_Report_${currentClass}_${currentDivision}.xlsx`;
   }else{
-   msg("ಈ reportಗೆ Excel format ಸಿದ್ಧವಾಗಿಲ್ಲ.","error");
-   return;
+    msg("ಈ reportಗೆ Excel format ಸಿದ್ಧವಾಗಿಲ್ಲ.","error"); return;
   }
-
-  XLSX.writeFile(wb,filename);
-  msg("✅ ಆಯ್ಕೆ ಮಾಡಿದ reportನ ಸಂಪೂರ್ಣ Excel format Download ಆಗುತ್ತದೆ.","success");
+  XLSX.writeFile(wb,filename,{bookType:"xlsx",cellStyles:true});
+  msg("✅ ಆಯ್ಕೆ ಮಾಡಿದ reportನ ಮಾದರಿಯಂತೆ Excel Download ಆಗುತ್ತದೆ.","success");
 }
 
 function printReport(){
