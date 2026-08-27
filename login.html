@@ -20,9 +20,10 @@
 <label for="password">Password</label>
 <div class="pw"><input id="password" type="password" autocomplete="current-password" placeholder="Password ನಮೂದಿಸಿ" required><button class="show" type="button" id="show">👁</button></div>
 <button class="login" id="loginBtn" type="submit">Login</button>
+ <button type="button" id="forgotBtn" style="width:100%;margin-top:12px;border:0;background:none;color:#1769e0;font-size:14px;font-weight:700;cursor:pointer;">Forgot Password?</button>
 <div id="msg" class="msg"></div>
 </form>
-<div class="note">Forgot Password option ಇಲ್ಲ. Password ಅನ್ನು Supabase Authentication ನಲ್ಲಿ ನಿರ್ವಹಿಸಲಾಗುತ್ತದೆ.</div>
+<div class="note">Forgot Password ಮೂಲಕ Password reset ಮಾಡಬಹುದು. Password ಅನ್ನು Supabase Authentication ನಲ್ಲಿ ನಿರ್ವಹಿಸಲಾಗುತ್ತದೆ.</div>
 </div>
 
 <script>
@@ -38,6 +39,64 @@ const msg=document.getElementById("msg");
 
 function showMsg(text,type="error"){msg.className="msg "+type;msg.textContent=text}
 document.getElementById("show").onclick=()=>{password.type=password.type==="password"?"text":"password"};
+
+
+document.getElementById("forgotBtn").addEventListener("click",async()=>{
+  const code=dise.value.trim();
+  if(!code){
+    showMsg("ಮೊದಲು ಶಾಲೆಯ DISE Code ನಮೂದಿಸಿ.");
+    dise.focus();
+    return;
+  }
+
+  const forgotBtn=document.getElementById("forgotBtn");
+  forgotBtn.disabled=true;
+  forgotBtn.textContent="Email ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...";
+
+  try{
+    const {data:email,error:rpcError}=await supabaseClient.rpc(
+      "get_login_email",
+      {p_dise_code:code}
+    );
+
+    if(rpcError){
+      throw new Error(
+        "school_users ಓದುವಾಗ error ಬಂದಿದೆ.\n\n"+
+        rpcError.message+
+        "\n\nಮೊದಲು get_login_email SQL function ಪರಿಶೀಲಿಸಿ."
+      );
+    }
+
+    if(!email){
+      throw new Error(
+        "ಈ DISE Code school_users table ನಲ್ಲಿ ಕಂಡುಬಂದಿಲ್ಲ.\nDISE Code: "+code
+      );
+    }
+
+    const redirectTo="https://svbrhsbls-bit.github.io/school-result/reset-password.html";
+
+    const {error}=await supabaseClient.auth.resetPasswordForEmail(
+      String(email).trim(),
+      {redirectTo}
+    );
+
+    if(error){
+      throw new Error("Password reset email ಕಳುಹಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.\n\n"+error.message);
+    }
+
+    showMsg(
+      "Password reset link ನಿಮ್ಮ registered emailಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.\n\n"+
+      "Email ತೆರೆಯಿರಿ → Reset password ಒತ್ತಿರಿ → ಹೊಸ password ಹಾಕಿ.",
+      "success"
+    );
+  }catch(err){
+    console.error("FORGOT PASSWORD ERROR:",err);
+    showMsg(err?.message||"Password reset error ಬಂದಿದೆ.");
+  }finally{
+    forgotBtn.disabled=false;
+    forgotBtn.textContent="Forgot Password?";
+  }
+});
 
 form.addEventListener("submit",async(e)=>{
  e.preventDefault();
