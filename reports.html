@@ -919,6 +919,7 @@ function addSheet(wb, data, sheetName){
       fitToWidth:1,
       fitToHeight:1
     };
+    ws["!printArea"]="A1:Z8";
   }else{
     ws["!cols"]=data.length
       ? Array.from({length:data[0].length},()=>({wch:16}))
@@ -963,7 +964,7 @@ function casteExcelData(studentList){
   const data=[];
   data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
   data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
-  data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",...CASTES,"ಒಟ್ಟು"]);
+  data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",...CASTES.flatMap(c=>[c,"",""]),"ಒಟ್ಟು","",""]);
   data.push(["","",...CASTES.flatMap(()=>["ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]),"ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
 
   [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
