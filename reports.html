@@ -45,48 +45,23 @@ th{background:#087db5;color:#fff}
  .no-print{display:none!important}
  .container{width:100%;margin:0}
  .card{box-shadow:none;border:0;padding:0}
- .report{overflow:visible!important}
-
- /*
-  * IMPORTANT:
-  * Keep each student's complete progress report on ONE A4 page.
-  * The signature block is positioned at the bottom of the SAME page,
-  * so it cannot create an extra blank/signature-only page.
-  */
+ .report{overflow:visible}
  .student-page{
-   position:relative;
    page-break-after:always;
    break-after:page;
-   height:calc(297mm - 16mm);
-   min-height:calc(297mm - 16mm);
-   max-height:calc(297mm - 16mm);
-   padding-bottom:18mm;
-   display:block;
-   overflow:hidden;
-   break-inside:avoid!important;
-   page-break-inside:avoid!important;
+   min-height:270mm;
+   display:flex;
+   flex-direction:column;
  }
-
- .student-page:last-child{
-   page-break-after:auto;
-   break-after:auto;
- }
-
+ .student-page:last-child{page-break-after:auto;break-after:auto}
  .student-signatures{
-   position:absolute;
-   left:0;
-   right:0;
-   bottom:3mm;
+   margin-top:auto;
    display:flex;
    justify-content:space-between;
-   align-items:flex-end;
-   padding:0 2mm;
-   margin:0;
+   padding-top:25mm;
    font-weight:700;
-   flex-shrink:0;
  }
-
- @page{size:A4 portrait;margin:8mm}
+ @page{size:A4 portrait;margin:10mm}
 }
 
 .caste-summary-table{
@@ -158,6 +133,11 @@ th{background:#087db5;color:#fff}
 
 
 @media print{
+  @page{
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
   body.caste-print-landscape{
     width:100%;
   }
@@ -939,7 +919,6 @@ function addSheet(wb, data, sheetName){
       fitToWidth:1,
       fitToHeight:1
     };
-    ws["!printArea"]="A1:Z8";
   }else{
     ws["!cols"]=data.length
       ? Array.from({length:data[0].length},()=>({wch:16}))
@@ -984,7 +963,7 @@ function casteExcelData(studentList){
   const data=[];
   data.push(["ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
   data.push(["8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ"]);
-  data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",...CASTES.flatMap(c=>[c,"",""]),"ಒಟ್ಟು","",""]);
+  data.push(["ಕ್ರ.ಸಂ","ತರಗತಿ",...CASTES,"ಒಟ್ಟು"]);
   data.push(["","",...CASTES.flatMap(()=>["ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]),"ಗಂಡು","ಹೆಣ್ಣು","ಒಟ್ಟು"]);
 
   [["01","8","8ನೇ ತರಗತಿ"],["02","9","9ನೇ ತರಗತಿ"],["03","10","10ನೇ ತರಗತಿ"]].forEach(([no,cls,label])=>{
@@ -1133,27 +1112,13 @@ function printReport(){
   const isCaste = reportType === "caste";
   document.body.classList.toggle("caste-print-landscape", isCaste);
 
-  // Progress/other reports: A4 portrait. Caste report: A4 landscape.
-  // The orientation is injected dynamically because @page cannot be scoped
-  // reliably with a body class. This prevents the student signature block
-  // from being pushed onto a second page.
-  let printOrientationStyle = document.getElementById("printOrientationStyle");
-  if(!printOrientationStyle){
-    printOrientationStyle = document.createElement("style");
-    printOrientationStyle.id = "printOrientationStyle";
-    document.head.appendChild(printOrientationStyle);
-  }
-  printOrientationStyle.textContent = isCaste
-    ? "@media print { @page { size: A4 landscape; margin: 8mm; } }"
-    : "@media print { @page { size: A4 portrait; margin: 8mm; } }";
-
+  // Give the browser a moment to apply the landscape print CSS.
   setTimeout(()=>{
     window.print();
     setTimeout(()=>{
       document.body.classList.remove("caste-print-landscape");
-      printOrientationStyle.textContent = "";
-    }, 700);
-  }, 80);
+    }, 500);
+  }, 50);
 }
 $("loadBtn").onclick=generate;
 $("excelBtn").onclick=exportExcel;
