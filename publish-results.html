@@ -273,8 +273,13 @@ async function loadResults(){
 
     const marksByResult={};
     markRows.forEach(m=>{
-      if(m.marks!==null && m.marks!==undefined && m.marks!==""){
-        marksByResult[m.exam_result_id]=true;
+      if(
+        m.marks!==null &&
+        m.marks!==undefined &&
+        String(m.marks).trim()!==""
+      ){
+        const rid=String(m.exam_result_id);
+        marksByResult[rid]=(marksByResult[rid]||0)+1;
       }
     });
 
@@ -287,11 +292,7 @@ async function loadResults(){
       the student cannot be published.
     */
     const enteredMarks = result
-      ? Object.values(marksByResult[result.id] || {}).filter(m =>
-          m !== null &&
-          m !== undefined &&
-          String(m).trim() !== ""
-        ).length
+      ? Number(marksByResult[String(result.id)] || 0)
       : 0;
 
     const hasMarks = enteredMarks === 6;
