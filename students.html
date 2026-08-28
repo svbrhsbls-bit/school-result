@@ -265,9 +265,7 @@ tr:hover{
             <div class="field">
                 <label>ವಿಭಾಗ / Division</label>
 
-                <select id="divisionSelect">
-                    <option value="A">A</option>
-                </select>
+                <select id="divisionSelect"><option value="A">A</option></select>
             </div>
 
             <button class="btn-load" onclick="loadStudents()">
@@ -282,32 +280,35 @@ tr:hover{
     </div>
 
 
-
-    <!-- EXCEL STUDENT IMPORT -->
-    <div class="card">
-        <h2>Excel ಮೂಲಕ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಸೇರಿಸಿ</h2>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <label style="font-weight:600;">ತರಗತಿ / Class</label>
-            <select id="excelClassSelect" style="padding:8px;">
-                <option value="8">8ನೇ ತರಗತಿ</option>
-                <option value="9">9ನೇ ತರಗತಿ</option>
-                <option value="10">10ನೇ ತರಗತಿ</option>
-            </select>
-
-            <button type="button" class="btn-new" onclick="downloadStudentExcelTemplate()">
-                ⬇️ Excel Template
-            </button>
-
-            <button type="button" class="btn-load" onclick="document.getElementById('studentExcelInput').click()">
-                📤 Excel Upload
-            </button>
-
-            <input id="studentExcelInput" type="file" accept=".xlsx"
-                   style="display:none" onchange="uploadStudentsFromExcel(event)">
-        </div>
+    
+    <!-- ACADEMIC YEAR -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label for="studentAcademicYear" style="font-weight:700;">ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
+        <select id="studentAcademicYear"
+                style="padding:8px 12px;border:1px solid #bbb;border-radius:6px;min-width:140px;">
+        </select>
+      </div>
     </div>
 
-    <!-- STUDENT FORM -->
+
+    <div class="card" style="margin-bottom:12px;">
+      <h2 style="margin-top:0;">Excel ಮೂಲಕ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಸೇರಿಸಿ</h2>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label for="excelClassSelect" style="font-weight:700;">ತರಗತಿ</label>
+        <select id="excelClassSelect" style="padding:8px 12px;">
+          <option value="8">8ನೇ ತರಗತಿ</option>
+          <option value="9">9ನೇ ತರಗತಿ</option>
+          <option value="10">10ನೇ ತರಗತಿ</option>
+        </select>
+        <button type="button" class="btn-new" onclick="downloadStudentExcelTemplate()">⬇️ Excel Template</button>
+        <button type="button" class="btn-load" onclick="document.getElementById('studentExcelInput').click()">📤 Excel Upload</button>
+        <input id="studentExcelInput" type="file" accept=".xlsx" style="display:none"
+               onchange="uploadStudentsFromExcel(event)">
+      </div>
+    </div>
+
+<!-- STUDENT FORM -->
     <div class="card">
 
         <h2 id="formTitle">ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ</h2>
@@ -396,20 +397,6 @@ tr:hover{
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
 
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-            <button type="button" id="selectAllStudentsBtn" class="btn-new"
-                    onclick="toggleSelectAllStudents()">
-                ☑️ All Tick
-            </button>
-            <button type="button" class="btn-delete"
-                    onclick="deleteCheckedStudents()">
-                🗑️ Tick ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete
-            </button>
-            <span id="selectedStudentCount" style="font-weight:600;color:#555;">
-                Selected: 0
-            </span>
-        </div>
-
         <div id="loading" class="loading" style="display:none;">
             Loading...
         </div>
@@ -420,7 +407,6 @@ tr:hover{
 
                 <thead>
                     <tr>
-                        <th style="width:45px;text-align:center;">✓</th>
                         <th>Roll No</th>
                         <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
                         <th>ತಂದೆಯ ಹೆಸರು</th>
@@ -436,7 +422,7 @@ tr:hover{
 
                 <tbody id="studentTableBody">
                     <tr>
-                        <td colspan="11" class="empty">
+                        <td colspan="10" class="empty">
                             ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
                         </td>
                     </tr>
@@ -479,6 +465,221 @@ const db = window.supabase.createClient(
    PAGE LOAD
    ========================================================= */
 
+
+/* ===== ACADEMIC YEAR: SAME SOURCE AS SETTINGS.HTML ===== */
+const STUDENT_YEAR_STORAGE_KEY = "school_result_academic_years";
+
+function studentCurrentYearLocal(){
+  return localStorage.getItem("school_result_current_academic_year") ||
+         localStorage.getItem("school_current_academic_year") ||
+         localStorage.getItem("currentAcademicYear") ||
+         "2026-27";
+}
+
+function studentSavedYears(){
+  try{
+    const raw = localStorage.getItem(STUDENT_YEAR_STORAGE_KEY);
+    const years = raw ? JSON.parse(raw) : [];
+    return Array.isArray(years)
+      ? years.filter(y => /^\d{4}-\d{2}$/.test(String(y)))
+      : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function fillStudentYearDropdown(years, current){
+  const el = document.getElementById("studentAcademicYear");
+  if(!el) return;
+
+  const all = [...new Set(
+    [...years, current]
+      .map(String)
+      .map(x => x.trim())
+      .filter(x => /^\d{4}-\d{2}$/.test(x))
+  )];
+
+  if(!all.length) all.push("2026-27");
+
+  all.sort((a,b) => parseInt(a)-parseInt(b));
+
+  el.innerHTML = all.map(y =>
+    `<option value="${y.replace(/"/g,"&quot;")}">${y}</option>`
+  ).join("");
+
+  if(current && all.includes(current)){
+    el.value = current;
+  }
+}
+
+/* Read the current Academic Year directly from settings table.
+   This is the exact source used by settings.html. */
+async function syncStudentYearFromSettings(){
+  const el = document.getElementById("studentAcademicYear");
+  if(!el) return studentCurrentYearLocal();
+
+  try{
+    const {data,error} = await db
+      .from("settings")
+      .select("academic_year")
+      .eq("id",1)
+      .maybeSingle();
+
+    if(error) throw error;
+
+    const current =
+      String(data?.academic_year || studentCurrentYearLocal()).trim();
+
+    const years = studentSavedYears();
+    if(current && !years.includes(current)) years.push(current);
+
+    localStorage.setItem(
+      STUDENT_YEAR_STORAGE_KEY,
+      JSON.stringify([...new Set(years)])
+    );
+
+    // Keep this page's local cache synchronized with Settings.
+    localStorage.setItem(
+      "school_result_current_academic_year",
+      current
+    );
+
+    fillStudentYearDropdown(years, current);
+    return current;
+
+  }catch(error){
+    console.error("Settings academic year load failed:", error);
+
+    const current = studentCurrentYearLocal();
+    fillStudentYearDropdown(studentSavedYears(), current);
+    return current;
+  }
+}
+
+async function initStudentAcademicYear(){
+  const el = document.getElementById("studentAcademicYear");
+  if(!el) return;
+
+  // First show cached year immediately.
+  fillStudentYearDropdown(
+    studentSavedYears(),
+    studentCurrentYearLocal()
+  );
+
+  // Then get the real current year from Settings/Supabase.
+  await syncStudentYearFromSettings();
+
+  el.addEventListener("change", async function(){
+    localStorage.setItem(
+      "school_result_current_academic_year",
+      this.value
+    );
+
+    // Do not change Settings here. Settings is the master/current-year source.
+    await loadStudents();
+  });
+}
+
+function getStudentSelectedYear(){
+  return document.getElementById("studentAcademicYear")?.value ||
+         studentCurrentYearLocal() ||
+         "2026-27";
+}
+
+const STUDENT_EXCEL_HEADERS = [
+  "Reg No","Student Name","Father Name","Mother Name",
+  "Gender","DOB","SATS No","Caste","Mobile Number"
+];
+
+function excelText(cell) {
+  const v = cell?.value;
+  if (v === null || v === undefined) return "";
+  if (v instanceof Date) return v.toISOString().slice(0,10);
+  if (typeof v === "object" && v.text) return String(v.text).trim();
+  return String(v).trim();
+}
+
+async function downloadStudentExcelTemplate() {
+  if (typeof ExcelJS === "undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
+  const cls = document.getElementById("excelClassSelect").value;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Students");
+  ws.columns = STUDENT_EXCEL_HEADERS.map(h => ({header:h,key:h,width:Math.max(15,h.length+3)}));
+  ws.getRow(1).font = {bold:true};
+  ws.freezePanes = {row:2};
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Students_Template_Class_${cls}_A.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+async function uploadStudentsFromExcel(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (typeof ExcelJS === "undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
+
+  const cls = document.getElementById("excelClassSelect").value;
+  const year = getSharedAcademicYear();
+
+  try {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+    const ws = wb.worksheets[0];
+    if (!ws) throw new Error("Excel sheet ಸಿಗಲಿಲ್ಲ.");
+
+    const hmap = {};
+    ws.getRow(1).eachCell((c,i) => hmap[excelText(c).toLowerCase()] = i);
+    const col = names => names.map(n => hmap[n]).find(Boolean);
+    const cols = {
+      roll:col(["reg no","roll no","roll number"]),
+      name:col(["student name","name"]),
+      father:col(["father name"]),
+      mother:col(["mother name"]),
+      gender:col(["gender"]),
+      dob:col(["dob","date of birth"]),
+      sats:col(["sats no"]),
+      caste:col(["caste"]),
+      mobile:col(["mobile number","mobile"])
+    };
+    if (!cols.name) throw new Error("Student Name column ಸಿಗಲಿಲ್ಲ.");
+
+    const rows = [];
+    for (let r=2; r<=ws.rowCount; r++) {
+      const get = k => cols[k] ? excelText(ws.getRow(r).getCell(cols[k])) : "";
+      const name = get("name");
+      if (!name) continue;
+      rows.push({
+        roll_no:get("roll"), student_name:name, father_name:get("father"),
+        mother_name:get("mother"), gender:get("gender") || null,
+        dob:get("dob") || null, sats_no:get("sats"), caste:get("caste"),
+        mobile:get("mobile"), class_name:cls, division:"A",
+        academic_year:year, is_active:true
+      });
+    }
+    if (!rows.length) throw new Error("Excelನಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳ data ಇಲ್ಲ.");
+
+    let added=0, errors=[];
+    for (let i=0; i<rows.length; i+=50) {
+      const batch=rows.slice(i,i+50);
+      const {error}=await db.from("students").insert(batch);
+      if (!error) { added += batch.length; continue; }
+      for (const row of batch) {
+        const {error:e}=await db.from("students").insert([row]);
+        if (e) errors.push(row.student_name+": "+e.message); else added++;
+      }
+    }
+    await loadStudents();
+    alert(`Excel Upload ಮುಗಿದಿದೆ.\n\nತರಗತಿ: ${cls}\nವಿಭಾಗ: A\nಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${year}\n\nAdded: ${added}\nFailed: ${errors.length}`);
+  } catch(e) {
+    console.error(e);
+    alert("Excel Upload Error: "+(e?.message || e));
+  }
+}
+
 document.addEventListener("DOMContentLoaded", function(){
 
     console.log("Students Database loaded.");
@@ -509,313 +710,6 @@ function showMessage(text, type="info"){
         box.textContent = "";
 
     },5000);
-}
-
-
-
-/* =========================================================
-   EXCEL TEMPLATE / UPLOAD
-   Only existing student-entry columns.
-   Section A only. Class is selected before upload.
-   No PEN No and no extra columns.
-   ========================================================= */
-
-const STUDENT_EXCEL_HEADERS = [
-    "Reg No",
-    "Student Name",
-    "Father Name",
-    "Mother Name",
-    "Gender",
-    "DOB",
-    "SATS No",
-    "Caste",
-    "Mobile Number"
-];
-
-function currentStudentAcademicYear(){
-    if(typeof selectedAcademicYear !== "undefined" && selectedAcademicYear){
-        return selectedAcademicYear;
-    }
-    const el = document.getElementById("academicYear");
-    return el ? (el.value || "2026-27") : "2026-27";
-}
-
-function excelText(cell){
-    const v = cell?.value;
-    if(v === null || v === undefined) return "";
-    if(v instanceof Date) return v.toISOString().slice(0,10);
-    if(typeof v === "object" && v.text) return String(v.text).trim();
-    return String(v).trim();
-}
-
-async function downloadStudentExcelTemplate(){
-    if(typeof ExcelJS === "undefined"){
-        alert("Excel library load ಆಗಿಲ್ಲ. Page ಅನ್ನು refresh ಮಾಡಿ.");
-        return;
-    }
-
-    const classValue =
-        document.getElementById("excelClassSelect").value;
-
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet("Students");
-
-    sheet.columns = STUDENT_EXCEL_HEADERS.map(h => ({
-        header:h,
-        key:h,
-        width:Math.max(15, h.length + 3)
-    }));
-
-    sheet.getRow(1).font = {bold:true};
-    sheet.freezePanes = {row:2};
-
-    // One sample row only to show the format.
-    sheet.addRow({
-        "Reg No":"01",
-        "Student Name":"",
-        "Father Name":"",
-        "Mother Name":"",
-        "Gender":"",
-        "DOB":"",
-        "SATS No":"",
-        "Caste":"",
-        "Mobile Number":""
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-        type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download =
-        "Students_Template_" +
-        classValue +
-        "th_A.xlsx";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-}
-
-async function uploadStudentsFromExcel(event){
-    const file =
-        event.target.files &&
-        event.target.files[0];
-
-    event.target.value = "";
-
-    if(!file) return;
-
-    if(typeof ExcelJS === "undefined"){
-        alert("Excel library load ಆಗಿಲ್ಲ. Page ಅನ್ನು refresh ಮಾಡಿ.");
-        return;
-    }
-
-    const classValue =
-        document.getElementById("excelClassSelect").value;
-
-    const academicYear =
-        currentStudentAcademicYear();
-
-    try{
-        const workbook = new ExcelJS.Workbook();
-
-        await workbook.xlsx.load(
-            await file.arrayBuffer()
-        );
-
-        const sheet = workbook.worksheets[0];
-
-        if(!sheet){
-            throw new Error("Excel sheet ಸಿಗಲಿಲ್ಲ.");
-        }
-
-        const headers = {};
-
-        sheet.getRow(1).eachCell((cell,col) => {
-            headers[
-                excelText(cell).toLowerCase()
-            ] = col;
-        });
-
-        const column = function(names){
-            for(const name of names){
-                if(headers[name]) return headers[name];
-            }
-            return null;
-        };
-
-        const cols = {
-            roll:column([
-                "reg no",
-                "roll no",
-                "roll number"
-            ]),
-            name:column([
-                "student name",
-                "name"
-            ]),
-            father:column([
-                "father name"
-            ]),
-            mother:column([
-                "mother name"
-            ]),
-            gender:column([
-                "gender"
-            ]),
-            dob:column([
-                "dob",
-                "date of birth"
-            ]),
-            sats:column([
-                "sats no"
-            ]),
-            caste:column([
-                "caste"
-            ]),
-            mobile:column([
-                "mobile number",
-                "mobile"
-            ])
-        };
-
-        if(!cols.name){
-            throw new Error(
-                "Student Name column ಸಿಗಲಿಲ್ಲ."
-            );
-        }
-
-        const rows = [];
-
-        for(let r=2; r<=sheet.rowCount; r++){
-
-            const get = key =>
-                cols[key]
-                ? excelText(
-                    sheet
-                    .getRow(r)
-                    .getCell(cols[key])
-                  )
-                : "";
-
-            const name = get("name");
-
-            if(!name) continue;
-
-            rows.push({
-                roll_no:get("roll"),
-                student_name:name,
-                father_name:get("father"),
-                mother_name:get("mother"),
-                gender:get("gender") || null,
-                dob:get("dob") || null,
-                sats_no:get("sats"),
-                caste:get("caste"),
-                mobile:get("mobile"),
-                class_name:classValue,
-                division:"A",
-                academic_year:academicYear,
-                is_active:true
-            });
-        }
-
-        if(!rows.length){
-            alert(
-                "Excelನಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳ data ಇಲ್ಲ."
-            );
-            return;
-        }
-
-        let added = 0;
-        const errors = [];
-
-        // Small batches make upload faster while preserving clear errors.
-        for(let i=0; i<rows.length; i+=50){
-
-            const batch =
-                rows.slice(i,i+50);
-
-            const {error} =
-                await db
-                    .from("students")
-                    .insert(batch);
-
-            if(error){
-
-                // Fallback row-by-row if a batch contains
-                // one invalid/duplicate record.
-                for(const row of batch){
-
-                    const {error:rowError} =
-                        await db
-                            .from("students")
-                            .insert([row]);
-
-                    if(rowError){
-                        errors.push(
-                            row.student_name +
-                            ": " +
-                            rowError.message
-                        );
-                    }else{
-                        added++;
-                    }
-                }
-
-            }else{
-                added += batch.length;
-            }
-        }
-
-        showMessage(
-            "Excel Upload: " +
-            added +
-            " ವಿದ್ಯಾರ್ಥಿಗಳು Save ಆಗಿದ್ದಾರೆ." +
-            (
-                errors.length
-                ? " " + errors.length + " row failed."
-                : ""
-            ),
-            errors.length
-            ? "error"
-            : "success"
-        );
-
-        // Load the selected class, Section A and year.
-        document.getElementById(
-            "classSelect"
-        ).value = classValue;
-
-        document.getElementById(
-            "divisionSelect"
-        ).value = "A";
-
-        await loadStudents();
-
-        if(errors.length){
-            console.error(
-                "Excel upload errors:",
-                errors
-            );
-        }
-
-    }catch(error){
-
-        console.error(
-            "EXCEL UPLOAD ERROR:",
-            error
-        );
-
-        showMessage(
-            "Excel Upload Error: " +
-            getSupabaseError(error),
-            "error"
-        );
-    }
 }
 
 
@@ -867,9 +761,10 @@ function getFormData(){
             divisionValue,
 
         academic_year:
-            (typeof selectedAcademicYear !== "undefined" && selectedAcademicYear)
-            ? selectedAcademicYear
-            : (document.getElementById("academicYear")?.value || "2026-27"),
+            (document.getElementById("studentAcademicYear")?.value ||
+             localStorage.getItem("school_current_academic_year") ||
+             localStorage.getItem("currentAcademicYear") ||
+             "2026-27"),
 
         is_active:true
     };
@@ -1043,12 +938,7 @@ async function loadStudents(){
                 .select("*")
                 .eq("class_name", classValue)
                 .eq("division", divisionValue)
-                .eq(
-                    "academic_year",
-                    (typeof selectedAcademicYear !== "undefined" && selectedAcademicYear)
-                    ? selectedAcademicYear
-                    : (document.getElementById("academicYear")?.value || "2026-27")
-                )
+                .eq("academic_year", getStudentSelectedYear())
                 .eq("is_active", true)
                 .order("roll_no", {ascending:true});
 
@@ -1077,7 +967,7 @@ async function loadStudents(){
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="empty">
+                <td colspan="10" class="empty">
                     ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.
                 </td>
             </tr>
@@ -1112,7 +1002,7 @@ function renderStudents(students){
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="empty">
+                <td colspan="10" class="empty">
                     ಈ ತರಗತಿ ಮತ್ತು ವಿಭಾಗದಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
                 </td>
             </tr>
@@ -1129,14 +1019,6 @@ function renderStudents(students){
             document.createElement("tr");
 
         tr.innerHTML = `
-
-            <td style="text-align:center;">
-                <input type="checkbox"
-                       class="student-delete-check"
-                       data-student-id="${safe(student.id)}"
-                       onchange="updateSelectedStudentCount()"
-                       checked>
-            </td>
 
             <td>${safe(student.roll_no)}</td>
 
@@ -1169,193 +1051,8 @@ function renderStudents(students){
         tbody.appendChild(tr);
 
     });
-
-    updateSelectedStudentCount();
 }
 
-
-/* =========================================================
-   BULK DELETE STUDENTS
-   All students are checked by default.
-   Untick students that must be kept.
-   Clicking Delete removes only the checked students.
-   ========================================================= */
-
-function toggleSelectAllStudents(){
-
-    const checks =
-        document.querySelectorAll(
-            ".student-delete-check"
-        );
-
-    if(!checks.length){
-        return;
-    }
-
-    const allChecked =
-        Array.from(checks).every(
-            checkbox => checkbox.checked
-        );
-
-    checks.forEach(function(checkbox){
-        checkbox.checked = !allChecked;
-    });
-
-    updateSelectedStudentCount();
-}
-
-function updateSelectedStudentCount(){
-
-    const checks =
-        document.querySelectorAll(
-            ".student-delete-check"
-        );
-
-    const selected =
-        Array.from(checks).filter(
-            checkbox => checkbox.checked
-        ).length;
-
-    const label =
-        document.getElementById(
-            "selectedStudentCount"
-        );
-
-    if(label){
-        label.textContent =
-            "Selected: " + selected;
-    }
-
-    const button =
-        document.getElementById(
-            "selectAllStudentsBtn"
-        );
-
-    if(button && checks.length){
-        const allChecked =
-            Array.from(checks).every(
-                checkbox => checkbox.checked
-            );
-
-        button.textContent =
-            allChecked
-            ? "☑️ All Untick"
-            : "☑️ All Tick";
-    }
-}
-
-async function deleteCheckedStudents(){
-
-    const checks =
-        Array.from(
-            document.querySelectorAll(
-                ".student-delete-check:checked"
-            )
-        );
-
-    if(!checks.length){
-        showMessage(
-            "Delete ಮಾಡಲು ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಯನ್ನು Tick ಮಾಡಿಲ್ಲ.",
-            "error"
-        );
-        return;
-    }
-
-    const total =
-        document.querySelectorAll(
-            ".student-delete-check"
-        ).length;
-
-    const keep =
-        total - checks.length;
-
-    const ok =
-        confirm(
-            "Tick ಮಾಡಿರುವ " +
-            checks.length +
-            " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಬೇಕೇ?\n\n" +
-            "Untick ಮಾಡಿದ " +
-            keep +
-            " ವಿದ್ಯಾರ್ಥಿಗಳು ಉಳಿಯುತ್ತಾರೆ."
-        );
-
-    if(!ok) return;
-
-    try{
-
-        showMessage(
-            "ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-        let deleted = 0;
-        const errors = [];
-
-        for(const checkbox of checks){
-
-            const id =
-                checkbox.dataset.studentId;
-
-            if(!id) continue;
-
-            const {error} =
-                await db
-                    .from("students")
-                    .update({
-                        is_active:false
-                    })
-                    .eq("id", id);
-
-            if(error){
-                errors.push(error.message);
-            }else{
-                deleted++;
-            }
-        }
-
-        await loadStudents();
-
-        if(errors.length){
-
-            showMessage(
-                deleted +
-                " ವಿದ್ಯಾರ್ಥಿಗಳು Delete ಆಗಿದ್ದಾರೆ. " +
-                errors.length +
-                " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
-                "error"
-            );
-
-            console.error(
-                "Bulk delete errors:",
-                errors
-            );
-
-        }else{
-
-            showMessage(
-                "✅ " +
-                deleted +
-                " ವಿದ್ಯಾರ್ಥಿಗಳು Delete ಆಗಿದ್ದಾರೆ. " +
-                keep +
-                " ವಿದ್ಯಾರ್ಥಿಗಳು ಉಳಿದಿದ್ದಾರೆ.",
-                "success"
-            );
-        }
-
-    }catch(error){
-
-        console.error(
-            "BULK DELETE ERROR:",
-            error
-        );
-
-        showMessage(
-            "Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
-            "error"
-        );
-    }
-}
 
 /* =========================================================
    EDIT STUDENT
@@ -1769,3 +1466,8 @@ setTimeout(function(){
 </body>
 </html>
 
+<script>
+document.addEventListener("DOMContentLoaded", async function(){
+    await initStudentAcademicYear();
+});
+</script>
