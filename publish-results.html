@@ -273,29 +273,14 @@ async function loadResults(){
 
     const marksByResult={};
     markRows.forEach(m=>{
-      if(
-        m.marks!==null &&
-        m.marks!==undefined &&
-        String(m.marks).trim()!==""
-      ){
-        const rid=String(m.exam_result_id);
-        marksByResult[rid]=(marksByResult[rid]||0)+1;
+      if(m.marks!==null && m.marks!==undefined && m.marks!==""){
+        marksByResult[m.exam_result_id]=true;
       }
     });
 
     rows=students.map((s,i)=>{
       const result=results.find(r=>String(r.student_id)===String(s.id))||null;
-      /*
-      PUBLISH RULE:
-      Exactly 6 subject marks are required.
-      If even one of the 6 subjects has no mark,
-      the student cannot be published.
-    */
-    const enteredMarks = result
-      ? Number(marksByResult[String(result.id)] || 0)
-      : 0;
-
-    const hasMarks = enteredMarks === 6;
+      const hasMarks=!!(result && marksByResult[result.id]);
       return {
         student:s,
         index:i,
