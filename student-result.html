@@ -246,6 +246,12 @@ td.subject{text-align:left;font-weight:700}
     table{min-width:0;font-size:11px}
     th,td{padding:5px}
 }
+
+
+.dob-entry{display:flex;align-items:center;gap:8px;width:100%}
+.dob-entry #dob{flex:1;min-width:0}
+.dob-calendar-btn{width:44px;height:42px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:19px}
+.dob-picker-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 </style>
 </head>
 
@@ -272,17 +278,14 @@ td.subject{text-align:left;font-weight:700}
 
             <div>
                 <label for="dob">Date of Birth</label>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <input id="dob" type="text"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           placeholder="DD-MM-YYYY"
-                           maxlength="10"
-                           style="flex:1">
-                    <input id="dobPicker" type="date"
-                           title="Calendar"
-                           style="width:52px;padding:10px;cursor:pointer"
-                           aria-label="Calendar">
+                <div class="dob-entry">
+                    <input id="dob" type="text" inputmode="numeric"
+                           autocomplete="off" placeholder="DD-MM-YYYY"
+                           maxlength="10" aria-label="Date of Birth">
+                    <button type="button" id="dobCalendarBtn"
+                            class="dob-calendar-btn" aria-label="Choose Date">📅</button>
+                    <input id="dobPicker" type="date" class="dob-picker-hidden"
+                           tabindex="-1" aria-hidden="true">
                 </div>
             </div>
         </div>
@@ -329,19 +332,6 @@ function esc(value){
         .replace(/>/g,"&gt;")
         .replace(/"/g,"&quot;")
         .replace(/'/g,"&#039;");
-}
-
-function dobTextToISO(value){
-    const s=String(value||"").trim();
-    const m=s.match(/^(\\d{2})-(\\d{2})-(\\d{4})$/);
-    if(!m) return "";
-    return `${m[3]}-${m[2]}-${m[1]}`;
-}
-
-function isoToDobText(value){
-    const s=String(value||"").trim();
-    const m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
-    return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
 }
 
 function normalizeDate(value){
@@ -616,6 +606,22 @@ function getExamHeaderName(results){
 /* =========================================================
    VIEW RESULT
 ========================================================= */
+
+function dobTextToISO(value){
+    const m=String(value||"").trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+function isoToDobText(value){
+    const m=String(value||"").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+function formatDobInput(value){
+    let d=String(value||"").replace(/\D/g,"").slice(0,8);
+    if(d.length>4) return d.slice(0,2)+"-"+d.slice(2,4)+"-"+d.slice(4);
+    if(d.length>2) return d.slice(0,2)+"-"+d.slice(2);
+    return d;
+}
+
 async function viewResult(){
 
     hideMessage();
@@ -837,36 +843,16 @@ async function viewResult(){
             "ANNUAL"
         ];
 
-        let resultQuery=db
+        const {data:results,error:resultError}=await db
             .from("exam_results")
-            .select("id,student_id,exam_type,published,academic_year")
+            .select("id,student_id,exam_type,published")
             .eq("student_id",student.id)
             .in("exam_type",examTypes)
-            .eq("published",true);
-
-        if(appSettings.academic_year){
-            resultQuery=resultQuery.eq("academic_year",appSettings.academic_year);
-        }
-
-        let {data:results,error:resultError}=await resultQuery
+            .eq("published",true)
             .order("id",{ascending:true});
 
-        if(resultError){
-            const msg=String(resultError.message||resultError);
-            if(msg.toLowerCase().includes("academic_year") && msg.toLowerCase().includes("column")){
-                const retry=await db
-                    .from("exam_results")
-                    .select("id,student_id,exam_type,published")
-                    .eq("student_id",student.id)
-                    .in("exam_type",examTypes)
-                    .eq("published",true)
-                    .order("id",{ascending:true});
-                if(retry.error) throw retry.error;
-                results=retry.data||[];
-            }else{
-                throw resultError;
-            }
-        }
+        if(resultError)
+            throw resultError;
 
         /* ---------------------------------------------
            4. Load marks for published results
@@ -1213,18 +1199,20 @@ function renderExam(student,subjects,result,marksMap){
     `;
 }
 
-/* Date of Birth: text entry + calendar */
-$("dob").addEventListener("input",function(){
-    let v=this.value.replace(/\\D/g,"").slice(0,8);
-    if(v.length>4) v=v.slice(0,2)+"-"+v.slice(2,4)+"-"+v.slice(4);
-    else if(v.length>2) v=v.slice(0,2)+"-"+v.slice(2);
-    this.value=v;
-});
 
+/* Date of Birth: type DD-MM-YYYY or choose from calendar */
+$("dob").addEventListener("input",function(){
+    this.value=formatDobInput(this.value);
+});
+$("dobCalendarBtn").addEventListener("click",function(){
+    const p=$("dobPicker");
+    const iso=dobTextToISO($("dob").value);
+    if(iso) p.value=iso;
+    if(typeof p.showPicker==="function") p.showPicker();
+    else p.click();
+});
 $("dobPicker").addEventListener("change",function(){
-    if(this.value){
-        $("dob").value=isoToDobText(this.value);
-    }
+    if(this.value) $("dob").value=isoToDobText(this.value);
 });
 
 /* Enter key support */
