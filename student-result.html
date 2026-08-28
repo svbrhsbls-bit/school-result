@@ -2,11 +2,10 @@
 <html lang="kn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Student Result</title>
-
+<meta name="viewport" content="width=1200, initial-scale=1.0">
+<title>Send Results – WhatsApp</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<script src="auth-guard.js"></script>
 <style>
 *{box-sizing:border-box}
 body{
@@ -57,6 +56,7 @@ button{
 .btn-blue{background:#087fba;color:white}
 .btn-gray{background:#5d6870;color:white}
 .btn-print{background:#168a55;color:white}
+.btn-whatsapp{background:#25D366;color:white}
 .message{
     margin-top:15px;
     padding:11px 14px;
@@ -247,83 +247,91 @@ td.subject{text-align:left;font-weight:700}
     th,td{padding:5px}
 }
 
+.bulk-card h2{margin-top:0}
+.bulk-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+.select-all-label{display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px}
+.select-all-label input,.bulk-table input{width:18px;height:18px}
+#bulkSelectedCount{font-weight:700;color:#075f89}
+.bulk-status{margin:8px 0;padding:9px 12px;border-radius:8px;background:#f4f9fc;display:none}
+.bulk-status.show{display:block}
+.bulk-table-wrap{overflow-x:auto;max-height:430px;overflow-y:auto}
+.bulk-table{min-width:760px}
+.bulk-table th{position:sticky;top:0;z-index:2}
+.bulk-table td:first-child,.bulk-table th:first-child{width:55px}
+.bulk-empty{text-align:center;padding:20px!important;color:#777}
+@media(max-width:700px){.bulk-toolbar{align-items:stretch}.bulk-toolbar button{width:100%}}
 
-.dob-entry{display:flex;align-items:center;gap:8px;width:100%}
-.dob-entry #dob{flex:1;min-width:0}
-.dob-calendar-btn{width:44px;height:42px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:19px}
-.dob-picker-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
-/* Mobile result fit */
-@media (max-width: 600px){
-    html,body{width:100%;max-width:100%;overflow-x:hidden}
-    .container,.card{width:100%;max-width:100%;box-sizing:border-box}
-    .result-table-wrap,.table-wrap,.result-table-container{
-        width:100%!important;
-        max-width:100%!important;
-        overflow-x:hidden!important;
-    }
-    table{
-        width:100%!important;
-        max-width:100%!important;
-        table-layout:fixed!important;
-    }
-    th,td{
-        padding:5px 3px!important;
-        font-size:11px!important;
-        white-space:normal!important;
-        word-break:break-word!important;
-    }
-}
+/* Staff Send Results page */
+.staff-note{background:#fff8e1;border:1px solid #f0df9b;color:#6b5200;padding:12px 14px;border-radius:8px;margin:12px 0;line-height:1.5}
+.school-business{background:#e9f8ef;border:1px solid #b9e2c7;color:#176b38;padding:12px 14px;border-radius:8px;margin:12px 0}
 </style>
 </head>
-
 <body>
-
 <div class="header">
-    <h1 id="schoolNameHeader">ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
-    <p id="schoolAddressHeader">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
+  <h1 id="schoolNameHeader">ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
+  <p id="schoolAddressHeader">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
 </div>
-
 <div class="container">
-
-    <div class="card search-card no-print">
-        <h2>📘 ವಿದ್ಯಾರ್ಥಿ ಫಲಿತಾಂಶ</h2>
-        <p>Roll Number ಮತ್ತು Date of Birth ನಮೂದಿಸಿ ಫಲಿತಾಂಶ ವೀಕ್ಷಿಸಿ.</p>
-
-        <div class="search-grid">
-            <div>
-                <label for="rollNumber">Roll Number</label>
-                <input id="rollNumber" type="text"
-                       autocomplete="off"
-                       placeholder="Roll Number ನಮೂದಿಸಿ">
-            </div>
-
-            <div>
-                <label for="dob">Date of Birth</label>
-                <div class="dob-entry">
-                    <input id="dob" type="text" inputmode="numeric"
-                           autocomplete="off" placeholder="DD-MM-YYYY"
-                           maxlength="10" aria-label="Date of Birth">
-                    <button type="button" id="dobCalendarBtn"
-                            class="dob-calendar-btn" aria-label="Choose Date">📅</button>
-                    <input id="dobPicker" type="date" class="dob-picker-hidden"
-                           tabindex="-1" aria-hidden="true">
-                </div>
-            </div>
+  <div class="card no-print">
+    <div class="school-business"><b>🏫 ಶಾಲೆಯ WhatsApp Business Account ಬಳಸಿ</b><br>ಈ pageನಲ್ಲಿ result message ಸಿದ್ಧವಾಗುತ್ತದೆ. WhatsApp Web/WhatsApp Desktopನಲ್ಲಿ ಶಾಲೆಯ Business number account login ಆಗಿದ್ದರೆ message ಅದೇ accountನಿಂದ ಕಳುಹಿಸಬಹುದು.</div>
+    <div class="staff-note"><b>ಸೂಚನೆ:</b> All Students ಆಯ್ಕೆ ಮಾಡಿ, ಬೇಡವಾದವರನ್ನು Untick ಮಾಡಿ. ನಂತರ Send Selected Results ಒತ್ತಿ. WhatsApp API ಇಲ್ಲದ ಕಾರಣ ಪ್ರತಿಯೊಂದು chatನಲ್ಲಿ ಕೊನೆಯಲ್ಲಿ <b>Send</b> ಒತ್ತಬೇಕು.</div>
+        <div class="card no-print bulk-card">
+        <h2>📱 WhatsApp Result – Staff</h2>
+        <p>ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Select ಮಾಡಿ, ನಿಮಗೆ ಬೇಡವಾದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Untick ಮಾಡಿ. ನಂತರ Selected Results ಕಳುಹಿಸಿ.</p>
+        <div class="bulk-toolbar">
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Academic Year</b>
+                <select id="bulkAcademicYear" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:120px;">
+                    <option value="">Year Load...</option>
+                </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Class</b>
+                <select id="bulkClass" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:100px;">
+                    <option value="">All Classes</option>
+                </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Exam</b>
+                <select id="bulkExam" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:150px;">
+                    <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+                    <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+                </select>
+            </label>
+            <label class="select-all-label">
+                <input type="checkbox" id="bulkSelectAll" onchange="toggleBulkSelectAll(this.checked)">
+                <b>☑ All Students</b>
+            </label>
+            <span id="bulkSelectedCount">0 ವಿದ್ಯಾರ್ಥಿಗಳು ಆಯ್ಕೆ</span>
+            <button type="button" class="btn-blue" onclick="loadBulkStudents()">🔄 Students Load</button>
+            <button type="button" class="btn-whatsapp" onclick="sendSelectedResultsToWhatsApp()">📱 Send Selected Results</button>
         </div>
-
-        <div class="button-row">
-            <button class="btn-blue" onclick="viewResult()">🔍 View Result</button>
-            <button class="btn-gray" onclick="clearResult()">Clear</button>
+        <div id="bulkStatus" class="bulk-status"></div>
+        <div class="bulk-table-wrap">
+            <table class="bulk-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="bulkHeaderCheck" onchange="toggleBulkSelectAll(this.checked)"></th>
+                        <th>Roll No</th>
+                        <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
+                        <th>ತರಗತಿ</th>
+                        <th>ವಿಭಾಗ</th>
+                        <th>Mobile</th>
+                    </tr>
+                </thead>
+                <tbody id="bulkStudentsBody">
+                    <tr><td colspan="6" class="bulk-empty">Students Load ಒತ್ತಿ ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿಯನ್ನು ಪಡೆಯಿರಿ.</td></tr>
+                </tbody>
+            </table>
         </div>
-
-        <div id="message" class="message"></div>
     </div>
 
-    <div id="resultArea"></div>
-</div>
 
+  </div>
+</div>
 <script>
+
 /* =========================================================
    SUPABASE CONNECTION
    Same working connection as Students Database / Marks Entry
@@ -427,39 +435,40 @@ function getDivision(student){
 }
 
 /* Current Marks Entry rules */
-function isKannadaSubject(subject){
-    const name = String(
-        subject?.subject_name ??
-        subject?.name ??
-        ""
-    ).trim().toLowerCase();
-
-    /* Kannada is identified by subject name, NOT by subject_code.
-       Therefore changing the code in Subject Master will never
-       break the Kannada maximum-mark rule. */
-    return name === "ಕನ್ನಡ" ||
-           name.includes("kannada");
-}
-
 function getMaxMarks(student, examType, subject){
-    const cls=getClass(student);
-    const kannada=isKannadaSubject(subject);
+    const cls=String(getClass(student)||"").trim();
+    const code=String(subject?.subject_code || subject?.code || "").trim();
+    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
 
-    if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
-        if(cls==="8") return 50;
+    // Subject Master stores the exact exam-wise maximum marks in localStorage.
+    // Try the exact class label used by Subject Master first.
+    const classVariants = {
+        "8":["8ನೇ ತರಗತಿ","8"],
+        "9":["9ನೇ ತರಗತಿ","9"],
+        "10":["10ನೇ ತರಗತಿ","10"]
+    };
+    const variants=classVariants[cls] || [cls];
 
-        if(cls==="9" || cls==="10")
-            return kannada ? 100 : 80;
+    for(const c of variants){
+        const keys=[
+            "subject_marks_"+c+"_"+examType+"_"+code,
+            "subject_marks_"+c+"_"+examType+"_"+code.toUpperCase()
+        ];
+        for(const key of keys){
+            const raw=localStorage.getItem(key);
+            if(raw!==null && raw!==""){
+                const n=Number(raw);
+                if(Number.isFinite(n) && n>0) return n;
+            }
+        }
     }
 
-    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
-        if(cls==="8") return 100;
+    // Also read the Subject Master record directly from Supabase for the
+    // selected Academic Year, class and subject code.
+    const dbMax=Number(subject?.max_marks);
+    if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
 
-        if(cls==="9" || cls==="10")
-            return kannada ? 125 : 100;
-    }
-
-    return Number(subject.max_marks || 100);
+    return "";
 }
 
 function grade(mark,max){
@@ -520,7 +529,6 @@ function clearResult(){
 let appSettings = {
     school_name: "",
     school_address: "",
-    exam_name: "",
     head_teacher_name: "",
     class_teacher_8: "",
     class_teacher_9: "",
@@ -549,17 +557,11 @@ async function loadAppSettings(){
             appSettings = {
                 school_name: String(data.school_name ?? "").trim(),
                 school_address: String(data.school_address ?? "").trim(),
-                exam_name: String(data.exam_name ?? "").trim(),
                 head_teacher_name: String(data.head_teacher_name ?? "").trim(),
                 class_teacher_8: String(data.class_teacher_8 ?? "").trim(),
                 class_teacher_9: String(data.class_teacher_9 ?? "").trim(),
                 class_teacher_10: String(data.class_teacher_10 ?? "").trim(),
-                academic_year: String(
-                    data.academic_year ??
-                    data.school_year ??
-                    data.academicYear ??
-                    "2026-27"
-                ).trim()
+                academic_year: String(data.academic_year ?? "2026-27").trim()
             };
 
             const school = $("schoolNameHeader");
@@ -613,37 +615,9 @@ function examDisplayName(examType){
     return examType || "";
 }
 
-/* Settingsನಲ್ಲಿ ಪರೀಕ್ಷೆಯ ಹೆಸರು ಇದ್ದರೆ headerನಲ್ಲಿ ಅದನ್ನೇ ತೋರಿಸಿ.
-   Settings tableನಲ್ಲಿ exam_name column ಇಲ್ಲದಿದ್ದರೂ Result page error ಆಗಬಾರದು. */
-function getExamHeaderName(results){
-    const configured = String(appSettings.exam_name || "").trim();
-    if(configured) return configured;
-
-    return (results || [])
-        .map(r => examDisplayName(r.exam_type))
-        .filter(Boolean)
-        .join(" / ");
-}
-
 /* =========================================================
    VIEW RESULT
 ========================================================= */
-
-function dobTextToISO(value){
-    const m=String(value||"").trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-}
-function isoToDobText(value){
-    const m=String(value||"").trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
-}
-function formatDobInput(value){
-    let d=String(value||"").replace(/\D/g,"").slice(0,8);
-    if(d.length>4) return d.slice(0,2)+"-"+d.slice(2,4)+"-"+d.slice(4);
-    if(d.length>2) return d.slice(0,2)+"-"+d.slice(2);
-    return d;
-}
-
 async function viewResult(){
 
     hideMessage();
@@ -651,8 +625,7 @@ async function viewResult(){
     await loadAppSettings();
 
     const roll=$("rollNumber").value.trim();
-    const dobText=$("dob").value.trim();
-    const dob=dobTextToISO(dobText);
+    const dob=$("dob").value;
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
@@ -661,7 +634,7 @@ async function viewResult(){
     }
 
     if(!dob){
-        showMessage("Date of Birth ಅನ್ನು DD-MM-YYYY ರೂಪದಲ್ಲಿ ನಮೂದಿಸಿ.","error");
+        showMessage("Date of Birth ಆಯ್ಕೆ ಮಾಡಿ.","error");
         $("dob").focus();
         return;
     }
@@ -713,24 +686,13 @@ async function viewResult(){
            2. Load subjects for student's class
         --------------------------------------------- */
         const className=student.class_name;
-        const normalizedStudentClass=normalizeClass(className);
 
-        /* Load active Subject Master rows and match class after
-           normalizing 8 / 9 / 10. This prevents Kannada/English/
-           other codes from being lost because of different class
-           text such as 8, 8th, 8ನೇ ತರಗತಿ, etc. */
-        const {data:allSubjectRows,error:subjectError}=await db
+        const {data:subjects,error:subjectError}=await db
             .from("subjects")
             .select("*")
+            .eq("class_name",className)
             .eq("is_active",true)
             .order("display_order",{ascending:true});
-
-        if(subjectError)
-            throw subjectError;
-
-        const subjects=(allSubjectRows || []).filter(s =>
-            normalizeClass(s.class_name) === normalizedStudentClass
-        );
 
         if(subjectError)
             throw subjectError;
@@ -740,120 +702,40 @@ async function viewResult(){
                 `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
             );
 
-        /* ---------------------------------------------
-           SUBJECT MASTER → STUDENT RESULT — LIVE CODE
+        /* =========================================================
+   SUBJECT MASTER — CURRENT ACTIVE CODE ONLY
+========================================================= */
+const normalizeSubjectName = (name) =>
+    String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
 
-           IMPORTANT:
-           1. Subject Code is NEVER hard-coded here.
-           2. The value displayed in Student Result is always
-              subjects.subject_code from the CURRENT Subject Master row.
-           3. If old duplicate rows exist for the same subject,
-              the row with the highest numeric id is treated as
-              the latest/current Subject Master row.
-           4. Old subject IDs are retained only for finding marks
-              that were already entered earlier.
-        --------------------------------------------- */
-        const normalizeSubjectName = (name) =>
-            String(name || "")
-                .trim()
-                .replace(/\s+/g, " ")
-                .toLowerCase();
+const subjectGroups = new Map();
+(subjects || []).forEach(subject => {
+    const key = normalizeSubjectName(subject.subject_name);
+    if(!key) return;
+    if(!subjectGroups.has(key)) subjectGroups.set(key, []);
+    subjectGroups.get(key).push(subject);
+});
 
-        /*
-           SUBJECT MASTER CURRENT ROWS ONLY
+const uniqueSubjects = [];
+subjectGroups.forEach(group => {
+    /* If duplicate historical rows exist, highest ID is the newest
+       Subject Master record and therefore its current code is used. */
+    group.sort((a,b) => {
+        const aId = Number(a.id), bId = Number(b.id);
+        if(Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) return bId-aId;
+        return Number(a.display_order || 999) - Number(b.display_order || 999);
+    });
+    const chosen = {...group[0]};
+    /* Only for finding old marks; display/WhatsApp always uses chosen.subject_code. */
+    chosen._allSubjectIds = group.map(x => x.id);
+    uniqueSubjects.push(chosen);
+});
 
-           Your Subject Master table stores one row per subject and
-           uses display_order (1,2,3...) to define the subject list.
-           Older rows with old codes/names may still exist in Supabase.
+uniqueSubjects.sort((a,b) =>
+    Number(a.display_order || 999) - Number(b.display_order || 999)
+);
 
-           Therefore we select ONLY the latest row for each
-           display_order. This is important because grouping by
-           subject_name is not safe: the old record may say "ಇಂಗ್ಲಿಷ್"
-           while the current Subject Master record says "English".
-
-           Example:
-             old  -> 02E / ಇಂಗ್ಲಿಷ್
-             current -> 31E / English
-           Result must show ONLY 31E / English.
-        */
-        const subjectGroups = new Map();
-
-        (subjects || []).forEach(subject => {
-            const order = Number(subject.display_order);
-
-            /*
-              display_order is the identity of the Subject Master
-              position. If it is missing, use subject name only as
-              a fallback so the record is not lost.
-            */
-            const key = Number.isFinite(order) && order > 0
-                ? `ORDER_${order}`
-                : `NAME_${normalizeSubjectName(subject.subject_name)}`;
-
-            if(!subjectGroups.has(key))
-                subjectGroups.set(key, []);
-
-            subjectGroups.get(key).push(subject);
-        });
-
-        const uniqueSubjects = [];
-
-        subjectGroups.forEach(group => {
-            /*
-              Latest Subject Master row = highest numeric id.
-              This ensures an old 02E row does not appear together
-              with the current 31E row.
-            */
-            group.sort((a,b) => {
-                const aid = Number(a.id);
-                const bid = Number(b.id);
-
-                if(Number.isFinite(aid) && Number.isFinite(bid) && aid !== bid)
-                    return bid - aid;
-
-                const au = new Date(
-                    a.updated_at || a.created_at || 0
-                ).getTime();
-
-                const bu = new Date(
-                    b.updated_at || b.created_at || 0
-                ).getTime();
-
-                if(Number.isFinite(au) && Number.isFinite(bu) && au !== bu)
-                    return bu - au;
-
-                return 0;
-            });
-
-            const current = {...group[0]};
-
-            /*
-              Keep old IDs only for retrieving previously saved marks.
-              They are NEVER rendered as subjects/codes.
-            */
-            current._allSubjectIds = group
-                .map(x => x.id)
-                .filter(id => id !== null && id !== undefined);
-
-            uniqueSubjects.push(current);
-        });
-
-        uniqueSubjects.sort((a,b) => {
-            const ao = Number(a.display_order);
-            const bo = Number(b.display_order);
-
-            if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo)
-                return ao - bo;
-
-            return Number(a.id || 0) - Number(b.id || 0);
-        });
-
-        /*
-          FINAL RESULT LIST:
-          Only the current Subject Master row for each display_order.
-          Old subject codes are not displayed.
-        */
-        const subjectsForResult = uniqueSubjects;
+const subjectsForResult = uniqueSubjects.slice(0, 6);
 
         /* ---------------------------------------------
            3. Load only published results
@@ -929,9 +811,99 @@ async function viewResult(){
 }
 
 /* =========================================================
+   WHATSAPP RESULT STATE
+========================================================= */
+let currentResultData = {
+    student: null,
+    subjects: [],
+    results: [],
+    marksMap: {}
+};
+
+function cleanIndianMobile(value){
+    let digits = String(value || "").replace(/\D/g, "");
+    if(digits.length === 10) return "91" + digits;
+    if(digits.length === 12 && digits.startsWith("91")) return digits;
+    return digits;
+}
+
+function buildWhatsAppMessage(){
+    const {student,subjects,results,marksMap} = currentResultData;
+    if(!student) return "";
+
+    const lines = [];
+    lines.push(`*${appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು"}*`);
+    if(appSettings.school_address) lines.push(appSettings.school_address);
+    lines.push(`ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${appSettings.academic_year || "2026-27"}`);
+    lines.push("");
+    lines.push(`*ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ*`);
+    lines.push(`ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು: ${getStudentName(student) || "-"}`);
+    lines.push(`Roll No: ${student.roll_no || "-"}`);
+    lines.push(`ತರಗತಿ: ${student.class_name || "-"}`);
+    lines.push(`ವಿಭಾಗ: ${getDivision(student) || "-"}`);
+    lines.push("");
+
+    results.forEach(result => {
+        lines.push(`*${examDisplayName(result.exam_type)}*`);
+        let total = 0, maximum = 0, entered = 0;
+
+        subjects.forEach(subject => {
+            const ids = Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
+                ? subject._allSubjectIds : [subject.id];
+            let value;
+            for(const id of ids){
+                const candidate = marksMap[`${result.id}_${id}`];
+                if(candidate !== null && candidate !== undefined && candidate !== ""){
+                    value = candidate;
+                    break;
+                }
+            }
+            const max = getMaxMarks(student, result.exam_type, subject);
+            maximum += max;
+            const hasMark = value !== null && value !== undefined && value !== "";
+            if(hasMark){
+                total += Number(value);
+                entered++;
+            }
+            const name = subject.subject_name || "";
+            const code = subject.subject_code || "";
+            const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
+            lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
+        });
+
+        const percentage = maximum ? total / maximum * 100 : 0;
+        const finalGrade = entered ? overallGrade(percentage) : "-";
+        const resultText = entered === 0 ? "PENDING" : (passMark(student, percentage) ? "PASS" : "FAIL");
+        lines.push(`ಒಟ್ಟು: ${total.toFixed(2)}/${maximum.toFixed(2)}`);
+        lines.push(`Percentage: ${percentage.toFixed(2)}%`);
+        lines.push(`Grade: ${finalGrade}`);
+        lines.push(`Result: ${resultText}`);
+        lines.push("");
+    });
+
+    lines.push("ಶುಭಾಶಯಗಳೊಂದಿಗೆ,");
+    lines.push("ಮುಖ್ಯಶಿಕ್ಷಕರು");
+    return lines.join("\n");
+}
+
+function sendResultToWhatsApp(){
+    const mobile = cleanIndianMobile(currentResultData.student?.mobile);
+    if(!mobile || (mobile.length !== 12)) {
+        showMessage("ವಿದ್ಯಾರ್ಥಿಯ Mobile Number ಸರಿಯಾಗಿ ನಮೂದಿಸಿಲ್ಲ. Students Databaseನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.", "error");
+        return;
+    }
+
+    const message = buildWhatsAppMessage();
+    const url = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+}
+
+/* =========================================================
    RENDER RESULT
 ========================================================= */
 function renderResult(student,subjects,results,marksMap){
+
+    currentResultData = {student, subjects, results, marksMap};
 
     let html=`
     <div class="card">
@@ -941,7 +913,11 @@ function renderResult(student,subjects,results,marksMap){
                 ${esc(appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
             </h2>
             <div class="exam-name">
-                ${esc(getExamHeaderName(results))}
+                ${esc(
+                    results.length === 1
+                        ? examDisplayName(results[0].exam_type)
+                        : results.map(r => examDisplayName(r.exam_type)).filter(Boolean).join(" / ")
+                )}
             </div>
             <div class="academic-year">
                 ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year || "2026-27")}
@@ -1022,6 +998,10 @@ function renderResult(student,subjects,results,marksMap){
                     onclick="window.print()">
                 🖨️ Print Result
             </button>
+            <button class="btn-whatsapp"
+                    onclick="sendResultToWhatsApp()">
+                📱 WhatsApp ಮೂಲಕ ಫಲಿತಾಂಶ ಕಳುಹಿಸಿ
+            </button>
         </div>
     </div>
     `;
@@ -1081,47 +1061,14 @@ function renderExam(student,subjects,result,marksMap){
             entered++;
         }
 
-        const subjectNameKey = String(
-            subject.subject_name ?? ""
-        ).trim().toLowerCase();
-
-        const subjectNameMap = {
-            "ಕನ್ನಡ": "ಕನ್ನಡ / KANNADA",
-            "kannada": "ಕನ್ನಡ / KANNADA",
-            "ಇಂಗ್ಲಿಷ್": "ಇಂಗ್ಲಿಷ್ / ENGLISH",
-            "english": "ಇಂಗ್ಲಿಷ್ / ENGLISH",
-            "ಹಿಂದಿ": "ಹಿಂದಿ / HINDI",
-            "hindi": "ಹಿಂದಿ / HINDI",
-            "ಗಣಿತ": "ಗಣಿತ / MATHEMATICS",
-            "mathematics": "ಗಣಿತ / MATHEMATICS",
-            "math": "ಗಣಿತ / MATHEMATICS",
-            "maths": "ಗಣಿತ / MATHEMATICS",
-            "ವಿಜ್ಞಾನ": "ವಿಜ್ಞಾನ / SCIENCE",
-            "science": "ವಿಜ್ಞಾನ / SCIENCE",
-            "ಸಮಾಜ ವಿಜ್ಞಾನ": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE",
-            "social science": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE",
-            "social studies": "ಸಮಾಜ ವಿಜ್ಞಾನ / SOCIAL SCIENCE"
-        };
-
-        const displaySubjectName =
-            subjectNameMap[subjectNameKey] ||
-            subject.subject_name ||
-            "-";
-
         rows+=`
         <tr>
             <td class="subject">
-                ${esc(displaySubjectName)}
+                ${esc(subject.subject_name)}
             </td>
 
             <td>
-                ${esc(
-                    String(
-                        subject.subject_code ??
-                        subject.code ??
-                        ""
-                    ).trim() || "-"
-                )}
+                ${esc(subject.subject_code)}
             </td>
 
             <td>
@@ -1161,7 +1108,7 @@ function renderExam(student,subjects,result,marksMap){
 
     return `
         <div class="exam-title">
-            📝 ${esc(examDisplayName(result.exam_type))}
+            📝 ${esc(result.exam_type==="HALF_YEARLY" ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type==="ANNUAL" ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type)}
         </div>
 
         <div class="exam-status">
@@ -1175,7 +1122,7 @@ function renderExam(student,subjects,result,marksMap){
                 <thead>
                     <tr>
                         <th>ವಿಷಯ</th>
-                        <th>ವಿಷಯ ಕೋಡ್</th>
+                        <th>Subject Code</th>
                         <th>ಅಂಕ</th>
                         <th>ಗರಿಷ್ಠ</th>
                         <th>Grade</th>
@@ -1192,26 +1139,26 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${total}</b>
+                <b>${total.toFixed(2)}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${maximum}</b>
+                <b>${maximum.toFixed(2)}</b>
             </div>
 
             <div class="summary-box">
-                ಶೇಕಡಾವಾರು
-                <b>${percentage}%</b>
+                Percentage
+                <b>${percentage.toFixed(2)}%</b>
             </div>
 
             <div class="summary-box">
-                ಒಟ್ಟು ಶ್ರೇಣಿ
+                Overall Grade
                 <b>${finalGrade}</b>
             </div>
 
             <div class="summary-box">
-                ಫಲಿತಾಂಶ
+                Result
                 <b class="${resultClass}">
                     ${resultText}
                 </b>
@@ -1221,20 +1168,326 @@ function renderExam(student,subjects,result,marksMap){
     `;
 }
 
+/* =========================================================
+   BULK WHATSAPP RESULT
+   No API: opens WhatsApp Ready Messages for selected students.
+========================================================= */
+let bulkStudents = [];
 
-/* Date of Birth: type DD-MM-YYYY or choose from calendar */
-$("dob").addEventListener("input",function(){
-    this.value=formatDobInput(this.value);
+function setBulkStatus(text, show=true){
+    const el = $("bulkStatus");
+    if(!el) return;
+    el.textContent = text || "";
+    el.className = show ? "bulk-status show" : "bulk-status";
+}
+
+function updateBulkCount(){
+    const checks = document.querySelectorAll(".bulk-student-check:checked");
+    const count = checks.length;
+    const el = $("bulkSelectedCount");
+    if(el) el.textContent = `${count} ವಿದ್ಯಾರ್ಥಿಗಳು ಆಯ್ಕೆ`;
+    const all = bulkStudents.length > 0 && count === bulkStudents.length;
+    const master = $("bulkSelectAll");
+    const header = $("bulkHeaderCheck");
+    if(master) master.checked = all;
+    if(header) header.checked = all;
+}
+
+function toggleBulkSelectAll(checked){
+    document.querySelectorAll(".bulk-student-check").forEach(cb => cb.checked = checked);
+    updateBulkCount();
+}
+
+function renderBulkStudents(){
+    const body = $("bulkStudentsBody");
+    if(!body) return;
+    if(!bulkStudents.length){
+        body.innerHTML = `<tr><td colspan="6" class="bulk-empty">Active students ಸಿಗಲಿಲ್ಲ.</td></tr>`;
+        updateBulkCount();
+        return;
+    }
+    const selectedClass=String($("bulkClass")?.value||"").trim();
+    const visibleStudents=bulkStudents
+        .map((s,i)=>({s,i}))
+        .filter(x=>!selectedClass || String(x.s.class_name||"").trim()===selectedClass);
+
+    if(!visibleStudents.length){
+        body.innerHTML=`<tr><td colspan="6" class="bulk-empty">ಈ ತರಗತಿಗೆ Students ಸಿಗಲಿಲ್ಲ.</td></tr>`;
+        updateBulkCount();
+        return;
+    }
+
+    body.innerHTML = visibleStudents.map(({s,i})=>`
+        <tr>
+            <td><input type="checkbox" class="bulk-student-check" data-index="${i}" onchange="updateBulkCount()"></td>
+            <td>${esc(s.roll_no || "")}</td>
+            <td>${esc(getStudentName(s) || "")}</td>
+            <td>${esc(s.class_name || "")}</td>
+            <td>${esc(getDivision(s) || "")}</td>
+            <td>${esc(s.mobile || "-" )}</td>
+        </tr>`).join("");
+    updateBulkCount();
+}
+
+
+async function loadBulkAcademicYears(){
+    const select=$("bulkAcademicYear");
+    if(!select) return;
+
+    try{
+        await loadAppSettings();
+
+        const currentYear=String(appSettings.academic_year || "").trim();
+
+        // Read years from the same Students table used by Marks Entry.
+        const {data,error}=await db
+            .from("students")
+            .select("academic_year")
+            .eq("is_active",true);
+
+        if(error) throw error;
+
+        const years=[...new Set((data||[])
+            .map(s=>String(s.academic_year || "").trim())
+            .filter(Boolean))];
+
+        if(currentYear && !years.includes(currentYear)){
+            years.push(currentYear);
+        }
+
+        years.sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
+
+        select.innerHTML = years.length
+            ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
+            : `<option value="">${esc(currentYear || "Year ಸಿಗಲಿಲ್ಲ")}</option>`;
+
+        if(currentYear && years.includes(currentYear)){
+            select.value=currentYear;
+        }
+
+    }catch(error){
+        console.error("Academic Year Load Error:",error);
+        select.innerHTML=`<option value="">Year Load Error</option>`;
+    }
+}
+
+
+
+async function filterPublishedStudents(){
+    const exam=String($("bulkExam")?.value || "HALF_YEARLY").trim();
+    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
+
+    const allStudents=bulkStudents.slice();
+    if(!allStudents.length) return;
+
+    const ids=allStudents.map(s=>s.id).filter(Boolean);
+    if(!ids.length) return;
+
+    let q=db
+        .from("exam_results")
+        .select("student_id,published,exam_type,academic_year")
+        .in("student_id",ids)
+        .eq("exam_type",exam)
+        .eq("published",true);
+
+    if(year) q=q.eq("academic_year",year);
+
+    let {data,error}=await q;
+    if(error){
+        // Compatibility if exam_results does not have academic_year.
+        const msg=String(error.message||error).toLowerCase();
+        if(msg.includes("academic_year") && msg.includes("column")){
+            const retry=await db
+                .from("exam_results")
+                .select("student_id,published,exam_type")
+                .in("student_id",ids)
+                .eq("exam_type",exam)
+                .eq("published",true);
+            if(retry.error) throw retry.error;
+            data=retry.data||[];
+        }else{
+            throw error;
+        }
+    }
+
+    const publishedIds=new Set((data||[]).map(r=>String(r.student_id)));
+    bulkStudents=allStudents.filter(s=>publishedIds.has(String(s.id)));
+}
+
+function populateBulkClasses(){
+    const select=$("bulkClass");
+    if(!select) return;
+    const classes=[...new Set(bulkStudents.map(s=>String(s.class_name||"").trim()).filter(Boolean))]
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    select.innerHTML='<option value="">All Classes</option>'+
+        classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+}
+
+async function loadBulkStudents(){
+    await loadAppSettings();
+    if(!$("bulkAcademicYear")?.value){
+        await loadBulkAcademicYears();
+    }
+    setBulkStatus("⏳ Students load ಆಗುತ್ತಿದೆ...");
+    try{
+        const academicYear=String(
+            $("bulkAcademicYear")?.value ||
+            appSettings.academic_year ||
+            ""
+        ).trim();
+
+        let query=db
+            .from("students")
+            .select("*")
+            .eq("is_active",true);
+
+        if(academicYear){
+            query=query.eq("academic_year",academicYear);
+        }
+
+        const {data,error}=await query
+            .order("class_name",{ascending:true})
+            .order("roll_no",{ascending:true});
+        if(error) throw error;
+        bulkStudents = data || [];
+        populateBulkClasses();
+        await filterPublishedStudents();
+        renderBulkStudents();
+        setBulkStatus(`✅ ${bulkStudents.length} active students load ಆಗಿದ್ದಾರೆ. ಬೇಡದವರನ್ನು Untick ಮಾಡಿ.`);
+    }catch(error){
+        console.error("Bulk Students Load Error:",error);
+        bulkStudents=[];
+        renderBulkStudents();
+        setBulkStatus("❌ Students load failed: " + (error.message || String(error)));
+    }
+}
+
+function dedupeSubjectsForBulk(subjects){
+    const normalize = name => String(name || "").trim().replace(/\\s+/g," ").toLowerCase();
+    const groups = new Map();
+    (subjects || []).forEach(subject=>{
+        const key=normalize(subject.subject_name);
+        if(!key) return;
+        if(!groups.has(key)) groups.set(key,[]);
+        groups.get(key).push(subject);
+    });
+    const unique=[];
+    groups.forEach(group=>{
+        group.sort((a,b)=>{
+            const ai=Number(a.id), bi=Number(b.id);
+            if(Number.isFinite(ai)&&Number.isFinite(bi)&&ai!==bi) return bi-ai;
+            return Number(a.display_order||999)-Number(b.display_order||999);
+        });
+        const chosen={...group[0]};
+        chosen._allSubjectIds=group.map(x=>x.id).filter(x=>x!==null&&x!==undefined);
+        unique.push(chosen);
+    });
+    unique.sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999));
+    return unique.slice(0,6);
+}
+
+async function loadResultDataForStudent(student){
+    const className=student.class_name;
+    const {data:subjects,error:subjectError}=await db
+        .from("subjects").select("*")
+        .eq("class_name",className)
+        .eq("academic_year",String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim())
+        .eq("is_active",true)
+        .order("display_order",{ascending:true});
+    if(subjectError) throw subjectError;
+
+    const subjectsForResult=dedupeSubjectsForBulk(subjects || []);
+    const {data:results,error:resultError}=await db
+        .from("exam_results")
+        .select("id,student_id,exam_type,published")
+        .eq("student_id",student.id)
+        .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
+        .eq("published",true)
+        .order("id",{ascending:true});
+    if(resultError) throw resultError;
+
+    const resultIds=(results||[]).map(r=>r.id);
+    let marks=[];
+    if(resultIds.length){
+        const {data:markRows,error:markError}=await db
+            .from("result_marks")
+            .select("exam_result_id,subject_id,marks")
+            .in("exam_result_id",resultIds);
+        if(markError) throw markError;
+        marks=markRows||[];
+    }
+    const marksMap={};
+    marks.forEach(m=>marksMap[`${m.exam_result_id}_${m.subject_id}`]=m.marks);
+    return {student,subjects:subjectsForResult,results:results||[],marksMap};
+}
+
+async function openBulkWhatsAppForStudent(student){
+    const mobile=cleanIndianMobile(student.mobile);
+    if(!mobile || mobile.length!==12) return {ok:false,reason:"Mobile Number ಇಲ್ಲ/ತಪ್ಪಾಗಿದೆ"};
+    const data=await loadResultDataForStudent(student);
+    if(!data.results.length) return {ok:false,reason:"Published result ಇಲ್ಲ"};
+    const message=buildWhatsAppMessageFromData(data);
+    const url=`https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
+    window.open(url,"_blank","noopener,noreferrer");
+    return {ok:true};
+}
+
+function buildWhatsAppMessageFromData(data){
+    const old=currentResultData;
+    currentResultData=data;
+    const msg=buildWhatsAppMessage();
+    currentResultData=old;
+    return msg;
+}
+
+async function sendSelectedResultsToWhatsApp(){
+    const selected=[...document.querySelectorAll(".bulk-student-check:checked")]
+        .map(cb=>bulkStudents[Number(cb.dataset.index)])
+        .filter(Boolean);
+    if(!selected.length){
+        setBulkStatus("⚠️ ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Select ಮಾಡಿ.");
+        return;
+    }
+
+    if(!confirm(`${selected.length} ವಿದ್ಯಾರ್ಥಿಗಳ WhatsApp Resultಗಳನ್ನು open ಮಾಡಬೇಕೇ?\
+\
+WhatsApp message Ready ಆಗುತ್ತದೆ. ಪ್ರತಿ chatನಲ್ಲಿ Send ಒತ್ತಬೇಕು.`)) return;
+
+    setBulkStatus(`⏳ ${selected.length} ವಿದ್ಯಾರ್ಥಿಗಳ result ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...`);
+    let opened=0, skipped=0;
+
+    for(let i=0;i<selected.length;i++){
+        const student=selected[i];
+        try{
+            const result=await openBulkWhatsAppForStudent(student);
+            if(result.ok) opened++; else skipped++;
+        }catch(error){
+            console.error("Bulk WhatsApp Error:",student,error);
+            skipped++;
+        }
+        setBulkStatus(`📱 ${i+1}/${selected.length} processed — ${opened} opened, ${skipped} skipped.`);
+        await new Promise(resolve=>setTimeout(resolve,700));
+    }
+
+    setBulkStatus(`✅ ಪೂರ್ಣಗೊಂಡಿದೆ: ${opened} WhatsApp chats open ಮಾಡಲು ಪ್ರಯತ್ನಿಸಲಾಗಿದೆ. ${skipped} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು skip ಮಾಡಲಾಗಿದೆ. WhatsAppನಲ್ಲಿ ಪ್ರತಿ messageಗೆ Send ಒತ್ತಿ.`);
+}
+
+
+$("bulkAcademicYear").addEventListener("change",function(){
+    loadBulkStudents();
 });
-$("dobCalendarBtn").addEventListener("click",function(){
-    const p=$("dobPicker");
-    const iso=dobTextToISO($("dob").value);
-    if(iso) p.value=iso;
-    if(typeof p.showPicker==="function") p.showPicker();
-    else p.click();
+
+(async function(){
+    await loadBulkAcademicYears();
+    await loadBulkStudents();
+})();
+
+$("bulkClass").addEventListener("change",function(){
+    renderBulkStudents();
 });
-$("dobPicker").addEventListener("change",function(){
-    if(this.value) $("dob").value=isoToDobText(this.value);
+
+$("bulkExam").addEventListener("change",async function(){
+    await loadBulkStudents();
 });
 
 /* Enter key support */
@@ -1245,7 +1498,7 @@ $("rollNumber").addEventListener("keydown",function(e){
 $("dob").addEventListener("keydown",function(e){
     if(e.key==="Enter") viewResult();
 });
-</script>
 
+</script>
 </body>
 </html>
