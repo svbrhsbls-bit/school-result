@@ -148,15 +148,14 @@ async function loadAcademicYear(){
   if(!el) return "";
 
   /*
-    IMPORTANT:
-    Students Database stores the academic year using
-    students.academic_year_id.
+    Students Database stores the academic year in:
+    students.academic_year
 
-    Therefore Publish Results must also use academic_year_id,
-    not the visible year text.
+    Therefore the dropdown value must also be the year text
+    (for example 2026-27), not an academic_years.id.
   */
   const yr=await db.from("academic_years")
-    .select("id,academic_year")
+    .select("academic_year")
     .order("academic_year",{ascending:false});
 
   if(yr.error) throw yr.error;
@@ -168,31 +167,23 @@ async function loadAcademicYear(){
 
   if(settings.error) throw settings.error;
 
-  const years=(yr.data||[])
-    .filter(x=>x.id!==null && x.id!==undefined)
-    .map(x=>({
-      id:String(x.id),
-      name:String(x.academic_year||"").trim()
-    }))
-    .filter(x=>x.name);
+  const years=[...new Set((yr.data||[])
+    .map(x=>String(x.academic_year||"").trim())
+    .filter(Boolean))];
 
   const current=String(settings.data?.academic_year||"").trim();
 
-  el.innerHTML=years.length
-    ? years.map(y=>
-        `<option value="${esc(y.id)}">${esc(y.name)}</option>`
-      ).join("")
-    : `<option value="">No Academic Year</option>`;
-
-  const currentRow=years.find(y=>y.name===current);
-
-  if(currentRow){
-    el.value=currentRow.id;
-  }else if(years.length){
-    el.value=years[0].id;
+  if(current && !years.includes(current)){
+    years.unshift(current);
   }
 
-  return el.value;
+  el.innerHTML=years.length
+    ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
+    : `<option value="">No Academic Year</option>`;
+
+  if(current){
+    el.value=current;
+  }
 }
 
 const val=(o,a)=>{for(const k of a)if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];return""};
@@ -228,15 +219,15 @@ async function loadResults(){
   $("tbody").innerHTML="<tr><td colspan='6'>⏳ Loading...</td></tr>";
 
   try{
-    const academicYearId=$("academicYearSelect").value.trim();
-    if(!academicYearId) throw new Error("Academic Year ಆಯ್ಕೆ ಆಗಿಲ್ಲ.");
+    const academicYear=$("academicYearSelect").value.trim();
+    if(!academicYear) throw new Error("Academic Year ಆಯ್ಕೆ ಆಗಿಲ್ಲ.");
 
     // Load ONLY students belonging to the selected Academic Year.
-    // Students Database stores the year in academic_year_id.
+    // Students Database stores the year in students.academic_year.
     // A student remains in the list even when no marks are entered.
     const sr=await db.from("students").select("*")
-      .eq("academic_year_id",academicYearId)
-      .eq("active",true);
+      .eq("academic_year",academicYear)
+      .eq("is_active",true);
     if(sr.error) throw sr.error;
 
     const students=(sr.data||[]).filter(s=>
