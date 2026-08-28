@@ -437,22 +437,22 @@ function getDivision(student){
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
     const cls=getClass(student);
+    const code=String(subject?.subject_code || "").trim();
 
-    if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
-        if(cls==="8") return 50;
-
-        if(cls==="9" || cls==="10")
-            return subject.subject_code==="01K" ? 100 : 80;
+    // Subject Master stores exam-wise Maximum Marks in localStorage using
+    // the same key format as subjects.html.
+    const key="subject_marks_" + cls + "_" + examType + "_" + code;
+    const saved=localStorage.getItem(key);
+    if(saved!==null && saved!==""){
+        const n=Number(saved);
+        if(Number.isFinite(n) && n>0) return n;
     }
 
-    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
-        if(cls==="8") return 100;
+    // Fallback to the Subject Master database value for this academic year.
+    const dbMax=Number(subject?.max_marks);
+    if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
 
-        if(cls==="9" || cls==="10")
-            return subject.subject_code==="01K" ? 125 : 100;
-    }
-
-    return Number(subject.max_marks || 100);
+    return 100;
 }
 
 function grade(mark,max){
@@ -1375,6 +1375,7 @@ async function loadResultDataForStudent(student){
     const {data:subjects,error:subjectError}=await db
         .from("subjects").select("*")
         .eq("class_name",className)
+        .eq("academic_year",String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim())
         .eq("is_active",true)
         .order("display_order",{ascending:true});
     if(subjectError) throw subjectError;
@@ -1384,7 +1385,7 @@ async function loadResultDataForStudent(student){
         .from("exam_results")
         .select("id,student_id,exam_type,published")
         .eq("student_id",student.id)
-        .in("exam_type",["HALF_YEARLY","ANNUAL"])
+        .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
         .eq("published",true)
         .order("id",{ascending:true});
     if(resultError) throw resultError;
