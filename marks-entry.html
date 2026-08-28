@@ -2638,38 +2638,11 @@ function printMarks(){
 
     let html = "";
 
-    /* Keep the original top heading exactly as before */
-    html +=
-        "<h2 style='text-align:center;margin:0 0 4px;'>" +
-        "ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ ಬಲ್ಲಾಳಸಮುದ್ರ ಹೊಸದುರ್ಗ" +
-        "</h2>";
+    /* Only the line below the existing
+       "ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು" heading is added.
+       School name / Marks Entry / academic year
+       are already present in the page header. */
 
-    html +=
-        "<div style='text-align:center;font-size:12px;margin:0 0 3px;'>" +
-        "Marks Entry" +
-        "</div>";
-
-    html +=
-        "<div style='text-align:center;font-size:12px;margin:0 0 8px;'>" +
-        "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - " +
-        escapeHtml(
-            String(
-                document.getElementById("academicYear")?.value || ""
-            )
-        ) +
-        "</div>";
-
-    html +=
-        "<hr style='margin:0 0 12px;border:0;border-top:1px solid #333;'>";
-
-    /* Total students remains in the same position */
-    html +=
-        "<div style='font-size:15px;font-weight:700;margin:0 0 10px;'>" +
-        "ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: " +
-        students.length +
-        "</div>";
-
-    /* Only this line is changed as requested */
     const examText =
         currentExam === "HALF_YEARLY"
         ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
@@ -2680,14 +2653,16 @@ function printMarks(){
         );
 
     html +=
-        "<h3 style='text-align:center;margin:0 0 10px;font-size:16px;'>" +
+        "<h3 style='text-align:center;margin:8px 0 10px;font-size:16px;'>" +
         escapeHtml(currentClass) +
         "ನೇ ತರಗತಿಯ " +
         escapeHtml(examText) +
-        " - " +
+        " -" +
         escapeHtml(
             String(
-                document.getElementById("academicYear")?.value || ""
+                document.getElementById("academicYearSelect")?.value ||
+                document.getElementById("academicYear")?.value ||
+                ""
             )
         ) +
         "</h3>";
