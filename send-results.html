@@ -439,16 +439,33 @@ function getMaxMarks(student, examType, subject){
     const cls=getClass(student);
     const code=String(subject?.subject_code || "").trim();
 
-    // Subject Master stores exam-wise Maximum Marks in localStorage using
-    // the same key format as subjects.html.
-    const key="subject_marks_" + cls + "_" + examType + "_" + code;
-    const saved=localStorage.getItem(key);
-    if(saved!==null && saved!==""){
-        const n=Number(saved);
-        if(Number.isFinite(n) && n>0) return n;
+    /*
+      Subject Master uses the Kannada class names in its localStorage keys:
+      8ನೇ ತರಗತಿ / 9ನೇ ತರಗತಿ / 10ನೇ ತರಗತಿ.
+      Students may store the class as 8 / 9 / 10, so try BOTH forms.
+      This makes Send Results use exactly the Maximum Marks saved in
+      Subject Master for the selected exam.
+    */
+    const classNames={
+        "8":["8ನೇ ತರಗತಿ","8"],
+        "9":["9ನೇ ತರಗತಿ","9"],
+        "10":["10ನೇ ತರಗತಿ","10"]
+    };
+    const candidates=classNames[cls] || [cls];
+
+    for(const className of candidates){
+        const key="subject_marks_" + className + "_" + examType + "_" + code;
+        const saved=localStorage.getItem(key);
+        if(saved!==null && saved!==""){
+            const n=Number(saved);
+            if(Number.isFinite(n) && n>0) return n;
+        }
     }
 
-    // Fallback to the Subject Master database value for this academic year.
+    /*
+      If no exam-wise browser value exists, use the subject row's
+      max_marks from the selected Academic Year.
+    */
     const dbMax=Number(subject?.max_marks);
     if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
 
