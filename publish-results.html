@@ -280,7 +280,21 @@ async function loadResults(){
 
     rows=students.map((s,i)=>{
       const result=results.find(r=>String(r.student_id)===String(s.id))||null;
-      const hasMarks=!!(result && marksByResult[result.id]);
+      /*
+      PUBLISH RULE:
+      Exactly 6 subject marks are required.
+      If even one of the 6 subjects has no mark,
+      the student cannot be published.
+    */
+    const enteredMarks = result
+      ? Object.values(marksByResult[result.id] || {}).filter(m =>
+          m !== null &&
+          m !== undefined &&
+          String(m).trim() !== ""
+        ).length
+      : 0;
+
+    const hasMarks = enteredMarks === 6;
       return {
         student:s,
         index:i,
