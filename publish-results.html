@@ -54,6 +54,12 @@ button{border:0;padding:10px 15px;margin:12px 6px 0 0;border-radius:7px;color:#f
 <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
 </select>
 </div>
+<div>
+<label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
+<select id="academicYearSelect">
+<option value="">Loading...</option>
+</select>
+</div>
 </div>
 <div class="actions">
 <button class="b" onclick="loadResults()">🔄 Students Load</button>
@@ -100,6 +106,33 @@ let rows=[];
 let currentClass="8", currentDivision="A", currentExam="HALF_YEARLY";
 
 const $=id=>document.getElementById(id);
+
+async function loadAcademicYear(){
+  const el=$("academicYearSelect");
+  if(!el) return "";
+  const yr=await db.from("academic_years")
+    .select("academic_year")
+    .order("academic_year",{ascending:false});
+  if(yr.error) throw yr.error;
+
+  const settings=await db.from("settings")
+    .select("academic_year")
+    .eq("id",1)
+    .maybeSingle();
+  if(settings.error) throw settings.error;
+
+  const years=[...new Set((yr.data||[])
+    .map(x=>String(x.academic_year||"").trim())
+    .filter(Boolean))];
+  const current=String(settings.data?.academic_year||"").trim();
+  if(current && !years.includes(current)) years.unshift(current);
+
+  el.innerHTML=years.length
+    ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
+    : `<option value="">No Academic Year</option>`;
+  if(current) el.value=current;
+}
+
 const val=(o,a)=>{for(const k of a)if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];return""};
 const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 
@@ -133,7 +166,15 @@ async function loadResults(){
   $("tbody").innerHTML="<tr><td colspan='6'>⏳ Loading...</td></tr>";
 
   try{
-    const sr=await db.from("students").select("*");
+    const academicYear=$("academicYearSelect").value.trim();
+
+    if(!academicYear) throw new Error("Academic Year ಆಯ್ಕೆ ಆಗಿಲ್ಲ.");
+
+
+    const sr=await db.from("students").select("*")
+
+      .eq("academic_year",academicYear);
+
     if(sr.error) throw sr.error;
 
     const students=(sr.data||[]).filter(s=>
@@ -276,6 +317,16 @@ function clearList(){
   $("headCheck").checked=false;
   hideMsg();
 }
+
+(async function(){
+  try{
+    await loadAcademicYear();
+  }catch(e){
+    console.error(e);
+    showMsg("Academic Year Load Error: "+(e.message||String(e)),"err");
+  }
+})();
+
 </script>
 </body>
 </html>
