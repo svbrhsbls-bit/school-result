@@ -250,6 +250,7 @@ tr:hover{
     <div class="card">
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ Database</h2>
+        <div id="currentYearBadge" style="display:inline-block;margin:0 0 15px;padding:7px 12px;border-radius:20px;background:#e8f5e9;color:#137333;font-weight:700;">ಶೈಕ್ಷಣಿಕ ವರ್ಷ: Loading...</div>
 
         <div class="selection">
 
@@ -455,16 +456,39 @@ const db = window.supabase.createClient(
     SUPABASE_KEY
 );
 
+/* =========================================================
+   YEAR WISE DATA
+========================================================= */
+let currentAcademicYear = "";
+
+async function loadCurrentAcademicYear(){
+    const {data,error} = await db
+        .from("settings")
+        .select("academic_year")
+        .eq("id",1)
+        .maybeSingle();
+    if(error) throw error;
+    currentAcademicYear = String(data?.academic_year || "").trim();
+    if(!currentAcademicYear) throw new Error("Settingsನಲ್ಲಿ Current Academic Year ಆಯ್ಕೆ ಮಾಡಿಲ್ಲ.");
+    const badge = document.getElementById("currentYearBadge");
+    if(badge) badge.textContent = "ಶೈಕ್ಷಣಿಕ ವರ್ಷ: " + currentAcademicYear;
+}
+
+
 
 /* =========================================================
    PAGE LOAD
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", function(){
-
+document.addEventListener("DOMContentLoaded", async function(){
     console.log("Students Database loaded.");
     console.log("Supabase URL:", SUPABASE_URL);
-
+    try{
+        await loadCurrentAcademicYear();
+    }catch(error){
+        console.error("Academic Year Load Error:", error);
+        showMessage("Current Academic Year Load Error: " + getSupabaseError(error), "error");
+    }
 });
 
 
@@ -541,7 +565,7 @@ function getFormData(){
             divisionValue,
 
         academic_year:
-            "2026-27",
+            currentAcademicYear,
 
         is_active:true
     };
@@ -553,6 +577,11 @@ function getFormData(){
    ========================================================= */
 
 function validateForm(){
+
+    if(!currentAcademicYear){
+        showMessage("Current Academic Year Load ಆಗಿಲ್ಲ. Settings ಪರಿಶೀಲಿಸಿ.", "error");
+        return false;
+    }
 
     const data = getFormData();
 
@@ -671,6 +700,10 @@ async function saveStudent(){
 
 async function loadStudents(){
 
+    if(!currentAcademicYear){
+        try{ await loadCurrentAcademicYear(); }catch(error){ showMessage("Academic Year Load Error: " + getSupabaseError(error), "error"); return; }
+    }
+
     const classValue =
         document.getElementById("classSelect").value;
 
@@ -715,6 +748,7 @@ async function loadStudents(){
                 .select("*")
                 .eq("class_name", classValue)
                 .eq("division", divisionValue)
+                .eq("academic_year", currentAcademicYear)
                 .eq("is_active", true)
                 .order("roll_no", {ascending:true});
 
@@ -1434,8 +1468,8 @@ async function handleExcelUpload(event){
                 caste: caste,
                 mobile: mobileClean,
                 class_name: classValue,
-                division: "A",
-                academic_year: "2026-27",
+                division: divisionValue,
+                academic_year: currentAcademicYear,
                 is_active: true
             };
 
@@ -1444,7 +1478,8 @@ async function handleExcelUpload(event){
                 .from("students")
                 .select("id")
                 .eq("class_name", classValue)
-                .eq("division", "A")
+                .eq("division", divisionValue)
+                .eq("academic_year", currentAcademicYear)
                 .eq("roll_no", rollNo)
                 .limit(1);
 
