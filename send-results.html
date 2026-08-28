@@ -436,32 +436,38 @@ function getDivision(student){
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
-    // Subject Master is the ONLY source for exam-wise maximum marks.
-    const cls = String(getClass(student) || subject?.class_name || "").trim();
-    const code = String(subject?.subject_code ?? subject?.code ?? "").trim().toUpperCase();
+    const cls = String(subject?.class_name || getClass(student) || "").trim();
+    const code = String(subject?.subject_code || subject?.code || "").trim().toUpperCase();
     const exam = String(examType || "").trim();
+
     if(!cls || !code || !exam) return null;
 
-    const variants = {
+    const classVariants = {
         "8ನೇ ತರಗತಿ":["8ನೇ ತರಗತಿ","8"],
         "9ನೇ ತರಗತಿ":["9ನೇ ತರಗತಿ","9"],
         "10ನೇ ತರಗತಿ":["10ನೇ ತರಗತಿ","10"],
         "8":["8ನೇ ತರಗತಿ","8"],
         "9":["9ನೇ ತರಗತಿ","9"],
         "10":["10ನೇ ತರಗತಿ","10"]
-    }[cls] || [cls];
+    };
 
+    const variants = classVariants[cls] || [cls];
+
+    // 1) EXACT exam-wise value saved by Subject Master.
     for(const c of variants){
-        const raw = localStorage.getItem(`subject_marks_${c}_${exam}_${code}`);
+        const key = `subject_marks_${c}_${exam}_${code}`;
+        const raw = localStorage.getItem(key);
         if(raw !== null && String(raw).trim() !== ""){
             const n = Number(raw);
             if(Number.isFinite(n) && n > 0) return n;
         }
     }
 
-    // Fallback only to the Subject Master database row.
+    // 2) Subject Master database row.
     const dbMax = Number(subject?.max_marks);
-    return Number.isFinite(dbMax) && dbMax > 0 ? dbMax : null;
+    if(Number.isFinite(dbMax) && dbMax > 0) return dbMax;
+
+    return null;
 }
 
 function grade(mark,max){
@@ -707,39 +713,21 @@ async function viewResult(){
             );
 
         /* =========================================================
-   SUBJECT MASTER — CURRENT ACTIVE CODE ONLY
+   SUBJECT MASTER — USE THE ACTUAL ACTIVE ROWS
+   IMPORTANT:
+   Do NOT merge subjects by subject_name.
+   result_marks is linked by subject_id, so changing the row/code
+   can make the displayed subject code and marks mismatch.
 ========================================================= */
-const normalizeSubjectName = (name) =>
-    String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
-
-const subjectGroups = new Map();
-(subjects || []).forEach(subject => {
-    const key = normalizeSubjectName(subject.subject_name);
-    if(!key) return;
-    if(!subjectGroups.has(key)) subjectGroups.set(key, []);
-    subjectGroups.get(key).push(subject);
-});
-
-const uniqueSubjects = [];
-subjectGroups.forEach(group => {
-    /* If duplicate historical rows exist, highest ID is the newest
-       Subject Master record and therefore its current code is used. */
-    group.sort((a,b) => {
-        const aId = Number(a.id), bId = Number(b.id);
-        if(Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) return bId-aId;
-        return Number(a.display_order || 999) - Number(b.display_order || 999);
-    });
-    const chosen = {...group[0]};
-    /* Only for finding old marks; display/WhatsApp always uses chosen.subject_code. */
-    chosen._allSubjectIds = group.map(x => x.id);
-    uniqueSubjects.push(chosen);
-});
-
-uniqueSubjects.sort((a,b) =>
-    Number(a.display_order || 999) - Number(b.display_order || 999)
-);
-
-const subjectsForResult = uniqueSubjects.slice(0, 6);
+const subjectsForResult = (subjects || [])
+    .filter(s => s && s.is_active !== false)
+    .sort((a,b) => {
+        const ao = Number(a.display_order);
+        const bo = Number(b.display_order);
+        if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo) return ao-bo;
+        return Number(a.id || 0) - Number(b.id || 0);
+    })
+    .slice(0, 6);
 
         /* ---------------------------------------------
            3. Load only published results
@@ -870,8 +858,8 @@ function buildWhatsAppMessage(){
                 entered++;
             }
             const name = subject.subject_name || "";
-            const code = subject.subject_code || "";
-            const maxText = max === "" ? "-" : Number(max).toString();
+            const code = String(subject.subject_code || subject.code || "").trim();
+            const maxText = (max === null || max === undefined || max === "") ? "-" : Number(max).toString();
             const markText = hasMark
                 ? `${value}/${maxText} (${grade(value,max)})`
                 : `-/${maxText}`;
@@ -1056,7 +1044,7 @@ function renderExam(student,subjects,result,marksMap){
                 subject
             );
 
-        maximum+=max;
+        if(Number.isFinite(Number(max)) && Number(max) > 0) maximum+=Number(max);
 
         const hasMark=
             value!==null &&
@@ -1082,7 +1070,7 @@ function renderExam(student,subjects,result,marksMap){
                 ${hasMark ? esc(value) : "-"}
             </td>
 
-            <td>${max}</td>
+            <td>${max === null || max === undefined ? "-" : max}</td>
 
             <td>
                 ${hasMark ? grade(value,max) : "-"}
