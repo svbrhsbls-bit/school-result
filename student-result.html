@@ -186,18 +186,6 @@ td.subject{text-align:left;font-weight:700}
     font-size:16px;
     font-weight:800;
 }
-
-.dob-input-wrap{position:relative;width:100%;}
-.dob-input-wrap #dob{padding-right:48px;}
-.dob-calendar{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:38px;padding:0;background:transparent;color:#17324d;font-size:21px;}
-.dob-picker{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;padding:0!important;border:0!important;}
-.dob-help{display:block;margin-top:5px;font-size:12px;color:#6b7280;}
-@media(max-width:700px){
- .dob-input-wrap #dob{min-height:46px;font-size:16px;padding-right:48px;}
- .dob-calendar{width:42px;height:42px;font-size:21px;}
- .dob-help{font-size:11px;}
-}
-
 @media print{
     body{
         background:#fff;
@@ -258,249 +246,6 @@ td.subject{text-align:left;font-weight:700}
     table{min-width:0;font-size:11px}
     th,td{padding:5px}
 }
-
-/* ============================================================
-   MOBILE RESULT VIEW
-   Only visual/layout changes. Existing data and calculations
-   remain untouched.
-   ============================================================ */
-@media (max-width:700px){
-
-    body{
-        overflow-x:hidden;
-        background:#fff;
-    }
-
-    .header{
-        padding:14px 8px;
-    }
-
-    .header h1{
-        font-size:18px;
-        line-height:1.35;
-    }
-
-    .header p{
-        font-size:12px;
-        line-height:1.4;
-        margin-top:4px;
-    }
-
-    .container{
-        width:100%;
-        max-width:none;
-        margin:0;
-        padding:6px;
-    }
-
-    .card{
-        border-radius:8px;
-        box-shadow:none;
-        padding:10px;
-        margin-bottom:8px;
-    }
-
-    .result-head{
-        padding-bottom:8px;
-        margin-bottom:8px;
-    }
-
-    .result-settings-head .school-name{
-        font-size:18px;
-        line-height:1.3;
-    }
-
-    .result-settings-head .exam-name{
-        font-size:15px;
-    }
-
-    .result-settings-head .academic-year{
-        font-size:12px;
-    }
-
-    .student-info{
-        grid-template-columns:repeat(2, minmax(0,1fr));
-        gap:5px;
-        padding:7px;
-        margin-bottom:8px;
-    }
-
-    .info-item{
-        font-size:12px;
-        min-width:0;
-        overflow-wrap:anywhere;
-    }
-
-    .exam-title{
-        margin-top:10px;
-        padding:7px 8px;
-        border-radius:6px 6px 0 0;
-        font-size:14px;
-    }
-
-    .exam-status{
-        padding:6px 8px;
-        font-size:12px;
-    }
-
-    /*
-      IMPORTANT:
-      Remove horizontal scrolling completely.
-      The existing table becomes a compact 5-column SSLC-style
-      mobile table that fits inside the phone width.
-    */
-    .table-wrap{
-        width:100%;
-        overflow:visible !important;
-    }
-
-    table{
-        width:100% !important;
-        min-width:0 !important;
-        max-width:100%;
-        table-layout:fixed;
-        border-collapse:collapse;
-        font-size:10px;
-    }
-
-    th,td{
-        padding:5px 2px;
-        line-height:1.25;
-        word-break:break-word;
-        overflow-wrap:anywhere;
-        white-space:normal;
-    }
-
-    table th:nth-child(1),
-    table td:nth-child(1){
-        width:34%;
-    }
-
-    table th:nth-child(2),
-    table td:nth-child(2){
-        width:17%;
-    }
-
-    table th:nth-child(3),
-    table td:nth-child(3){
-        width:15%;
-    }
-
-    table th:nth-child(4),
-    table td:nth-child(4){
-        width:15%;
-    }
-
-    table th:nth-child(5),
-    table td:nth-child(5){
-        width:19%;
-    }
-
-    th{
-        font-size:10px;
-        padding:6px 2px;
-    }
-
-    td{
-        font-size:10px;
-    }
-
-    td.subject{
-        text-align:left;
-        font-size:10px;
-        line-height:1.25;
-    }
-
-    .summary{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:5px;
-        margin-top:7px;
-    }
-
-    .summary-box{
-        padding:6px 3px;
-        font-size:11px;
-    }
-
-    .summary-box b{
-        font-size:15px;
-        margin-top:2px;
-    }
-
-    .teacher-footer{
-        grid-template-columns:1fr 1fr;
-        gap:8px;
-        margin-top:18px;
-        padding-top:12px;
-    }
-
-    .teacher-block{
-        min-height:45px;
-        font-size:11px;
-    }
-
-    .teacher-block .role,
-    .teacher-block .name{
-        font-size:11px;
-    }
-
-    .button-row{
-        gap:6px;
-    }
-
-    button{
-        padding:9px 12px;
-        font-size:13px;
-    }
-
-    /*
-      Search section also fits phone width.
-    */
-    .search-grid{
-        grid-template-columns:1fr;
-        gap:8px;
-    }
-
-    input{
-        font-size:15px;
-        padding:10px;
-    }
-}
-
-/* Very small phones */
-@media (max-width:380px){
-
-    .container{
-        padding:3px;
-    }
-
-    .card{
-        padding:7px;
-    }
-
-    .student-info{
-        grid-template-columns:1fr 1fr;
-    }
-
-    table{
-        font-size:9px;
-    }
-
-    th,td,
-    td.subject{
-        font-size:9px;
-        padding:4px 1px;
-    }
-
-    .summary-box{
-        font-size:10px;
-    }
-
-    .summary-box b{
-        font-size:14px;
-    }
-}
-
 </style>
 </head>
 
@@ -527,16 +272,18 @@ td.subject{text-align:left;font-weight:700}
 
             <div>
                 <label for="dob">Date of Birth</label>
-                <div class="dob-input-wrap">
-                    <input id="dob" type="text" inputmode="numeric"
-                           autocomplete="off" maxlength="10"
-                           placeholder="DD MM YYYY">
-                    <button type="button" class="dob-calendar"
-                            onclick="openDOBPicker()" aria-label="Calendar">📅</button>
-                    <input id="dobPicker" type="date" class="dob-picker"
-                           onchange="setDOBFromPicker(this.value)">
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input id="dob" type="text"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           placeholder="DD-MM-YYYY"
+                           maxlength="10"
+                           style="flex:1">
+                    <input id="dobPicker" type="date"
+                           title="Calendar"
+                           style="width:52px;padding:10px;cursor:pointer"
+                           aria-label="Calendar">
                 </div>
-                <small class="dob-help">ಉದಾ: 28 08 2026 → 28-08-2026</small>
             </div>
         </div>
 
@@ -584,6 +331,19 @@ function esc(value){
         .replace(/'/g,"&#039;");
 }
 
+function dobTextToISO(value){
+    const s=String(value||"").trim();
+    const m=s.match(/^(\\d{2})-(\\d{2})-(\\d{4})$/);
+    if(!m) return "";
+    return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+function isoToDobText(value){
+    const s=String(value||"").trim();
+    const m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+    return m ? `${m[3]}-${m[2]}-${m[1]}` : s;
+}
+
 function normalizeDate(value){
     if(!value) return "";
 
@@ -613,40 +373,6 @@ function formatDate(value){
         return `${p[2]}-${p[1]}-${p[0]}`;
 
     return s;
-}
-
-function formatNumber(value){
-    const n=Number(value);
-    if(!Number.isFinite(n)) return "0";
-    return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(2)));
-}
-
-function parseTypedDOB(value){
-    const digits=String(value || "").replace(/\D/g, "").slice(0,8);
-    if(digits.length <= 2) return digits;
-    if(digits.length <= 4) return digits.slice(0,2)+"-"+digits.slice(2);
-    return digits.slice(0,2)+"-"+digits.slice(2,4)+"-"+digits.slice(4);
-}
-
-function dobToISO(value){
-    const m=String(value || "").match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if(!m) return "";
-    const day=m[1], month=m[2], year=m[3];
-    const d=new Date(Number(year),Number(month)-1,Number(day));
-    if(d.getFullYear()!==Number(year) || d.getMonth()!==Number(month)-1 || d.getDate()!==Number(day)) return "";
-    return `${year}-${month}-${day}`;
-}
-
-function openDOBPicker(){
-    const picker=$("dobPicker");
-    if(picker.showPicker) picker.showPicker();
-    else picker.click();
-}
-
-function setDOBFromPicker(value){
-    if(!value) return;
-    const [year,month,day]=value.split("-");
-    $("dob").value=`${day}-${month}-${year}`;
 }
 
 function normalizeClass(value){
@@ -898,7 +624,7 @@ async function viewResult(){
 
     const roll=$("rollNumber").value.trim();
     const dobText=$("dob").value.trim();
-    const dob=dobToISO(dobText);
+    const dob=dobTextToISO(dobText);
 
     if(!roll){
         showMessage("Roll Number ನಮೂದಿಸಿ.","error");
@@ -1111,16 +837,36 @@ async function viewResult(){
             "ANNUAL"
         ];
 
-        const {data:results,error:resultError}=await db
+        let resultQuery=db
             .from("exam_results")
-            .select("id,student_id,exam_type,published")
+            .select("id,student_id,exam_type,published,academic_year")
             .eq("student_id",student.id)
             .in("exam_type",examTypes)
-            .eq("published",true)
+            .eq("published",true);
+
+        if(appSettings.academic_year){
+            resultQuery=resultQuery.eq("academic_year",appSettings.academic_year);
+        }
+
+        let {data:results,error:resultError}=await resultQuery
             .order("id",{ascending:true});
 
-        if(resultError)
-            throw resultError;
+        if(resultError){
+            const msg=String(resultError.message||resultError);
+            if(msg.toLowerCase().includes("academic_year") && msg.toLowerCase().includes("column")){
+                const retry=await db
+                    .from("exam_results")
+                    .select("id,student_id,exam_type,published")
+                    .eq("student_id",student.id)
+                    .in("exam_type",examTypes)
+                    .eq("published",true)
+                    .order("id",{ascending:true});
+                if(retry.error) throw retry.error;
+                results=retry.data||[];
+            }else{
+                throw resultError;
+            }
+        }
 
         /* ---------------------------------------------
            4. Load marks for published results
@@ -1438,17 +1184,17 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${formatNumber(total)}</b>
+                <b>${total.toFixed(2)}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${formatNumber(maximum)}</b>
+                <b>${maximum.toFixed(2)}</b>
             </div>
 
             <div class="summary-box">
                 ಶೇಕಡಾವಾರು
-                <b>${formatNumber(percentage)}%</b>
+                <b>${percentage.toFixed(2)}%</b>
             </div>
 
             <div class="summary-box">
@@ -1467,8 +1213,18 @@ function renderExam(student,subjects,result,marksMap){
     `;
 }
 
+/* Date of Birth: text entry + calendar */
 $("dob").addEventListener("input",function(){
-    this.value=parseTypedDOB(this.value);
+    let v=this.value.replace(/\\D/g,"").slice(0,8);
+    if(v.length>4) v=v.slice(0,2)+"-"+v.slice(2,4)+"-"+v.slice(4);
+    else if(v.length>2) v=v.slice(0,2)+"-"+v.slice(2);
+    this.value=v;
+});
+
+$("dobPicker").addEventListener("change",function(){
+    if(this.value){
+        $("dob").value=isoToDobText(this.value);
+    }
 });
 
 /* Enter key support */
