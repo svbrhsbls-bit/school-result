@@ -1,13 +1,14 @@
+```html
 <!DOCTYPE html>
 <html lang="kn">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Students Database</title>
+<title>Settings - School Result Management System</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="auth-guard.js"></script>
 
 <style>
 *{
@@ -17,216 +18,272 @@
 body{
     margin:0;
     font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
-    background:#eef4f9;
-    color:#172b4d;
+    background:#eef6fb;
+    color:#17324d;
 }
 
 .header{
-    background:linear-gradient(135deg,#1261a0,#2086c9);
-    color:white;
+    background:#087db5;
+    color:#fff;
+    padding:22px 15px;
     text-align:center;
-    padding:25px 15px;
 }
 
 .header h1{
     margin:0;
-    font-size:30px;
+    font-size:28px;
 }
 
 .header p{
-    margin:8px 0 0;
-    font-size:17px;
+    margin:7px 0 0;
+    font-size:15px;
 }
 
 .container{
-    max-width:1200px;
+    width:95%;
+    max-width:900px;
     margin:25px auto;
-    padding:0 15px;
 }
 
 .card{
-    background:white;
-    border-radius:18px;
+    background:#fff;
+    border-radius:14px;
     padding:25px;
-    margin-bottom:22px;
-    box-shadow:0 5px 20px rgba(0,0,0,.08);
+    box-shadow:0 3px 16px rgba(0,0,0,.10);
+    margin-bottom:20px;
 }
 
 .card h2{
     margin-top:0;
-    text-align:center;
-    color:#123d72;
+    color:#087db5;
+    border-bottom:2px solid #e5eef3;
+    padding-bottom:12px;
 }
 
-.selection{
-    display:grid;
-    grid-template-columns:1fr 1fr auto auto;
-    gap:15px;
-    align-items:end;
+.form-group{
+    margin-bottom:18px;
 }
 
-.form-grid{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:18px;
-}
-
-.field label{
+label{
     display:block;
-    font-weight:bold;
+    font-weight:700;
     margin-bottom:7px;
-    color:#23456e;
 }
 
-input,select{
+input,
+select{
     width:100%;
-    padding:12px 13px;
-    border:1px solid #c9d5e2;
-    border-radius:9px;
+    padding:13px;
+    border:1px solid #d7e1e7;
+    border-radius:8px;
     font-size:16px;
-    background:#fff;
-}
-
-input:focus,select:focus{
     outline:none;
-    border-color:#1677bd;
-    box-shadow:0 0 0 3px rgba(22,119,189,.12);
+    background:#f4f7f9;
+    color:#17324d;
 }
 
-button{
-    border:none;
-    border-radius:9px;
-    padding:12px 18px;
-    font-size:16px;
-    font-weight:bold;
-    cursor:pointer;
+input:focus,
+select:focus{
+    border-color:#087db5;
+    box-shadow:0 0 0 2px rgba(8,125,181,.10);
 }
 
-.btn-load{
-    background:#1677bd;
-    color:white;
+input:not(:read-only){
+    background:#fff;
+    border-color:#087db5;
 }
 
-.btn-new{
-    background:#188b45;
-    color:white;
+input:read-only{
+    background:#f4f7f9;
 }
 
-.btn-save{
-    background:#1261a0;
-    color:white;
+.class-box{
+    background:#f7fbfd;
+    border:1px solid #d9e7ee;
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:14px;
 }
 
-.btn-update{
-    background:#e68a00;
-    color:white;
+.class-title{
+    font-weight:800;
+    color:#087db5;
+    margin-bottom:10px;
 }
 
-.btn-delete{
-    background:#d63031;
-    color:white;
-}
-
-.btn-clear{
-    background:#6c757d;
-    color:white;
-}
-
-.actions{
+.button-row{
     display:flex;
     gap:10px;
     flex-wrap:wrap;
     margin-top:22px;
 }
 
-.message{
-    display:none;
-    padding:14px;
-    border-radius:10px;
-    margin-bottom:20px;
-    font-weight:bold;
+button{
+    border:0;
+    border-radius:8px;
+    padding:12px 20px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
 }
 
-.success{
-    display:block;
-    background:#d9f7e5;
-    color:#146c35;
+.btn-save{
+    background:#168a52;
+    color:#fff;
 }
 
-.error{
-    display:block;
-    background:#ffe1e1;
-    color:#a30000;
+.btn-save:disabled{
+    background:#a9b7c0;
+    cursor:not-allowed;
+    opacity:.75;
 }
 
-.info{
-    display:block;
-    background:#dceeff;
-    color:#07548c;
+.btn-edit{
+    background:#087db5;
+    color:#fff;
 }
 
-.table-wrap{
-    overflow-x:auto;
+.btn-reset{
+    background:#687582;
+    color:#fff;
 }
 
-table{
-    width:100%;
-    border-collapse:collapse;
-    min-width:900px;
+.btn-add{
+    background:#7b3dbb;
+    color:#fff;
 }
 
-th{
-    background:#1261a0;
-    color:white;
-    padding:12px;
-    text-align:left;
-}
-
-td{
-    padding:10px;
-    border-bottom:1px solid #e0e6ec;
-}
-
-tr:hover{
-    background:#f3f8fc;
-}
-
-.small-btn{
-    padding:7px 11px;
+.btn-delete{
+    background:#c0392b;
+    color:#fff;
+    padding:8px 14px;
     font-size:14px;
 }
 
-.empty{
-    text-align:center;
-    padding:30px;
-    color:#777;
+.status{
+    display:none;
+    padding:12px 15px;
+    border-radius:8px;
+    margin-bottom:18px;
+    font-weight:600;
 }
 
-.loading{
-    text-align:center;
-    padding:20px;
-    font-weight:bold;
-    color:#1261a0;
+.status.show{
+    display:block;
 }
 
-@media(max-width:850px){
-    .selection{
-        grid-template-columns:1fr 1fr;
-    }
+.status.success{
+    background:#dcf5e2;
+    color:#126b38;
+}
 
-    .form-grid{
-        grid-template-columns:1fr 1fr;
-    }
+.status.error{
+    background:#ffe0e0;
+    color:#9b1c1c;
+}
+
+.status.info{
+    background:#dceeff;
+    color:#15547a;
+}
+
+.year-list{
+    margin-top:20px;
+}
+
+.year-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:#f7fbfd;
+    border:1px solid #d9e7ee;
+    border-radius:9px;
+    padding:12px 15px;
+    margin-bottom:10px;
+}
+
+.year-name{
+    font-weight:700;
+    font-size:17px;
+}
+
+.active-badge{
+    display:inline-block;
+    background:#168a52;
+    color:#fff;
+    padding:4px 9px;
+    border-radius:20px;
+    font-size:12px;
+    margin-left:8px;
+}
+
+.year-actions{
+    display:flex;
+    gap:7px;
+}
+
+.info-box{
+    margin-top:22px;
+    padding:15px;
+    background:#f4f9fc;
+    border:1px solid #d8e6ed;
+    border-radius:9px;
+    line-height:1.7;
+}
+
+.info-box b{
+    color:#087db5;
+}
+
+.small{
+    color:#687582;
+    font-size:13px;
+    margin-top:5px;
+}
+
+.current-year-box{
+    background:#eaf7ef;
+    border:2px solid #168a52;
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:22px;
+}
+
+.current-year-box label{
+    color:#126b38;
+}
+
+.current-year-box select{
+    background:#fff;
+    border-color:#168a52;
+    font-weight:700;
 }
 
 @media(max-width:600px){
-    .selection,
-    .form-grid{
-        grid-template-columns:1fr;
+    .card{
+        padding:18px;
     }
 
     .header h1{
         font-size:23px;
+    }
+
+    button{
+        width:100%;
+    }
+
+    .year-item{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .year-actions{
+        width:100%;
+    }
+
+    .year-actions button{
+        width:auto;
     }
 }
 </style>
@@ -235,199 +292,190 @@ tr:hover{
 <body>
 
 <div class="header">
-    <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
-    <p>ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
-    <p>Students Database / ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿ</p>
+    <h1>⚙️ Settings</h1>
+    <p>School Result Management System</p>
 </div>
 
 <div class="container">
 
-    <div id="message" class="message"></div>
+<!-- ======================================================
+     SCHOOL INFORMATION
+====================================================== -->
 
-    <!-- CLASS SELECTION -->
-    <div class="card">
+<div class="card">
 
-        <h2>ವಿದ್ಯಾರ್ಥಿಗಳ Database</h2>
+<h2>🏫 ಶಾಲೆಯ ಮಾಹಿತಿ</h2>
 
-        <div class="selection">
+<div id="lockNote"
+     class="small"
+     style="margin:-4px 0 18px;color:#087db5;font-weight:700;">
+    🔒 ಮಾಹಿತಿ Lock ಆಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಲು “Edit / Unlock” ಒತ್ತಿರಿ.
+</div>
 
-            <div class="field">
-                <label>ತರಗತಿ / Class</label>
+<div id="status" class="status"></div>
 
-                <select id="classSelect">
-                    <option value="">-- ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="8">8ನೇ ತರಗತಿ</option>
-                    <option value="9">9ನೇ ತರಗತಿ</option>
-                    <option value="10">10ನೇ ತರಗತಿ</option>
-                </select>
-            </div>
+<div class="form-group">
+    <label for="schoolName">🏫 ಶಾಲೆಯ ಹೆಸರು</label>
 
-            <div class="field">
-                <label>ವಿಭಾಗ / Division</label>
+    <input
+        type="text"
+        id="schoolName"
+        placeholder="ಶಾಲೆಯ ಸಂಪೂರ್ಣ ಹೆಸರು">
+</div>
 
-                <select id="divisionSelect"><option value="A">A</option></select>
-            </div>
+<div class="form-group">
+    <label for="headTeacherName">👨‍🏫 ಮುಖ್ಯಶಿಕ್ಷಕರ ಹೆಸರು</label>
 
-            <button class="btn-load" onclick="loadStudents()">
-                🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
-            </button>
+    <input
+        type="text"
+        id="headTeacherName"
+        placeholder="ಮುಖ್ಯಶಿಕ್ಷಕರ ಹೆಸರು">
+</div>
 
-            <button class="btn-new" onclick="newStudent()">
-                ＋ ವಿದ್ಯಾರ್ಥಿ ಸೇರಿಸಿ
-            </button>
+<h2>👩‍🏫 ತರಗತಿ ಶಿಕ್ಷಕರ ಮಾಹಿತಿ</h2>
 
-        </div>
-    </div>
+<div class="class-box">
+    <div class="class-title">8ನೇ ತರಗತಿ</div>
 
+    <input
+        type="text"
+        id="classTeacher8"
+        placeholder="8ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+</div>
 
-    <div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <label for="studentAcademicYear" style="font-weight:700;">ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
-        <select id="studentAcademicYear" style="padding:8px 12px;border:1px solid #bbb;border-radius:6px;min-width:140px;"></select>
-      </div>
-    </div>
+<div class="class-box">
+    <div class="class-title">9ನೇ ತರಗತಿ</div>
 
+    <input
+        type="text"
+        id="classTeacher9"
+        placeholder="9ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+</div>
 
-    <div class="card" style="margin-bottom:12px;">
-      <h2 style="margin-top:0;">Excel ಮೂಲಕ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಸೇರಿಸಿ</h2>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <label style="font-weight:700;">ತರಗತಿ</label>
-        <select id="excelClassSelect" style="padding:8px 12px;">
-          <option value="8">8ನೇ ತರಗತಿ</option>
-          <option value="9">9ನೇ ತರಗತಿ</option>
-          <option value="10">10ನೇ ತರಗತಿ</option>
-        </select>
-        <button type="button" class="btn-new" onclick="downloadStudentExcelTemplate()">⬇️ Excel Template</button>
-        <button type="button" class="btn-load" onclick="document.getElementById('studentExcelInput').click()">📤 Excel Upload</button>
-        <input id="studentExcelInput" type="file" accept=".xlsx" style="display:none" onchange="uploadStudentsFromExcel(event)">
-      </div>
-    </div>
+<div class="class-box">
+    <div class="class-title">10ನೇ ತರಗತಿ</div>
 
-<!-- STUDENT FORM -->
-    <div class="card">
+    <input
+        type="text"
+        id="classTeacher10"
+        placeholder="10ನೇ ತರಗತಿ ತರಗತಿ ಶಿಕ್ಷಕರ ಹೆಸರು">
+</div>
 
-        <h2 id="formTitle">ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ</h2>
+<!-- CURRENT YEAR -->
 
-        <input type="hidden" id="studentId">
+<div class="current-year-box">
 
-        <div class="form-grid">
+<label for="currentAcademicYear">
+    📅 ಪ್ರಸ್ತುತ ಶೈಕ್ಷಣಿಕ ವರ್ಷ
+</label>
 
-            <div class="field">
-                <label>Roll No / Reg No</label>
-                <input id="rollNo" type="text" placeholder="ಉದಾ: 01">
-            </div>
+<select id="currentAcademicYear">
+    <option value="">Loading...</option>
+</select>
 
-            <div class="field">
-                <label>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</label>
-                <input id="studentName" type="text" placeholder="ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು">
-            </div>
+<div class="small">
+    Dashboard ಮತ್ತು ಇತರ pagesಗಳಲ್ಲಿ ಪ್ರಸ್ತುತವಾಗಿ ಬಳಸಬೇಕಾದ Academic Year ಅನ್ನು ಇಲ್ಲಿ ಆಯ್ಕೆ ಮಾಡಿ.
+</div>
 
-            <div class="field">
-                <label>ತಂದೆಯ ಹೆಸರು</label>
-                <input id="fatherName" type="text" placeholder="ತಂದೆಯ ಹೆಸರು">
-            </div>
+</div>
 
-            <div class="field">
-                <label>ತಾಯಿಯ ಹೆಸರು</label>
-                <input id="motherName" type="text" placeholder="ತಾಯಿಯ ಹೆಸರು">
-            </div>
+<div class="button-row">
 
-            <div class="field">
-                <label>ಲಿಂಗ / Gender</label>
+<button
+    type="button"
+    class="btn-save"
+    id="saveBtn"
+    onclick="saveSettings()"
+    disabled>
+    💾 Save / Update
+</button>
 
-                <select id="gender">
-                    <option value="">-- ಆಯ್ಕೆ ಮಾಡಿ --</option>
-                    <option value="ಗಂಡು">ಗಂಡು / Male</option>
-                    <option value="ಹೆಣ್ಣು">ಹೆಣ್ಣು / Female</option>
-                </select>
-            </div>
+<button
+    type="button"
+    class="btn-edit"
+    id="editBtn"
+    onclick="enableEdit()">
+    ✏️ Edit / Unlock
+</button>
 
-            <div class="field">
-                <label>ಜನ್ಮ ದಿನಾಂಕ / DOB</label>
-                <input id="dob" type="date">
-            </div>
+<button
+    type="button"
+    class="btn-reset"
+    id="resetBtn"
+    onclick="cancelEdit()">
+    ↺ Reload
+</button>
 
-            <div class="field">
-                <label>SATS No</label>
-                <input id="satsNo" type="text" placeholder="SATS Number">
-            </div>
+</div>
 
-            <div class="field">
-                <label>ಜಾತಿ / Caste</label>
-                <input id="caste" type="text" placeholder="ಉದಾ: SC / ST / 2A">
-            </div>
+<div class="info-box">
 
-            <div class="field">
-                <label>ಮೊಬೈಲ್ ಸಂಖ್ಯೆ</label>
-                <input id="mobile" type="text" maxlength="10" placeholder="10 digit mobile number">
-            </div>
+<b>ಮುಖ್ಯ ಸೂಚನೆ:</b><br>
 
-        </div>
+ಪ್ರಸ್ತುತ ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು ಇಲ್ಲಿ ಆಯ್ಕೆ ಮಾಡಿದಾಗ,
+Dashboard, Students, Marks Entry, Reports ಮತ್ತು ಇತರ pages
+ಈ Academic Year ಅನ್ನು ಬಳಸಬಹುದು.
 
-        <div class="actions">
+<br><br>
 
-            <button class="btn-save" onclick="saveStudent()">
-                💾 Save
-            </button>
+ಹಳೆಯ Academic Year data delete ಆಗುವುದಿಲ್ಲ.
+ಮುಂದಿನ ವರ್ಷ ಹೊಸ Academic Year ಸೇರಿಸಿ ಅದನ್ನು Current Year ಆಗಿ ಆಯ್ಕೆ ಮಾಡಬಹುದು.
 
-            <button class="btn-update" onclick="updateStudent()">
-                ✏️ Update
-            </button>
+</div>
 
-            <button class="btn-delete" onclick="deleteStudent()">
-                🗑️ Delete
-            </button>
-
-            <button class="btn-clear" onclick="clearForm()">
-                ✖ Clear
-            </button>
-
-        </div>
-
-    </div>
+</div>
 
 
-    <!-- STUDENT LIST -->
-    <div class="card">
+<!-- ======================================================
+     YEAR MASTER
+====================================================== -->
 
-        <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
+<div class="card">
 
-        <div id="loading" class="loading" style="display:none;">
-            Loading...
-        </div>
+<h2>📅 Academic Year Master</h2>
 
-        <div class="table-wrap">
+<div id="yearStatus" class="status"></div>
 
-            <table>
+<div class="form-group">
 
-                <thead>
-                    <tr>
-                        <th>Roll No</th>
-                        <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
-                        <th>ತಂದೆಯ ಹೆಸರು</th>
-                        <th>ತಾಯಿಯ ಹೆಸರು</th>
-                        <th>Gender</th>
-                        <th>DOB</th>
-                        <th>SATS No</th>
-                        <th>Caste</th>
-                        <th>Mobile</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
+<label for="newAcademicYear">
+    ➕ ಹೊಸ ಶೈಕ್ಷಣಿಕ ವರ್ಷ
+</label>
 
-                <tbody id="studentTableBody">
-                    <tr>
-                        <td colspan="10" class="empty">
-                            ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
-                        </td>
-                    </tr>
-                </tbody>
+<input
+    type="text"
+    id="newAcademicYear"
+    placeholder="ಉದಾ: 2027-28"
+    maxlength="7">
 
-            </table>
+<div class="small">
+    ಉದಾಹರಣೆ: 2026-27, 2027-28, 2028-29
+</div>
 
-        </div>
+</div>
 
-    </div>
+<div class="button-row">
+
+<button
+    type="button"
+    class="btn-add"
+    onclick="addAcademicYear()">
+    ➕ Add Year
+</button>
+
+</div>
+
+<div class="year-list">
+
+<h3>📋 Saved Academic Years</h3>
+
+<div id="yearList">
+    ⏳ Loading...
+</div>
+
+</div>
+
+</div>
 
 </div>
 
@@ -436,7 +484,7 @@ tr:hover{
 
 /* =========================================================
    SUPABASE CONNECTION
-   ========================================================= */
+========================================================= */
 
 const SUPABASE_URL =
     "https://sozlvjvqrgpaabnvjvxe.supabase.co";
@@ -444,884 +492,838 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
     "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
-
-/*
-   ಒಂದೇ client.
-   sbClient / supabaseClient ಎಂಬ duplicate variable ಇಲ್ಲ.
-*/
-
-const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-);
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
 
 
 /* =========================================================
-   PAGE LOAD
-   ========================================================= */
+   HELPER
+========================================================= */
 
-
-
-/* STUDENTS ONLY: year sync + Excel */
-function studentCurrentYear(){
-  return localStorage.getItem("school_current_academic_year") ||
-         localStorage.getItem("currentAcademicYear") || "2026-27";
+function $(id){
+    return document.getElementById(id);
 }
-function studentYears(){
-  let a=[];
-  ["academicYears","academic_years","schoolAcademicYears","school_academic_years"].forEach(k=>{
-    try{
-      const v=JSON.parse(localStorage.getItem(k)||"null");
-      if(Array.isArray(v)) a.push(...v.map(x=>typeof x==="string"?x:(x.year||x.academic_year||"")));
-    }catch(e){}
-  });
-  const c=studentCurrentYear();
-  if(c && !a.includes(c)) a.push(c);
-  return [...new Set((a.length?a:["2026-27"]).map(String).map(x=>x.trim()).filter(Boolean))];
-}
-function initStudentYearOnly(){
-  const el=document.getElementById("studentAcademicYear");
-  if(!el) return;
-  const years=studentYears();
-  el.innerHTML=years.map(y=>`<option value="${y.replace(/"/g,"&quot;")}">${y}</option>`).join("");
-  el.value=studentCurrentYear();
-  el.addEventListener("change",async()=>{
-    localStorage.setItem("school_current_academic_year",el.value);
-    localStorage.setItem("currentAcademicYear",el.value);
-    if(typeof loadStudents==="function") await loadStudents();
-  });
-}
-const STUDENT_EXCEL_HEADERS=["Reg No","Student Name","Father Name","Mother Name","Gender","DOB","SATS No","Caste","Mobile Number"];
-function exText(c){let v=c?.value;if(v==null)return "";if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==="object"&&v.text)return String(v.text).trim();return String(v).trim();}
-async function downloadStudentExcelTemplate(){
-  if(typeof ExcelJS==="undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
-  const cls=document.getElementById("excelClassSelect").value;
-  const wb=new ExcelJS.Workbook(), ws=wb.addWorksheet("Students");
-  ws.columns=STUDENT_EXCEL_HEADERS.map(h=>({header:h,key:h,width:Math.max(15,h.length+3)}));
-  ws.getRow(1).font={bold:true}; ws.freezePanes={row:2};
-  const b=await wb.xlsx.writeBuffer(), blob=new Blob([b],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  const u=URL.createObjectURL(blob), a=document.createElement("a"); a.href=u; a.download=`Students_Template_Class_${cls}_A.xlsx`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
-}
-async function uploadStudentsFromExcel(event){
-  const file=event.target.files?.[0]; event.target.value=""; if(!file)return;
-  if(typeof ExcelJS==="undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
-  const cls=document.getElementById("excelClassSelect").value, year=studentCurrentYear();
-  try{
-    const wb=new ExcelJS.Workbook(); await wb.xlsx.load(await file.arrayBuffer()); const ws=wb.worksheets[0];
-    if(!ws)throw new Error("Excel sheet ಸಿಗಲಿಲ್ಲ.");
-    const hm={}; ws.getRow(1).eachCell((c,i)=>hm[exText(c).toLowerCase()]=i);
-    const col=n=>n.map(x=>hm[x]).find(Boolean);
-    const c={roll:col(["reg no","roll no","roll number"]),name:col(["student name","name"]),father:col(["father name"]),mother:col(["mother name"]),gender:col(["gender"]),dob:col(["dob","date of birth"]),sats:col(["sats no"]),caste:col(["caste"]),mobile:col(["mobile number","mobile"])};
-    if(!c.name)throw new Error("Student Name column ಸಿಗಲಿಲ್ಲ.");
-    const rows=[];
-    for(let r=2;r<=ws.rowCount;r++){
-      const g=k=>c[k]?exText(ws.getRow(r).getCell(c[k])):"", name=g("name"); if(!name)continue;
-      rows.push({roll_no:g("roll"),student_name:name,father_name:g("father"),mother_name:g("mother"),gender:g("gender")||null,dob:g("dob")||null,sats_no:g("sats"),caste:g("caste"),mobile:g("mobile"),class_name:cls,division:"A",academic_year:year,is_active:true});
-    }
-    if(!rows.length)throw new Error("Excelನಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳ data ಇಲ್ಲ.");
-    let added=0,errors=[];
-    for(let i=0;i<rows.length;i+=50){
-      const batch=rows.slice(i,i+50), res=await db.from("students").insert(batch);
-      if(!res.error){added+=batch.length;continue;}
-      for(const row of batch){const x=await db.from("students").insert([row]);if(x.error)errors.push(row.student_name+": "+x.error.message);else added++;}
-    }
-    await loadStudents();
-    alert(`Excel Upload ಮುಗಿದಿದೆ.\nತರಗತಿ: ${cls}\nವಿಭಾಗ: A\nಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${year}\n\nAdded: ${added}\nFailed: ${errors.length}`);
-  }catch(e){console.error(e);alert("Excel Upload Error: "+(e?.message||e));}
-}
-
-document.addEventListener("DOMContentLoaded", function(){
-
-    console.log("Students Database loaded.");
-    console.log("Supabase URL:", SUPABASE_URL);
-
-});
 
 
 /* =========================================================
-   MESSAGE
-   ========================================================= */
+   SCHOOL SETTINGS
+========================================================= */
 
-function showMessage(text, type="info"){
+const FIELD_IDS = [
+    "schoolName",
+    "headTeacherName",
+    "classTeacher8",
+    "classTeacher9",
+    "classTeacher10"
+];
 
-    const box = document.getElementById("message");
+let editMode = false;
 
-    box.className = "message " + type;
-    box.textContent = text;
 
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
+/* =========================================================
+   LOCK / UNLOCK
+========================================================= */
+
+function setLocked(locked){
+
+    FIELD_IDS.forEach(id => {
+        $(id).readOnly = locked;
     });
 
-    setTimeout(function(){
+    editMode = !locked;
 
-        box.className = "message";
-        box.textContent = "";
+    $("currentAcademicYear").disabled = locked;
 
-    },5000);
+    $("saveBtn").disabled = locked;
+
+    $("editBtn").disabled = !locked;
+
+    $("resetBtn").textContent =
+        locked ? "↺ Reload" : "✖ Cancel";
+
+    $("lockNote").textContent =
+        locked
+        ? "🔒 ಮಾಹಿತಿ Lock ಆಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಲು “Edit / Unlock” ಒತ್ತಿರಿ."
+        : "✏️ Edit Mode: ಮಾಹಿತಿಯನ್ನು ಬದಲಾಯಿಸಬಹುದು. ಮುಗಿದ ನಂತರ Save / Update ಒತ್ತಿರಿ.";
 }
 
 
 /* =========================================================
-   GET FORM DATA
-   ========================================================= */
+   STATUS
+========================================================= */
+
+function showStatus(message,type="info"){
+
+    const box = $("status");
+
+    box.textContent = message;
+
+    box.className =
+        "status show " + type;
+}
+
+
+function hideStatus(){
+
+    $("status").textContent = "";
+
+    $("status").className = "status";
+}
+
+
+function showYearStatus(message,type="info"){
+
+    const box = $("yearStatus");
+
+    box.textContent = message;
+
+    box.className =
+        "status show " + type;
+}
+
+
+/* =========================================================
+   FORM DATA
+========================================================= */
 
 function getFormData(){
 
-    const classValue =
-        document.getElementById("classSelect").value;
-
-    const divisionValue =
-        document.getElementById("divisionSelect").value;
-
     return {
 
-        roll_no:
-            document.getElementById("rollNo").value.trim(),
+        id:1,
 
-        student_name:
-            document.getElementById("studentName").value.trim(),
+        school_name:
+            $("schoolName").value.trim(),
 
-        father_name:
-            document.getElementById("fatherName").value.trim(),
+        head_teacher_name:
+            $("headTeacherName").value.trim(),
 
-        mother_name:
-            document.getElementById("motherName").value.trim(),
+        class_teacher_8:
+            $("classTeacher8").value.trim(),
 
-        gender:
-            document.getElementById("gender").value || null,
+        class_teacher_9:
+            $("classTeacher9").value.trim(),
 
-        dob:
-            document.getElementById("dob").value || null,
-
-        sats_no:
-            document.getElementById("satsNo").value.trim(),
-
-        caste:
-            document.getElementById("caste").value.trim(),
-
-        mobile:
-            document.getElementById("mobile").value.trim(),
-
-        class_name:
-            classValue,
-
-        division:
-            divisionValue,
+        class_teacher_10:
+            $("classTeacher10").value.trim(),
 
         academic_year:
-            (document.getElementById("studentAcademicYear")?.value ||
-             localStorage.getItem("school_current_academic_year") ||
-             localStorage.getItem("currentAcademicYear") ||
-             "2026-27"),
+            $("currentAcademicYear").value,
 
-        is_active:true
+        updated_at:
+            new Date().toISOString()
     };
 }
 
 
 /* =========================================================
-   VALIDATION
-   ========================================================= */
+   SET FORM DATA
+========================================================= */
 
-function validateForm(){
+function setFormData(data){
 
-    const data = getFormData();
+    $("schoolName").value =
+        data?.school_name || "";
 
-    if(!data.class_name){
+    $("headTeacherName").value =
+        data?.head_teacher_name || "";
 
-        showMessage(
-            "ದಯವಿಟ್ಟು ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.",
-            "error"
-        );
+    $("classTeacher8").value =
+        data?.class_teacher_8 || "";
 
-        return false;
-    }
-
-    if(!data.division){
-
-        showMessage(
-            "ದಯವಿಟ್ಟು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ.",
-            "error"
-        );
-
-        return false;
-    }
-
-    if(!data.roll_no){
-
-        showMessage(
-            "Roll No ನಮೂದಿಸಿ.",
-            "error"
-        );
-
-        document.getElementById("rollNo").focus();
-
-        return false;
-    }
-
-    if(!data.student_name){
-
-        showMessage(
-            "ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.",
-            "error"
-        );
-
-        document.getElementById("studentName").focus();
-
-        return false;
-    }
-
-    return true;
+    $("classTeacher9").value =
+        data?.class_teacher_9 || "";
+        
+    $("classTeacher10").value =
+        data?.class_teacher_10 || "";
 }
 
 
 /* =========================================================
-   SAVE NEW STUDENT
-   ========================================================= */
+   ENABLE EDIT
+========================================================= */
 
-async function saveStudent(){
+function enableEdit(){
 
-    if(!validateForm()){
-        return;
-    }
+    setLocked(false);
 
-    const data = getFormData();
+    hideStatus();
 
-    try{
+    $("schoolName").focus();
 
-        showMessage(
-            "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿಯನ್ನು Save ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-        const { data: insertedData, error } =
-            await db
-                .from("students")
-                .insert([data])
-                .select();
-
-        if(error){
-
-            console.error("SAVE ERROR:", error);
-
-            throw error;
-        }
-
-        console.log(
-            "Student saved:",
-            insertedData
-        );
-
-        showMessage(
-            "✅ ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ.",
-            "success"
-        );
-
-        clearForm();
-
-        await loadStudents();
-
-    }
-
-    catch(error){
-
-        console.error(error);
-
-        showMessage(
-            "Save ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
-            "error"
-        );
-    }
-}
-
-
-/* =========================================================
-   LOAD STUDENTS
-   ========================================================= */
-
-async function loadStudents(){
-
-    const classValue =
-        document.getElementById("classSelect").value;
-
-    const divisionValue =
-        document.getElementById("divisionSelect").value;
-
-    if(!classValue){
-
-        showMessage(
-            "ದಯವಿಟ್ಟು ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.",
-            "error"
-        );
-
-        return;
-    }
-
-    if(!divisionValue){
-
-        showMessage(
-            "ದಯವಿಟ್ಟು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ.",
-            "error"
-        );
-
-        return;
-    }
-
-    const loading =
-        document.getElementById("loading");
-
-    const tbody =
-        document.getElementById("studentTableBody");
-
-    loading.style.display = "block";
-
-    tbody.innerHTML = "";
-
-    try{
-
-        const { data, error } =
-            await db
-                .from("students")
-                .select("*")
-                .eq("class_name", classValue)
-                .eq("division", divisionValue)
-                .eq(
-                    "academic_year",
-                    document.getElementById("studentAcademicYear")?.value ||
-                    localStorage.getItem("school_current_academic_year") ||
-                    localStorage.getItem("currentAcademicYear") ||
-                    "2026-27"
-                )
-                .eq("is_active", true)
-                .order("roll_no", {ascending:true});
-
-        if(error){
-
-            console.error(
-                "LOAD ERROR:",
-                error
-            );
-
-            throw error;
-        }
-
-        console.log(
-            "Students loaded:",
-            data
-        );
-
-        renderStudents(data || []);
-
-    }
-
-    catch(error){
-
-        console.error(error);
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="empty">
-                    ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.
-                </td>
-            </tr>
-        `;
-
-        showMessage(
-            "Load ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
-            "error"
-        );
-
-    }
-
-    finally{
-
-        loading.style.display = "none";
-
-    }
-}
-
-
-/* =========================================================
-   RENDER STUDENTS
-   ========================================================= */
-
-function renderStudents(students){
-
-    const tbody =
-        document.getElementById("studentTableBody");
-
-    if(!students.length){
-
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="empty">
-                    ಈ ತರಗತಿ ಮತ್ತು ವಿಭಾಗದಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
-                </td>
-            </tr>
-        `;
-
-        return;
-    }
-
-    tbody.innerHTML = "";
-
-    students.forEach(function(student){
-
-        const tr =
-            document.createElement("tr");
-
-        tr.innerHTML = `
-
-            <td>${safe(student.roll_no)}</td>
-
-            <td>${safe(student.student_name)}</td>
-
-            <td>${safe(student.father_name)}</td>
-
-            <td>${safe(student.mother_name)}</td>
-
-            <td>${safe(student.gender)}</td>
-
-            <td>${formatDate(student.dob)}</td>
-
-            <td>${safe(student.sats_no)}</td>
-
-            <td>${safe(student.caste)}</td>
-
-            <td>${safe(student.mobile)}</td>
-
-            <td>
-                <button
-                    class="btn-update small-btn"
-                    onclick='editStudent(${JSON.stringify(student)})'>
-                    Edit
-                </button>
-            </td>
-
-        `;
-
-        tbody.appendChild(tr);
-
-    });
-}
-
-
-/* =========================================================
-   EDIT STUDENT
-   ========================================================= */
-
-function editStudent(student){
-
-    document.getElementById("studentId").value =
-        student.id || "";
-
-    document.getElementById("classSelect").value =
-        student.class_name || "";
-
-    document.getElementById("divisionSelect").value =
-        student.division || "";
-
-    document.getElementById("rollNo").value =
-        student.roll_no || "";
-
-    document.getElementById("studentName").value =
-        student.student_name || "";
-
-    document.getElementById("fatherName").value =
-        student.father_name || "";
-
-    document.getElementById("motherName").value =
-        student.mother_name || "";
-
-    document.getElementById("gender").value =
-        student.gender || "";
-
-    document.getElementById("dob").value =
-        student.dob || "";
-
-    document.getElementById("satsNo").value =
-        student.sats_no || "";
-
-    document.getElementById("caste").value =
-        student.caste || "";
-
-    document.getElementById("mobile").value =
-        student.mobile || "";
-
-    document.getElementById("formTitle").textContent =
-        "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ - Edit";
-
-    showMessage(
-        "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿಯನ್ನು Edit ಮಾಡಲು Load ಮಾಡಲಾಗಿದೆ.",
+    showStatus(
+        "✏️ Edit Mode ಆರಂಭವಾಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಿದ ನಂತರ Save / Update ಒತ್ತಿರಿ.",
         "info"
     );
+}
 
-    window.scrollTo({
-        top:document.body.scrollHeight,
-        behavior:"smooth"
+
+/* =========================================================
+   CANCEL
+========================================================= */
+
+async function cancelEdit(){
+
+    if(!editMode){
+
+        await loadSettings();
+
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            "ನೀವು ಮಾಡಿದ ಬದಲಾವಣೆಗಳನ್ನು Cancel ಮಾಡಿ ಹಳೆಯ ಮಾಹಿತಿಯನ್ನು ಮರುಲೋಡ್ ಮಾಡಬೇಕೇ?"
+        );
+
+    if(!confirmed) return;
+
+    setLocked(true);
+
+    await loadSettings();
+}
+
+
+/* =========================================================
+   LOAD SETTINGS
+========================================================= */
+
+async function loadSettings(){
+
+    setLocked(true);
+
+    hideStatus();
+
+    try{
+
+        const {data,error} =
+            await supabaseClient
+                .from("settings")
+                .select("*")
+                .eq("id",1)
+                .maybeSingle();
+
+        if(error)
+            throw error;
+
+        if(data){
+
+            setFormData(data);
+
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        showStatus(
+            "Settings Load Error: " +
+            (error.message || String(error)),
+            "error"
+        );
+    }
+
+    await loadAcademicYears();
+
+}
+
+
+/* =========================================================
+   SAVE SETTINGS
+========================================================= */
+
+async function saveSettings(){
+
+    if(!editMode){
+
+        showStatus(
+            "🔒 ಮೊದಲು Edit / Unlock ಒತ್ತಿ.",
+            "info"
+        );
+
+        return;
+    }
+
+    hideStatus();
+
+    const data =
+        getFormData();
+
+
+    if(!data.school_name){
+
+        showStatus(
+            "ಶಾಲೆಯ ಹೆಸರು ನಮೂದಿಸಿ.",
+            "error"
+        );
+
+        $("schoolName").focus();
+
+        return;
+    }
+
+
+    if(!data.academic_year){
+
+        showStatus(
+            "ಪ್ರಸ್ತುತ ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಆಯ್ಕೆ ಮಾಡಿ.",
+            "error"
+        );
+
+        $("currentAcademicYear").focus();
+
+        return;
+    }
+
+
+    try{
+
+        showStatus(
+            "⏳ Settings Save / Update ಆಗುತ್ತಿದೆ...",
+            "info"
+        );
+
+
+        /* Make selected year active */
+
+        await setCurrentAcademicYear(
+            data.academic_year,
+            false
+        );
+
+
+        const {data:updated,error} =
+            await supabaseClient
+                .from("settings")
+                .upsert(
+                    data,
+                    {
+                        onConflict:"id"
+                    }
+                )
+                .select()
+                .single();
+
+
+        if(error)
+            throw error;
+
+
+        setFormData(updated);
+
+        setLocked(true);
+
+
+        showStatus(
+            "✅ Settings ಯಶಸ್ವಿಯಾಗಿ Save / Update ಆಗಿದೆ.",
+            "success"
+        );
+
+
+    }catch(error){
+
+        console.error(error);
+
+        showStatus(
+            "Update Error: " +
+            (error.message || String(error)),
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   LOAD ACADEMIC YEARS
+========================================================= */
+
+async function loadAcademicYears(){
+
+    const select =
+        $("currentAcademicYear");
+
+    select.innerHTML =
+        `<option value="">Loading...</option>`;
+
+
+    try{
+
+        const {data,error} =
+            await supabaseClient
+                .from("academic_years")
+                .select("*")
+                .order(
+                    "academic_year",
+                    {ascending:false}
+                );
+
+
+        if(error)
+            throw error;
+
+
+        if(!data || data.length === 0){
+
+            select.innerHTML =
+                `<option value="">No Academic Year</option>`;
+
+            $("yearList").innerHTML =
+                `<div class="small">
+                    ಯಾವುದೇ Academic Year ಇಲ್ಲ.
+                 </div>`;
+
+            return;
+        }
+
+
+        /* Dropdown */
+
+        select.innerHTML =
+            `<option value="">
+                -- Academic Year ಆಯ್ಕೆ ಮಾಡಿ --
+            </option>`;
+
+
+        data.forEach(year => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                year.academic_year;
+
+            option.textContent =
+                year.academic_year;
+
+            select.appendChild(option);
+
+        });
+
+
+        /* Current selected year */
+
+        const {data:settings} =
+            await supabaseClient
+                .from("settings")
+                .select("academic_year")
+                .eq("id",1)
+                .maybeSingle();
+
+
+        if(settings?.academic_year){
+
+            select.value =
+                settings.academic_year;
+
+        }else{
+
+            const active =
+                data.find(
+                    x => x.is_active === true
+                );
+
+            if(active){
+
+                select.value =
+                    active.academic_year;
+            }
+        }
+
+
+        /* Year list */
+
+        renderYearList(data);
+
+
+    }catch(error){
+
+        console.error(error);
+
+        select.innerHTML =
+            `<option value="">
+                Load Error
+             </option>`;
+
+        $("yearList").innerHTML =
+            `<div style="color:#c0392b">
+                ${error.message || error}
+             </div>`;
+    }
+}
+
+
+/* =========================================================
+   RENDER YEAR LIST
+========================================================= */
+
+function renderYearList(data){
+
+    const box =
+        $("yearList");
+
+    if(!data.length){
+
+        box.innerHTML =
+            `<div class="small">
+                ಯಾವುದೇ year ಇಲ್ಲ.
+             </div>`;
+
+        return;
+    }
+
+
+    box.innerHTML = "";
+
+
+    data.forEach(year => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "year-item";
+
+
+        const active =
+            year.is_active
+            ? `<span class="active-badge">
+                    CURRENT
+               </span>`
+            : "";
+
+
+        item.innerHTML = `
+
+            <div class="year-name">
+
+                📅 ${year.academic_year}
+
+                ${active}
+
+            </div>
+
+            <div class="year-actions">
+
+                ${
+                    !year.is_active
+                    ?
+                    `<button
+                        class="btn-save"
+                        onclick="makeCurrentYear('${year.academic_year}')">
+                        Set Current
+                     </button>`
+                    :
+                    ""
+                }
+
+                <button
+                    class="btn-delete"
+                    onclick="deleteAcademicYear(${year.id}, '${year.academic_year}')">
+                    Delete
+                </button>
+
+            </div>
+
+        `;
+
+
+        box.appendChild(item);
+
     });
 }
 
 
 /* =========================================================
-   UPDATE STUDENT
-   ========================================================= */
+   ADD ACADEMIC YEAR
+========================================================= */
 
-async function updateStudent(){
+async function addAcademicYear(){
 
-    const id =
-        document.getElementById("studentId").value;
+    const input =
+        $("newAcademicYear");
 
-    if(!id){
+    const year =
+        input.value.trim();
 
-        showMessage(
-            "ಮೊದಲು ಪಟ್ಟಿಯಿಂದ ವಿದ್ಯಾರ್ಥಿಯನ್ನು Edit ಮಾಡಿ.",
+
+    if(!/^\d{4}-\d{2}$/.test(year)){
+
+        showYearStatus(
+            "ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು 2027-28 ರೀತಿಯಲ್ಲಿ ನಮೂದಿಸಿ.",
             "error"
         );
 
+        input.focus();
+
         return;
     }
 
-    if(!validateForm()){
-        return;
-    }
-
-    const data = getFormData();
-
-    delete data.is_active;
 
     try{
 
-        showMessage(
-            "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ Update ಮಾಡಲಾಗುತ್ತಿದೆ...",
+        showYearStatus(
+            "⏳ Academic Year ಸೇರಿಸಲಾಗುತ್ತಿದೆ...",
             "info"
         );
 
-        const { data: updatedData, error } =
-            await db
-                .from("students")
-                .update(data)
-                .eq("id", id)
-                .select();
 
-        if(error){
-
-            console.error(
-                "UPDATE ERROR:",
-                error
-            );
-
-            throw error;
-        }
-
-        console.log(
-            "Updated:",
-            updatedData
-        );
-
-        showMessage(
-            "✅ ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ ಯಶಸ್ವಿಯಾಗಿ Update ಆಗಿದೆ.",
-            "success"
-        );
-
-        clearForm();
-
-        await loadStudents();
-
-    }
-
-    catch(error){
-
-        console.error(error);
-
-        showMessage(
-            "Update ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
-            "error"
-        );
-
-    }
-}
-
-
-/* =========================================================
-   DELETE STUDENT
-   ========================================================= */
-
-async function deleteStudent(){
-
-    const id =
-        document.getElementById("studentId").value;
-
-    if(!id){
-
-        showMessage(
-            "ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಯನ್ನು Edit ಮಾಡಿ.",
-            "error"
-        );
-
-        return;
-    }
-
-    const studentName =
-        document.getElementById("studentName").value;
-
-    const ok =
-        confirm(
-            studentName +
-            " ಅವರನ್ನು Delete ಮಾಡಲು ಖಚಿತವೇ?"
-        );
-
-    if(!ok){
-        return;
-    }
-
-    try{
-
-        showMessage(
-            "ವಿದ್ಯಾರ್ಥಿಯನ್ನು Delete ಮಾಡಲಾಗುತ್ತಿದೆ...",
-            "info"
-        );
-
-        /*
-           Hard delete ಮಾಡುವ ಬದಲು
-           is_active = false ಮಾಡಲಾಗುತ್ತದೆ.
-        */
-
-        const { error } =
-            await db
-                .from("students")
-                .update({
+        const {error} =
+            await supabaseClient
+                .from("academic_years")
+                .insert({
+                    academic_year:year,
                     is_active:false
-                })
-                .eq("id", id);
+                });
+
 
         if(error){
 
-            console.error(
-                "DELETE ERROR:",
-                error
-            );
+            if(error.code === "23505"){
+
+                throw new Error(
+                    "ಈ Academic Year ಈಗಾಗಲೇ ಇದೆ."
+                );
+            }
 
             throw error;
         }
 
-        showMessage(
-            "✅ ವಿದ್ಯಾರ್ಥಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ Delete ಮಾಡಲಾಗಿದೆ.",
+
+        input.value = "";
+
+
+        showYearStatus(
+            "✅ " + year +
+            " Academic Year ಯಶಸ್ವಿಯಾಗಿ ಸೇರಿಸಲಾಗಿದೆ.",
             "success"
         );
 
-        clearForm();
 
-        await loadStudents();
+        await loadAcademicYears();
 
-    }
 
-    catch(error){
+    }catch(error){
 
         console.error(error);
 
-        showMessage(
-            "Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
+        showYearStatus(
+            "Add Year Error: " +
+            (error.message || String(error)),
             "error"
         );
-
     }
 }
 
 
 /* =========================================================
-   NEW STUDENT
-   ========================================================= */
+   SET CURRENT YEAR
+========================================================= */
 
-function newStudent(){
+async function makeCurrentYear(year){
 
-    clearForm();
+    const confirmed =
+        confirm(
+            year +
+            " ಅನ್ನು Current Academic Year ಆಗಿ ಆಯ್ಕೆ ಮಾಡಬೇಕೇ?"
+        );
 
-    document.getElementById("formTitle").textContent =
-        "ಹೊಸ ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ";
+    if(!confirmed)
+        return;
 
-    document.getElementById("studentName").focus();
-
-}
-
-
-/* =========================================================
-   CLEAR FORM
-   ========================================================= */
-
-function clearForm(){
-
-    document.getElementById("studentId").value = "";
-
-    document.getElementById("rollNo").value = "";
-
-    document.getElementById("studentName").value = "";
-
-    document.getElementById("fatherName").value = "";
-
-    document.getElementById("motherName").value = "";
-
-    document.getElementById("gender").value = "";
-
-    document.getElementById("dob").value = "";
-
-    document.getElementById("satsNo").value = "";
-
-    document.getElementById("caste").value = "";
-
-    document.getElementById("mobile").value = "";
-
-    document.getElementById("formTitle").textContent =
-        "ವಿದ್ಯಾರ್ಥಿಯ ಮಾಹಿತಿ";
-
-}
-
-
-/* =========================================================
-   DATE FORMAT
-   ========================================================= */
-
-function formatDate(date){
-
-    if(!date){
-        return "";
-    }
-
-    const parts =
-        String(date).split("-");
-
-    if(parts.length !== 3){
-        return date;
-    }
-
-    return (
-        parts[2] +
-        "-" +
-        parts[1] +
-        "-" +
-        parts[0]
-    );
-}
-
-
-/* =========================================================
-   SAFE HTML
-   ========================================================= */
-
-function safe(value){
-
-    if(value === null || value === undefined){
-        return "";
-    }
-
-    return String(value)
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-}
-
-
-/* =========================================================
-   SUPABASE ERROR MESSAGE
-   ========================================================= */
-
-function getSupabaseError(error){
-
-    if(!error){
-        return "Unknown error";
-    }
-
-    if(error.message){
-        return error.message;
-    }
-
-    if(error.error_description){
-        return error.error_description;
-    }
-
-    return String(error);
-}
-
-
-/* =========================================================
-   CONNECTION TEST
-   ========================================================= */
-
-async function testConnection(){
 
     try{
 
-        const { error } =
-            await db
-                .from("students")
-                .select("id")
-                .limit(1);
-
-        if(error){
-
-            console.error(
-                "Supabase connection/table error:",
-                error
-            );
-
-            showMessage(
-                "Supabase ಸಂಪರ್ಕವಾಗಿದೆ, ಆದರೆ students table ಪ್ರವೇಶ ಸಮಸ್ಯೆ: " +
-                getSupabaseError(error),
-                "error"
-            );
-
-            return false;
-        }
-
-        console.log(
-            "Supabase connection successful."
+        showYearStatus(
+            "⏳ Current Year ಬದಲಾಯಿಸಲಾಗುತ್ತಿದೆ...",
+            "info"
         );
 
-        return true;
 
-    }
-
-    catch(error){
-
-        console.error(
-            "Supabase connection failed:",
-            error
+        await setCurrentAcademicYear(
+            year,
+            true
         );
 
-        showMessage(
-            "Supabase ಸಂಪರ್ಕ ಸಮಸ್ಯೆ: " +
-            getSupabaseError(error),
+
+        $("currentAcademicYear").value =
+            year;
+
+
+        showYearStatus(
+            "✅ " + year +
+            " ಈಗ Current Academic Year ಆಗಿದೆ.",
+            "success"
+        );
+
+
+        await loadAcademicYears();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        showYearStatus(
+            "Current Year Error: " +
+            (error.message || String(error)),
             "error"
         );
-
-        return false;
     }
 }
 
 
 /* =========================================================
-   START CONNECTION TEST
-   ========================================================= */
+   SET CURRENT ACADEMIC YEAR
+========================================================= */
 
-setTimeout(function(){
+async function setCurrentAcademicYear(
+    year,
+    showMessage = true
+){
 
-    testConnection();
+    /* First deactivate all */
 
-},1000);
+    const {error:deactivateError} =
+        await supabaseClient
+            .from("academic_years")
+            .update({
+                is_active:false
+            })
+            .neq(
+                "academic_year",
+                year
+            );
+
+
+    if(deactivateError)
+        throw deactivateError;
+
+
+    /* Activate selected year */
+
+    const {error:activateError} =
+        await supabaseClient
+            .from("academic_years")
+            .update({
+                is_active:true
+            })
+            .eq(
+                "academic_year",
+                year
+            );
+
+
+    if(activateError)
+        throw activateError;
+
+
+    if(showMessage){
+
+        showYearStatus(
+            "✅ Current Academic Year: " + year,
+            "success"
+        );
+    }
+}
+
+
+/* =========================================================
+   DELETE ACADEMIC YEAR
+========================================================= */
+
+async function deleteAcademicYear(
+    id,
+    year
+){
+
+    /* Current year cannot be deleted */
+
+    const {data:current} =
+        await supabaseClient
+            .from("academic_years")
+            .select("is_active")
+            .eq("id",id)
+            .maybeSingle();
+
+
+    if(current?.is_active){
+
+        showYearStatus(
+            "❌ Current Academic Year ಅನ್ನು Delete ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            year +
+            " ಅನ್ನು Delete ಮಾಡಬೇಕೇ?"
+        );
+
+
+    if(!confirmed)
+        return;
+
+
+    try{
+
+        const {error} =
+            await supabaseClient
+                .from("academic_years")
+                .delete()
+                .eq("id",id);
+
+
+        if(error)
+            throw error;
+
+
+        showYearStatus(
+            "✅ " + year +
+            " Delete ಮಾಡಲಾಗಿದೆ.",
+            "success"
+        );
+
+
+        await loadAcademicYears();
+
+
+    }catch(error){
+
+        console.error(error);
+
+        showYearStatus(
+            "Delete Error: " +
+            (error.message || String(error)),
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   PAGE LOAD
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        setLocked(true);
+
+        await loadSettings();
+
+    }
+);
 
 </script>
 
 </body>
 </html>
-
-<script>document.addEventListener("DOMContentLoaded", function(){ initStudentAcademicYear(); });</script>
-
-<script>document.addEventListener("DOMContentLoaded",function(){initStudentYearOnly();});</script>
+```
