@@ -7,7 +7,7 @@
 <title>Students Database</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <style>
 *{
@@ -233,6 +233,32 @@ tr:hover{
 </head>
 
 <body>
+<div id="excelToolbar" style="
+    margin:12px 0;
+    padding:14px;
+    border:2px solid #0b7fab;
+    border-radius:10px;
+    background:#eef8fc;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;">
+    <strong style="margin-right:8px;">📊 Excel</strong>
+    <button type="button" onclick="downloadStudentExcelTemplate()"
+        style="padding:10px 16px;border:0;border-radius:7px;background:#198754;color:white;font-weight:700;cursor:pointer;">
+        ⬇️ Excel Template
+    </button>
+    <button type="button" onclick="document.getElementById('studentExcelUploadInput').click()"
+        style="padding:10px 16px;border:0;border-radius:7px;background:#0d6efd;color:white;font-weight:700;cursor:pointer;">
+        📤 Excel Upload
+    </button>
+    <input id="studentExcelUploadInput" type="file" accept=".xlsx,.xls"
+        style="display:none" onchange="uploadStudentsFromExcel(event)">
+    <span style="font-size:12px;color:#455a64;">
+        Selected Year: <b id="excelYearLabel">2026-27</b>
+    </span>
+</div>
+
 
 <div class="header">
     <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
@@ -539,6 +565,232 @@ async function loadAcademicYears(){
 /* =========================================================
    PAGE LOAD
    ========================================================= */
+
+
+/* =========================================================
+   EXCEL TEMPLATE + EXCEL UPLOAD
+========================================================= */
+
+const STUDENT_EXCEL_HEADERS = [
+    "Academic Year","Class","Division","Roll No","Student Name",
+    "Father Name","Mother Name","Gender","DOB","SATS No",
+    "PEN No","Caste","Mobile Number"
+];
+
+function getExcelAcademicYear(){
+    if(typeof selectedAcademicYear !== "undefined" && selectedAcademicYear){
+        return selectedAcademicYear;
+    }
+    const el = document.getElementById("academicYear");
+    return el ? (el.value || "2026-27") : "2026-27";
+}
+
+function updateExcelYearLabel(){
+    const el = document.getElementById("excelYearLabel");
+    if(el) el.textContent = getExcelAcademicYear();
+}
+
+async function downloadStudentExcelTemplate(){
+    if(typeof ExcelJS === "undefined"){
+        alert("Excel library load ಆಗಿಲ್ಲ. Internet ON ಮಾಡಿ page refresh ಮಾಡಿ.");
+        return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("Students");
+
+    ws.columns = STUDENT_EXCEL_HEADERS.map(h => ({
+        header:h,
+        key:h,
+        width: Math.max(15, h.length + 4)
+    }));
+
+    ws.getRow(1).font = {bold:true};
+    ws.freezePanes = {row:2};
+
+    ws.addRow({
+        "Academic Year": getExcelAcademicYear(),
+        "Class": "8",
+        "Division": "A",
+        "Roll No": "1",
+        "Student Name": "ಉದಾಹರಣೆ ವಿದ್ಯಾರ್ಥಿ",
+        "Father Name": "",
+        "Mother Name": "",
+        "Gender": "Male",
+        "DOB": "2013-01-01",
+        "SATS No": "",
+        "PEN No": "",
+        "Caste": "",
+        "Mobile Number": ""
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+        type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Students_Template_" + getExcelAcademicYear() + ".xlsx";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+function excelCellText(cell){
+    let v = cell?.value;
+    if(v === null || v === undefined) return "";
+    if(v instanceof Date) return v.toISOString().slice(0,10);
+    if(typeof v === "object" && v.text) return String(v.text).trim();
+    return String(v).trim();
+}
+
+async function uploadStudentsFromExcel(event){
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if(!file) return;
+
+    if(typeof ExcelJS === "undefined"){
+        alert("Excel library load ಆಗಿಲ್ಲ. Internet ON ಮಾಡಿ page refresh ಮಾಡಿ.");
+        return;
+    }
+
+    try{
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(await file.arrayBuffer());
+
+        const ws = workbook.worksheets[0];
+        if(!ws) throw new Error("Excel sheet ಸಿಗಲಿಲ್ಲ.");
+
+        const headerMap = {};
+        ws.getRow(1).eachCell((cell,col) => {
+            const h = excelCellText(cell).toLowerCase();
+            if(h) headerMap[h] = col;
+        });
+
+        const aliases = {
+            academic_year:["academic year","academic_year"],
+            class_name:["class","class name","class_name"],
+            division:["division"],
+            roll_no:["roll no","roll number","reg no","registration no","roll_no"],
+            student_name:["student name","name","student_name"],
+            father_name:["father name","father's name","father_name"],
+            mother_name:["mother name","mother's name","mother_name"],
+            gender:["gender"],
+            dob:["dob","date of birth","dateofbirth"],
+            sats_no:["sats no","sats number","sats_no"],
+            pen_no:["pen no","pen number","pen_no"],
+            caste:["caste"],
+            mobile:["mobile number","mobile","mobile_number"]
+        };
+
+        function findCol(keys){
+            for(const key of keys){
+                if(headerMap[key]) return headerMap[key];
+            }
+            return null;
+        }
+
+        const cols = {};
+        for(const key in aliases) cols[key] = findCol(aliases[key]);
+
+        if(!cols.student_name){
+            throw new Error("Student Name column ಸಿಗಲಿಲ್ಲ.");
+        }
+
+        const rows = [];
+
+        for(let r=2; r<=ws.rowCount; r++){
+            const get = key => cols[key] ? excelCellText(ws.getRow(r).getCell(cols[key])) : "";
+
+            const studentName = get("student_name");
+            if(!studentName) continue;
+
+            rows.push({
+                academic_year: get("academic_year") || getExcelAcademicYear(),
+                class_name: get("class_name"),
+                division: get("division"),
+                roll_no: get("roll_no"),
+                student_name: studentName,
+                father_name: get("father_name"),
+                mother_name: get("mother_name"),
+                gender: get("gender"),
+                dob: get("dob") || null,
+                sats_no: get("sats_no"),
+                pen_no: get("pen_no"),
+                caste: get("caste"),
+                mobile: get("mobile")
+            });
+        }
+
+        if(!rows.length){
+            alert("Excelನಲ್ಲಿ Student data ಇಲ್ಲ.");
+            return;
+        }
+
+        if(rows.some(r => !r.academic_year || !r.class_name || !r.division)){
+            throw new Error("ಪ್ರತಿ rowನಲ್ಲಿ Academic Year, Class ಮತ್ತು Division ಇರಬೇಕು.");
+        }
+
+        let inserted = 0;
+        const errors = [];
+
+        // Insert in batches for faster upload.
+        const batchSize = 50;
+
+        for(let i=0; i<rows.length; i+=batchSize){
+            const batch = rows.slice(i,i+batchSize);
+
+            const {error} = await supabaseClient
+                .from("students")
+                .insert(batch);
+
+            if(error){
+                // Fallback row-by-row so one duplicate/bad row
+                // doesn't prevent all valid rows from importing.
+                for(const row of batch){
+                    const {error: rowError} =
+                        await supabaseClient
+                            .from("students")
+                            .insert(row);
+
+                    if(rowError){
+                        errors.push(row.student_name + ": " + rowError.message);
+                    }else{
+                        inserted++;
+                    }
+                }
+            }else{
+                inserted += batch.length;
+            }
+        }
+
+        if(typeof loadStudents === "function"){
+            await loadStudents();
+        }
+
+        updateExcelYearLabel();
+
+        let msg =
+            "Excel Upload ಮುಗಿದಿದೆ.\n\n" +
+            "✅ Added: " + inserted +
+            "\n❌ Failed: " + errors.length;
+
+        if(errors.length){
+            msg += "\n\n" + errors.slice(0,8).join("\n");
+        }
+
+        alert(msg);
+
+    }catch(error){
+        console.error("Excel Upload Error:", error);
+        alert("Excel Upload Error: " + (error?.message || error));
+    }
+}
+
 
 document.addEventListener("DOMContentLoaded", async function(){
 
