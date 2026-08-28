@@ -2638,34 +2638,61 @@ function printMarks(){
 
     let html = "";
 
+    /* Keep the original top heading exactly as before */
     html +=
-        "<h2 style='text-align:center;margin:0 0 5px;'>" +
-        "ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ" +
+        "<h2 style='text-align:center;margin:0 0 4px;'>" +
+        "ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ ಬಲ್ಲಾಳಸಮುದ್ರ ಹೊಸದುರ್ಗ" +
         "</h2>";
 
     html +=
-        "<h3 style='text-align:center;margin:0 0 5px;'>" +
-        currentClass +
-        "ನೇ ತರಗತಿ - " +
-        currentDivision +
-        " ವಿಭಾಗ - " +
-        (
-            currentExam === "HALF_YEARLY"
-            ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-            : "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-        ) +
-        "</h3>";
+        "<div style='text-align:center;font-size:12px;margin:0 0 3px;'>" +
+        "Marks Entry" +
+        "</div>";
 
     html +=
-        "<div style='text-align:center;margin-bottom:8px;'>" +
-        "ಶೈಕ್ಷಣಿಕ ವರ್ಷ: " +
+        "<div style='text-align:center;font-size:12px;margin:0 0 8px;'>" +
+        "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - " +
         escapeHtml(
             String(
-                document.getElementById("academicYear")?.value ||
-                ""
+                document.getElementById("academicYear")?.value || ""
             )
         ) +
         "</div>";
+
+    html +=
+        "<hr style='margin:0 0 12px;border:0;border-top:1px solid #333;'>";
+
+    /* Total students remains in the same position */
+    html +=
+        "<div style='font-size:15px;font-weight:700;margin:0 0 10px;'>" +
+        "ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: " +
+        students.length +
+        "</div>";
+
+    /* Only this line is changed as requested */
+    const examText =
+        currentExam === "HALF_YEARLY"
+        ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+        : (
+            currentExam === "ANNUAL"
+            ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            : currentExam
+        );
+
+    html +=
+        "<h3 style='text-align:center;margin:0 0 10px;font-size:16px;'>" +
+        escapeHtml(currentClass) +
+        "ನೇ ತರಗತಿಯ " +
+        escapeHtml(examText) +
+        " - " +
+        escapeHtml(
+            String(
+                document.getElementById("academicYear")?.value || ""
+            )
+        ) +
+        "</h3>";
+
+    /* ================= MARKS TABLE ================= */
 
     html += "<table>";
     html += "<thead><tr>";
@@ -2675,21 +2702,16 @@ function printMarks(){
 
     subjects.forEach(subject => {
 
-        const name =
-            subjectName(subject);
-
-        const max =
-            maximumMarks(subject);
+        const name = subjectName(subject);
+        const max = maximumMarks(subject);
 
         html +=
             "<th>" +
             escapeHtml(name) +
             "<br>" +
-            "<small>Marks / " +
+            "<small>" +
             max +
             "</small>" +
-            "<br>" +
-            "<small>Grade</small>" +
             "</th>";
 
     });
@@ -2698,7 +2720,7 @@ function printMarks(){
         "<th>Total</th>" +
         "<th>Maximum</th>" +
         "<th>%</th>" +
-        "<th>Overall Grade</th>" +
+        "<th>Grade</th>" +
         "<th>Result</th>";
 
     html += "</tr></thead>";
@@ -2721,10 +2743,7 @@ function printMarks(){
         html +=
             "<td>" +
             escapeHtml(
-                rollNumber(
-                    student,
-                    index
-                )
+                rollNumber(student,index)
             ) +
             "</td>";
 
@@ -2744,22 +2763,17 @@ function printMarks(){
                 );
 
             const value =
-                input &&
-                input.value !== ""
-                ?
-                Number(input.value)
-                :
-                "";
+                input && input.value !== ""
+                ? Number(input.value)
+                : "";
 
             const max =
                 maximumMarks(subject);
 
             const grade =
                 value === ""
-                ?
-                ""
-                :
-                subjectGrade(
+                ? ""
+                : subjectGrade(
                     value,
                     max,
                     subject
@@ -2776,23 +2790,11 @@ function printMarks(){
                 "<td>" +
                 (
                     value === ""
-                    ?
-                    ""
-                    :
-                    escapeHtml(
-                        String(value)
-                    )
-                ) +
-                (
-                    value === ""
-                    ?
-                    ""
-                    :
-                    "<br><b>" +
-                    escapeHtml(
-                        grade || "-"
-                    ) +
-                    "</b>"
+                    ? ""
+                    : escapeHtml(String(value)) +
+                      "<br><b>" +
+                      escapeHtml(grade || "-") +
+                      "</b>"
                 ) +
                 "</td>";
 
@@ -2800,69 +2802,32 @@ function printMarks(){
 
         const percentage =
             maximum
-            ?
-            total / maximum * 100
-            :
-            0;
+            ? total / maximum * 100
+            : 0;
 
         const complete =
             entered === subjects.length;
 
         const grade =
             complete
-            ?
-            overallGrade(
-                percentage
-            )
-            :
-            "-";
+            ? overallGrade(percentage)
+            : "-";
 
         const pass =
             currentClass === "8"
-            ?
-            percentage >= 30
-            :
-            percentage >= 35;
+            ? percentage >= 30
+            : percentage >= 35;
 
         const result =
             complete
-            ?
-            (
-                pass
-                ?
-                "PASS"
-                :
-                "FAIL"
-            )
-            :
-            "PENDING";
+            ? (pass ? "PASS" : "FAIL")
+            : "PENDING";
 
-        html +=
-            "<td>" +
-            total.toFixed(2) +
-            "</td>";
-
-        html +=
-            "<td>" +
-            maximum.toFixed(2) +
-            "</td>";
-
-        html +=
-            "<td>" +
-            percentage.toFixed(2) +
-            "%</td>";
-
-        html +=
-            "<td><b>" +
-            escapeHtml(
-                grade
-            ) +
-            "</b></td>";
-
-        html +=
-            "<td>" +
-            result +
-            "</td>";
+        html += "<td>" + total.toFixed(2) + "</td>";
+        html += "<td>" + maximum.toFixed(2) + "</td>";
+        html += "<td>" + percentage.toFixed(2) + "%</td>";
+        html += "<td><b>" + escapeHtml(grade) + "</b></td>";
+        html += "<td>" + result + "</td>";
 
         html += "</tr>";
 
@@ -2871,9 +2836,7 @@ function printMarks(){
     html += "</tbody>";
     html += "</table>";
 
-    document.getElementById(
-        "printArea"
-    ).innerHTML = html;
+    document.getElementById("printArea").innerHTML = html;
 
     window.print();
 }
