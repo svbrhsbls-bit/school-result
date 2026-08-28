@@ -206,6 +206,10 @@ th{background:#087db5;color:#fff}
 <option value="caste">👥 ಜಾತಿವಾರು ವಿದ್ಯಾರ್ಥಿಗಳ ವಿವರ</option>
 </select>
 </div>
+<div>
+<label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
+<select id="academicYearSelect"><option value="2026-27">2026-27</option></select>
+</div>
 <div id="classBox">
 <label>ತರಗತಿ</label>
 <select id="classSelect">
@@ -370,7 +374,8 @@ async function loadBase(){
 
  await loadSettings();
 
- const sr=await db.from("students").select("*");
+ const sr=await db.from("students").select("*")
+        .eq("academic_year", document.getElementById("academicYearSelect")?.value || "2026-27");
  if(sr.error)throw sr.error;
  allStudents=(sr.data||[]).filter(s=>s.is_active!==false);
 
@@ -793,7 +798,8 @@ async function generate(){
     const savedClass=currentClass;
     for(const c of ["8","9","10"]){
       currentClass=c;
-      const sr=await db.from("students").select("*");
+      const sr=await db.from("students").select("*")
+        .eq("academic_year", document.getElementById("academicYearSelect")?.value || "2026-27");
       if(sr.error)throw sr.error;
       if(!allStudents.length) allStudents=(sr.data||[]).filter(s=>s.is_active!==false);
       const clsStudents=(sr.data||[]).filter(s=>{
@@ -839,7 +845,8 @@ async function generate(){
     }else{
       // Caste report uses ONLY the students table and ONLY its `caste` column.
       const cr=await db.from("students")
-        .select("id,class_name,gender,caste,is_active");
+        .select("id,class_name,gender,caste,is_active")
+        .eq("academic_year", document.getElementById("academicYearSelect")?.value || "2026-27");
       if(cr.error) throw cr.error;
       currentCasteStudents=cr.data||[];
 
@@ -1122,7 +1129,33 @@ $("reportType").onchange=()=>{
  $("divisionSelect").disabled=combined;
 };
 
-loadSettings().catch(e=>console.warn(e));
+loadReportsAcademicYear().then(()=>loadSettings()).catch(e=>console.warn(e));
+
+/* Academic Year for Reports - uses the same Settings source */
+async function loadReportsAcademicYear(){
+  const el=document.getElementById("academicYearSelect");
+  if(!el)return "2026-27";
+  let years=[];
+  try{
+    const a=JSON.parse(localStorage.getItem("school_result_academic_years")||"[]");
+    if(Array.isArray(a))years.push(...a.map(x=>typeof x==="string"?x:(x.year||x.academic_year||"")));
+  }catch(e){}
+  let current=localStorage.getItem("school_result_current_academic_year")||
+              localStorage.getItem("school_current_academic_year")||
+              localStorage.getItem("currentAcademicYear")||"";
+  try{
+    const r=await db.from("settings").select("academic_year").eq("id",1).maybeSingle();
+    if(!r.error&&r.data&&r.data.academic_year)current=String(r.data.academic_year).trim();
+  }catch(e){}
+  current=current||"2026-27";
+  if(!years.includes(current))years.push(current);
+  years=[...new Set(years.filter(Boolean))].sort();
+  el.innerHTML=years.map(y=>`<option value="${String(y).replace(/"/g,"&quot;")}">${y}</option>`).join("");
+  el.value=current;
+  el.onchange=async()=>{localStorage.setItem("school_result_current_academic_year",el.value);currentRows=[];};
+  return current;
+}
+
 </script>
 </body>
 </html>
