@@ -97,6 +97,19 @@ button{border:0;padding:10px 15px;margin:12px 6px 0 0;border-radius:7px;color:#f
 </div>
 </div>
 
+<div class="box" id="teacherFooter" style="display:none;">
+  <div style="display:flex;justify-content:space-between;gap:30px;text-align:center;font-weight:700;">
+    <div style="flex:1;">
+      <div>Class Teacher</div>
+      <div id="classTeacherName" style="margin-top:8px;"></div>
+    </div>
+    <div style="flex:1;">
+      <div>Head Teacher</div>
+      <div id="headTeacherName" style="margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL="https://sozlvjvqrgpaabnvjvxe.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
@@ -107,30 +120,79 @@ let currentClass="8", currentDivision="A", currentExam="HALF_YEARLY";
 
 const $=id=>document.getElementById(id);
 
+async function loadTeacherNames(){
+  try{
+    const {data,error}=await db.from("settings")
+      .select("head_teacher_name,class_teacher_8,class_teacher_9,class_teacher_10,class_teacher_name")
+      .eq("id",1)
+      .maybeSingle();
+    if(error) throw error;
+
+    const cls=classNo($("classSelect").value);
+    const classTeacher =
+      data?.[`class_teacher_${cls}`] ||
+      data?.class_teacher_name ||
+      "";
+
+    $("classTeacherName").textContent=classTeacher;
+    $("headTeacherName").textContent=data?.head_teacher_name || "";
+    $("teacherFooter").style.display="block";
+  }catch(e){
+    console.error("Teacher names load error:",e);
+    $("teacherFooter").style.display="none";
+  }
+}
+
 async function loadAcademicYear(){
   const el=$("academicYearSelect");
   if(!el) return "";
+
+  /*
+    IMPORTANT:
+    Students Database stores the academic year using
+    students.academic_year_id.
+
+    Therefore Publish Results must also use academic_year_id,
+    not the visible year text.
+  */
   const yr=await db.from("academic_years")
-    .select("academic_year")
+    .select("id,academic_year")
     .order("academic_year",{ascending:false});
+
   if(yr.error) throw yr.error;
 
   const settings=await db.from("settings")
     .select("academic_year")
     .eq("id",1)
     .maybeSingle();
+
   if(settings.error) throw settings.error;
 
-  const years=[...new Set((yr.data||[])
-    .map(x=>String(x.academic_year||"").trim())
-    .filter(Boolean))];
+  const years=(yr.data||[])
+    .filter(x=>x.id!==null && x.id!==undefined)
+    .map(x=>({
+      id:String(x.id),
+      name:String(x.academic_year||"").trim()
+    }))
+    .filter(x=>x.name);
+
   const current=String(settings.data?.academic_year||"").trim();
-  if(current && !years.includes(current)) years.unshift(current);
 
   el.innerHTML=years.length
-    ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
+    ? years.map(y=>
+        `<option value="${esc(y.id)}">${esc(y.name)}</option>`
+      ).join("")
     : `<option value="">No Academic Year</option>`;
-  if(current) el.value=current;
+
+  const currentRow=years.find(y=>y.name===current);
+
+  if(currentRow){
+    el.value=currentRow.id;
+  }else if(years.length){
+    el.value=years[0].id;
+  }
+
+  return el.value;
 }
 
 const val=(o,a)=>{for(const k of a)if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];return""};
@@ -166,52 +228,79 @@ async function loadResults(){
   $("tbody").innerHTML="<tr><td colspan='6'>⏳ Loading...</td></tr>";
 
   try{
-    const academicYear=$("academicYearSelect").value.trim();
+    const academicYearId=$("academicYearSelect").value.trim();
+    if(!academicYearId) throw new Error("Academic Year ಆಯ್ಕೆ ಆಗಿಲ್ಲ.");
 
-    if(!academicYear) throw new Error("Academic Year ಆಯ್ಕೆ ಆಗಿಲ್ಲ.");
-
-
+    // Load ONLY students belonging to the selected Academic Year.
+    // Students Database stores the year in academic_year_id.
+    // A student remains in the list even when no marks are entered.
     const sr=await db.from("students").select("*")
-
-      .eq("academic_year",academicYear);
-
+      .eq("academic_year_id",academicYearId)
+      .eq("active",true);
     if(sr.error) throw sr.error;
 
     const students=(sr.data||[]).filter(s=>
       classNo(val(s,["class_name","class","standard","className"]))===currentClass &&
-      division(s)===currentDivision
+      division(s)===currentDivision &&
+      (
+        s.active === undefined ||
+        s.active === null ||
+        s.active === true ||
+        s.is_active === true
+      )
     );
 
     if(!students.length){
       rows=[];
       $("tbody").innerHTML="<tr><td colspan='6'>ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.</td></tr>";
-      $("count").textContent="ಒಟ್ಟು: 0";
+      $("count").textContent="ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: 0";
       showMsg("ಆಯ್ಕೆ ಮಾಡಿದ ತರಗತಿ ಮತ್ತು ವಿಭಾಗದಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳು ಸಿಗಲಿಲ್ಲ.","err");
       return;
     }
 
-    rows=[];
-    for(let i=0;i<students.length;i++){
-      const s=students[i];
-      const q=await db.from("exam_results")
-        .select("id,student_id,exam_type,published")
-        .eq("student_id",s.id)
-        .eq("exam_type",currentExam)
-        .order("id",{ascending:false})
-        .limit(1)
-        .maybeSingle();
+    // Load result records for all students in one query.
+    const ids=students.map(s=>s.id);
+    const rr=await db.from("exam_results")
+      .select("id,student_id,exam_type,published")
+      .in("student_id",ids)
+      .eq("exam_type",currentExam);
+    if(rr.error) throw rr.error;
 
-      if(q.error) throw q.error;
+    const results=rr.data||[];
+    const resultIds=results.map(r=>r.id);
 
-      rows.push({
-        student:s,
-        index:i,
-        result:q.data||null
-      });
+    // A result record alone is not enough. "Records ಇದೆ" means
+    // at least one actual mark exists in result_marks.
+    let markRows=[];
+    if(resultIds.length){
+      const mr=await db.from("result_marks")
+        .select("exam_result_id,subject_id,marks")
+        .in("exam_result_id",resultIds);
+      if(mr.error) throw mr.error;
+      markRows=mr.data||[];
     }
 
+    const marksByResult={};
+    markRows.forEach(m=>{
+      if(m.marks!==null && m.marks!==undefined && m.marks!==""){
+        marksByResult[m.exam_result_id]=true;
+      }
+    });
+
+    rows=students.map((s,i)=>{
+      const result=results.find(r=>String(r.student_id)===String(s.id))||null;
+      const hasMarks=!!(result && marksByResult[result.id]);
+      return {
+        student:s,
+        index:i,
+        result:result,
+        hasMarks:hasMarks
+      };
+    });
+
     render();
-    showMsg("Students ಮತ್ತು Result records Load ಆಗಿವೆ.","ok");
+    await loadTeacherNames();
+    showMsg("ಆಯ್ಕೆ ಮಾಡಿದ ಶೈಕ್ಷಣಿಕ ವರ್ಷದ Students ಮತ್ತು Result records Load ಆಗಿವೆ.","ok");
   }catch(e){
     console.error(e);
     rows=[];
@@ -228,8 +317,13 @@ function render(){
   $("tbody").innerHTML=rows.map((r,i)=>{
     const s=r.student;
     const res=r.result;
-    const status=!res
-      ? "<span class='unpublished'>Marks/Result ಇಲ್ಲ</span>"
+    const hasMarks=!!r.hasMarks;
+    const recordText=hasMarks
+      ? "<span class='published'>✅ Result record ಇದೆ</span>"
+      : "<span class='unpublished'>❌ Result record ಇಲ್ಲ</span>";
+
+    const status=!hasMarks
+      ? "<span class='unpublished'>⏳ NOT PUBLISHED</span>"
       : res.published
         ? "<span class='published'>✅ PUBLISHED</span>"
         : "<span class='unpublished'>⏳ NOT PUBLISHED</span>";
@@ -239,7 +333,7 @@ function render(){
       <td>${esc(rollNo(s,i))}</td>
       <td class="name">${esc(studentName(s))}</td>
       <td>${esc(val(s,["sats_no","sats_number","sats"]))}</td>
-      <td>${res?"✅ Result record ಇದೆ":"❌ Result record ಇಲ್ಲ"}</td>
+      <td>${recordText}</td>
       <td>${status}</td>
     </tr>`;
   }).join("");
@@ -277,7 +371,7 @@ async function changePublish(value){
     let changed=0, skipped=0;
 
     for(const r of selected){
-      if(!r.result){
+      if(!r.result || !r.hasMarks){
         skipped++;
         continue;
       }
@@ -315,6 +409,9 @@ function clearList(){
   $("count").textContent="ಒಟ್ಟು: 0";
   $("selectAll").checked=false;
   $("headCheck").checked=false;
+  $("teacherFooter").style.display="none";
+  $("classTeacherName").textContent="";
+  $("headTeacherName").textContent="";
   hideMsg();
 }
 
