@@ -437,38 +437,45 @@ function getDivision(student){
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
     const cls=String(getClass(student)||"").trim();
-    const code=String(subject?.subject_code || subject?.code || "").trim();
-    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
+    const code=String(subject?.subject_code || "").trim();
+    const exam=String(examType||"").trim();
 
-    // Subject Master stores the exact exam-wise maximum marks in localStorage.
-    // Try the exact class label used by Subject Master first.
-    const classVariants = {
+    // Subject Master saves the exact exam-wise Maximum Marks in localStorage.
+    // Use the exact class labels used by Subject Master.
+    const classNames={
         "8":["8ನೇ ತರಗತಿ","8"],
         "9":["9ನೇ ತರಗತಿ","9"],
         "10":["10ನೇ ತರಗತಿ","10"]
     };
-    const variants=classVariants[cls] || [cls];
 
-    for(const c of variants){
-        const keys=[
-            "subject_marks_"+c+"_"+examType+"_"+code,
-            "subject_marks_"+c+"_"+examType+"_"+code.toUpperCase()
-        ];
-        for(const key of keys){
-            const raw=localStorage.getItem(key);
-            if(raw!==null && raw!==""){
-                const n=Number(raw);
-                if(Number.isFinite(n) && n>0) return n;
-            }
+    const classes=classNames[cls] || [cls];
+
+    for(const c of classes){
+        const key="subject_marks_"+c+"_"+exam+"_"+code;
+        const raw=localStorage.getItem(key);
+        if(raw!==null && raw!==""){
+            const n=Number(raw);
+            if(Number.isFinite(n) && n>0) return n;
         }
     }
 
-    // Also read the Subject Master record directly from Supabase for the
-    // selected Academic Year, class and subject code.
+    // Also try every localStorage key so that a class-label variation
+    // cannot make Subject Master's saved value disappear.
+    const suffix="_"+exam+"_"+code;
+    for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i)||"";
+        if(k.startsWith("subject_marks_") && k.endsWith(suffix)){
+            const n=Number(localStorage.getItem(k));
+            if(Number.isFinite(n) && n>0) return n;
+        }
+    }
+
+    // Final fallback: the maximum marks stored in the matching Subject
+    // Master row for the selected year.
     const dbMax=Number(subject?.max_marks);
     if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
 
-    return "";
+    return 0;
 }
 
 function grade(mark,max){
