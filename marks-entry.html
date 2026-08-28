@@ -1595,141 +1595,148 @@ function calculateStudent(studentId){
 async function saveMarks(){
 
     if(!students.length){
-
-        alert(
-            "ಮೊದಲು Students Load ಮಾಡಿ."
-        );
-
+        alert("ಮೊದಲು Students Load ಮಾಡಿ.");
         return;
     }
 
-
     try{
 
-        showMessage(
-            "Marks save ಆಗುತ್ತಿದೆ...",
-            "info"
-        );
+        showMessage("💾 Marks save ಆಗುತ್ತಿದೆ...", "info");
 
+        /*
+         * FAST SAVE
+         * Old version did one Supabase request for every
+         * student + subject. That becomes very slow.
+         *
+         * New version:
+         * 1. Fetch existing exam_results in ONE request.
+         * 2. Create missing exam_results in parallel.
+         * 3. Fetch all existing result_marks in ONE request.
+         * 4. Update/insert marks in parallel batches.
+         */
+
+        const studentIds = students
+            .map(s => getValue(s,["id","student_id"]))
+            .filter(Boolean);
+
+        if(!studentIds.length){
+            throw new Error("Students ID ಸಿಗಲಿಲ್ಲ.");
+        }
+
+        /* ---------------------------------------------
+           1. Existing exam results — ONE request
+        --------------------------------------------- */
+
+        const existingResultsResponse =
+            await supabaseClient
+                .from("exam_results")
+                .select("id,student_id")
+                .in("student_id", studentIds)
+                .eq("exam_type", currentExam);
+
+        if(existingResultsResponse.error){
+            throw existingResultsResponse.error;
+        }
+
+        const resultByStudent = new Map();
+
+        (existingResultsResponse.data || []).forEach(row => {
+            const key = String(row.student_id);
+
+            if(!resultByStudent.has(key)){
+                resultByStudent.set(key, row.id);
+            }
+        });
+
+        /* ---------------------------------------------
+           2. Create missing exam results in parallel
+        --------------------------------------------- */
+
+        const missingStudents = students.filter(student => {
+            const id = getValue(student,["id","student_id"]);
+            return id && !resultByStudent.has(String(id));
+        });
+
+        if(missingStudents.length){
+
+            const createResults = await Promise.all(
+                missingStudents.map(async student => {
+
+                    const studentId =
+                        getValue(student,["id","student_id"]);
+
+                    const inserted =
+                        await supabaseClient
+                            .from("exam_results")
+                            .insert({
+                                student_id: studentId,
+                                exam_type: currentExam,
+                                published: false
+                            })
+                            .select("id,student_id")
+                            .single();
+
+                    if(inserted.error){
+                        throw inserted.error;
+                    }
+
+                    return inserted.data;
+                })
+            );
+
+            createResults.forEach(row => {
+                resultByStudent.set(
+                    String(row.student_id),
+                    row.id
+                );
+            });
+        }
+
+        /* ---------------------------------------------
+           3. Prepare all marks and validate first
+        --------------------------------------------- */
+
+        const markRows = [];
 
         for(const student of students){
 
             const studentId =
-                getValue(
-                    student,
-                    ["id","student_id"]
-                );
+                getValue(student,["id","student_id"]);
 
+            const resultId =
+                resultByStudent.get(String(studentId));
 
-            if(!studentId){
+            if(!resultId){
                 continue;
             }
 
-
-            let resultId =
-                student.resultId;
-
-
-            /* Existing result ಹುಡುಕು */
-
-            if(!resultId){
-
-                const existing =
-                    await supabaseClient
-                        .from("exam_results")
-                        .select("id")
-                        .eq(
-                            "student_id",
-                            studentId
-                        )
-                        .eq(
-                            "exam_type",
-                            currentExam
-                        )
-                        .order(
-                            "id",
-                            {ascending:false}
-                        )
-                        .limit(1)
-                        .maybeSingle();
-
-
-                if(existing.error){
-                    throw existing.error;
-                }
-
-
-                if(existing.data){
-
-                    resultId =
-                        existing.data.id;
-
-                }
-            }
-
-
-            /* New exam result */
-
-            if(!resultId){
-
-                const inserted =
-                    await supabaseClient
-                        .from("exam_results")
-                        .insert({
-                            student_id:studentId,
-                            exam_type:currentExam,
-                            published:false
-                        })
-                        .select("id")
-                        .single();
-
-
-                if(inserted.error){
-                    throw inserted.error;
-                }
-
-
-                resultId =
-                    inserted.data.id;
-            }
-
-
-            /* Save every subject */
+            student.resultId = resultId;
 
             for(const subject of subjects){
 
                 const input =
-                    getInput(
-                        studentId,
-                        subject.id
-                    );
-
+                    getInput(studentId,subject.id);
 
                 if(!input){
                     continue;
                 }
 
-
                 const marks =
                     input.value === ""
-                    ?
-                    null
-                    :
-                    Number(input.value);
-
+                    ? null
+                    : Number(input.value);
 
                 const max =
                     maximumMarks(subject);
 
-
                 if(
                     marks !== null &&
                     (
+                        !Number.isFinite(marks) ||
                         marks < 0 ||
                         marks > max
                     )
                 ){
-
                     throw new Error(
                         studentName(student) +
                         " → " +
@@ -1739,85 +1746,146 @@ async function saveMarks(){
                     );
                 }
 
-
-                const existingMark =
-                    await supabaseClient
-                        .from("result_marks")
-                        .select("id")
-                        .eq(
-                            "exam_result_id",
-                            resultId
-                        )
-                        .eq(
-                            "subject_id",
-                            subject.id
-                        )
-                        .order(
-                            "id",
-                            {ascending:false}
-                        )
-                        .limit(1)
-                        .maybeSingle();
-
-
-                if(existingMark.error){
-                    throw existingMark.error;
-                }
-
-
-                if(existingMark.data){
-
-                    const updated =
-                        await supabaseClient
-                            .from("result_marks")
-                            .update({
-                                marks:marks
-                            })
-                            .eq(
-                                "id",
-                                existingMark.data.id
-                            );
-
-
-                    if(updated.error){
-                        throw updated.error;
-                    }
-
-                }
-                else{
-
-                    const inserted =
-                        await supabaseClient
-                            .from("result_marks")
-                            .insert({
-                                exam_result_id:
-                                    resultId,
-
-                                subject_id:
-                                    subject.id,
-
-                                marks:marks
-                            });
-
-
-                    if(inserted.error){
-                        throw inserted.error;
-                    }
-                }
+                markRows.push({
+                    studentId,
+                    resultId,
+                    subjectId: subject.id,
+                    marks
+                });
             }
-
-
-            student.resultId =
-                resultId;
         }
 
+        /* ---------------------------------------------
+           4. Existing result_marks — ONE request
+        --------------------------------------------- */
+
+        const resultIds =
+            [...new Set(
+                markRows.map(r => r.resultId)
+            )];
+
+        const existingMarksResponse =
+            resultIds.length
+            ?
+            await supabaseClient
+                .from("result_marks")
+                .select("id,exam_result_id,subject_id")
+                .in("exam_result_id", resultIds)
+            :
+            {data:[],error:null};
+
+        if(existingMarksResponse.error){
+            throw existingMarksResponse.error;
+        }
+
+        const existingMarkMap = new Map();
+
+        (existingMarksResponse.data || []).forEach(row => {
+
+            const key =
+                String(row.exam_result_id) +
+                "|" +
+                String(row.subject_id);
+
+            if(!existingMarkMap.has(key)){
+                existingMarkMap.set(key,row.id);
+            }
+
+        });
+
+        /* ---------------------------------------------
+           5. Update + Insert in parallel batches
+        --------------------------------------------- */
+
+        const operations = [];
+
+        for(const row of markRows){
+
+            const key =
+                String(row.resultId) +
+                "|" +
+                String(row.subjectId);
+
+            const existingId =
+                existingMarkMap.get(key);
+
+            if(existingId){
+
+                operations.push(
+                    () =>
+                        supabaseClient
+                            .from("result_marks")
+                            .update({
+                                marks: row.marks
+                            })
+                            .eq("id", existingId)
+                );
+
+            }else{
+
+                operations.push(
+                    () =>
+                        supabaseClient
+                            .from("result_marks")
+                            .insert({
+                                exam_result_id: row.resultId,
+                                subject_id: row.subjectId,
+                                marks: row.marks
+                            })
+                );
+
+            }
+        }
+
+        const BATCH_SIZE = 20;
+
+        for(
+            let i = 0;
+            i < operations.length;
+            i += BATCH_SIZE
+        ){
+
+            const batch =
+                operations.slice(
+                    i,
+                    i + BATCH_SIZE
+                );
+
+            const responses =
+                await Promise.all(
+                    batch.map(fn => fn())
+                );
+
+            const failed =
+                responses.find(
+                    response => response.error
+                );
+
+            if(failed && failed.error){
+                throw failed.error;
+            }
+
+            showMessage(
+                "💾 Marks save ಆಗುತ್ತಿದೆ... " +
+                Math.min(
+                    i + batch.length,
+                    operations.length
+                ) +
+                " / " +
+                operations.length,
+                "info"
+            );
+        }
+
+        /* ---------------------------------------------
+           Refresh screen
+        --------------------------------------------- */
 
         await loadSavedMarks();
 
         renderMarksTable();
 
         updateSummary();
-
 
         showMessage(
             "✅ Marks successfully saved.",
@@ -1827,13 +1895,14 @@ async function saveMarks(){
     }
     catch(error){
 
-        console.error(error);
+        console.error("Fast Save Error:",error);
 
         showMessage(
             "❌ Marks Save Error: " +
-            error.message,
+            (error?.message || error),
             "error"
         );
+
     }
 }
 
@@ -2563,75 +2632,77 @@ function downloadExcel(){function downloadExcel(){
 function printMarks(){
 
     if(!students.length){
-
-        alert(
-            "ಮೊದಲು Students Load ಮಾಡಿ."
-        );
-
+        alert("ಮೊದಲು Students Load ಮಾಡಿ.");
         return;
     }
 
-
     let html = "";
 
-
     html +=
-        "<h2 style='text-align:center'>" +
-    "" +
+        "<h2 style='text-align:center;margin:0 0 5px;'>" +
+        "ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ" +
         "</h2>";
 
-
     html +=
-        "<h3 style='text-align:center'>" +
+        "<h3 style='text-align:center;margin:0 0 5px;'>" +
         currentClass +
         "ನೇ ತರಗತಿ - " +
         currentDivision +
         " ವಿಭಾಗ - " +
         (
             currentExam === "HALF_YEARLY"
-            ?
-            "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-            :
-            "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+            : "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
         ) +
         "</h3>";
 
+    html +=
+        "<div style='text-align:center;margin-bottom:8px;'>" +
+        "ಶೈಕ್ಷಣಿಕ ವರ್ಷ: " +
+        escapeHtml(
+            String(
+                document.getElementById("academicYear")?.value ||
+                ""
+            )
+        ) +
+        "</div>";
 
     html += "<table>";
-
-
     html += "<thead><tr>";
 
     html += "<th>Roll</th>";
     html += "<th>ವಿದ್ಯಾರ್ಥಿ</th>";
 
-
     subjects.forEach(subject => {
+
+        const name =
+            subjectName(subject);
+
+        const max =
+            maximumMarks(subject);
 
         html +=
             "<th>" +
-            escapeHtml(
-                subjectName(subject)
-            ) +
+            escapeHtml(name) +
             "<br>" +
-            maximumMarks(subject) +
+            "<small>Marks / " +
+            max +
+            "</small>" +
+            "<br>" +
+            "<small>Grade</small>" +
             "</th>";
-    });
 
+    });
 
     html +=
         "<th>Total</th>" +
         "<th>Maximum</th>" +
         "<th>%</th>" +
-        "<th>Grade</th>" +
+        "<th>Overall Grade</th>" +
         "<th>Result</th>";
 
-
     html += "</tr></thead>";
-
-
     html += "<tbody>";
-
 
     students.forEach((student,index) => {
 
@@ -2641,14 +2712,11 @@ function printMarks(){
                 ["id","student_id"]
             );
 
-
         let total = 0;
         let maximum = 0;
         let entered = 0;
 
-
         html += "<tr>";
-
 
         html +=
             "<td>" +
@@ -2660,14 +2728,12 @@ function printMarks(){
             ) +
             "</td>";
 
-
         html +=
             "<td style='text-align:left'>" +
             escapeHtml(
                 studentName(student)
             ) +
             "</td>";
-
 
         subjects.forEach(subject => {
 
@@ -2677,7 +2743,6 @@ function printMarks(){
                     subject.id
                 );
 
-
             const value =
                 input &&
                 input.value !== ""
@@ -2686,19 +2751,26 @@ function printMarks(){
                 :
                 "";
 
-
             const max =
                 maximumMarks(subject);
 
+            const grade =
+                value === ""
+                ?
+                ""
+                :
+                subjectGrade(
+                    value,
+                    max,
+                    subject
+                );
 
             if(value !== ""){
                 total += value;
                 entered++;
             }
 
-
             maximum += max;
-
 
             html +=
                 "<td>" +
@@ -2707,11 +2779,24 @@ function printMarks(){
                     ?
                     ""
                     :
-                    value
+                    escapeHtml(
+                        String(value)
+                    )
+                ) +
+                (
+                    value === ""
+                    ?
+                    ""
+                    :
+                    "<br><b>" +
+                    escapeHtml(
+                        grade || "-"
+                    ) +
+                    "</b>"
                 ) +
                 "</td>";
-        });
 
+        });
 
         const percentage =
             maximum
@@ -2720,10 +2805,8 @@ function printMarks(){
             :
             0;
 
-
         const complete =
             entered === subjects.length;
-
 
         const grade =
             complete
@@ -2734,14 +2817,12 @@ function printMarks(){
             :
             "-";
 
-
         const pass =
             currentClass === "8"
             ?
             percentage >= 30
             :
             percentage >= 35;
-
 
         const result =
             complete
@@ -2756,49 +2837,43 @@ function printMarks(){
             :
             "PENDING";
 
-
         html +=
             "<td>" +
             total.toFixed(2) +
             "</td>";
-
 
         html +=
             "<td>" +
             maximum.toFixed(2) +
             "</td>";
 
-
         html +=
             "<td>" +
             percentage.toFixed(2) +
             "%</td>";
 
-
         html +=
-            "<td>" +
-            grade +
-            "</td>";
-
+            "<td><b>" +
+            escapeHtml(
+                grade
+            ) +
+            "</b></td>";
 
         html +=
             "<td>" +
             result +
             "</td>";
 
-
         html += "</tr>";
-    });
 
+    });
 
     html += "</tbody>";
     html += "</table>";
 
-
     document.getElementById(
         "printArea"
     ).innerHTML = html;
-
 
     window.print();
 }
