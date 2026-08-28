@@ -252,6 +252,28 @@ td.subject{text-align:left;font-weight:700}
 .dob-entry #dob{flex:1;min-width:0}
 .dob-calendar-btn{width:44px;height:42px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:19px}
 .dob-picker-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* Mobile result fit */
+@media (max-width: 600px){
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+    .container,.card{width:100%;max-width:100%;box-sizing:border-box}
+    .result-table-wrap,.table-wrap,.result-table-container{
+        width:100%!important;
+        max-width:100%!important;
+        overflow-x:hidden!important;
+    }
+    table{
+        width:100%!important;
+        max-width:100%!important;
+        table-layout:fixed!important;
+    }
+    th,td{
+        padding:5px 3px!important;
+        font-size:11px!important;
+        white-space:normal!important;
+        word-break:break-word!important;
+    }
+}
 </style>
 </head>
 
@@ -1170,17 +1192,17 @@ function renderExam(student,subjects,result,marksMap){
 
             <div class="summary-box">
                 ಒಟ್ಟು ಅಂಕ
-                <b>${total.toFixed(2)}</b>
+                <b>${total}</b>
             </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
-                <b>${maximum.toFixed(2)}</b>
+                <b>${maximum}</b>
             </div>
 
             <div class="summary-box">
                 ಶೇಕಡಾವಾರು
-                <b>${percentage.toFixed(2)}%</b>
+                <b>${percentage}%</b>
             </div>
 
             <div class="summary-box">
