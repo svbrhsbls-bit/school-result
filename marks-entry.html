@@ -533,31 +533,95 @@ function isKannada(subject){
 ===================================================== */
 
 function maximumMarks(subject){
-    /* Subject Master is the single source of truth for Maximum Marks. */
-    const dbMax = Number(subject && subject.max_marks);
-    if(Number.isFinite(dbMax) && dbMax > 0){
-        return dbMax;
+
+    /*
+     * ============================================================
+     * SUBJECT MASTER -> MARKS ENTRY : MAXIMUM MARKS LINK
+     * ============================================================
+     *
+     * Subject Master saves exam-wise maximum marks using:
+     *
+     * subject_marks_[CLASS]_[EXAM]_[SUBJECT CODE]
+     *
+     * Examples:
+     * subject_marks_8ನೇ ತರಗತಿ_HALF_YEARLY_01K
+     * subject_marks_9ನೇ ತರಗತಿ_HALF_YEARLY_01K
+     * subject_marks_10ನೇ ತರಗತಿ_ANNUAL_01K
+     *
+     * Marks Entry MUST read this value first.
+     * Therefore, when Maximum Marks is changed in Subject Master,
+     * the same value is used here.
+     */
+
+    const cls = String(currentClass || "").trim();
+    const exam = String(currentExam || "").trim();
+    const code = String(subjectCode(subject) || "").trim().toUpperCase();
+
+    if(!cls || !exam || !code){
+        const dbMax = Number(subject && subject.max_marks);
+        return Number.isFinite(dbMax) && dbMax > 0 ? dbMax : 100;
     }
 
-    /* Backward compatibility for old Subject Master exam-specific marks. */
-    const cls=currentClass;
-    const exam=currentExam;
-    const code=String(subjectCode(subject)||"");
-    const keys=[];
+    const className =
+        cls === "8"  ? "8ನೇ ತರಗತಿ" :
+        cls === "9"  ? "9ನೇ ತರಗತಿ" :
+        cls === "10" ? "10ನೇ ತರಗತಿ" :
+        cls;
+
+    /*
+     * 1. EXACT SUBJECT MASTER KEY
+     */
+    const exactKey =
+        "subject_marks_" +
+        className + "_" +
+        exam + "_" +
+        code;
+
+    const exactValue = localStorage.getItem(exactKey);
+
+    if(
+        exactValue !== null &&
+        String(exactValue).trim() !== "" &&
+        Number.isFinite(Number(exactValue)) &&
+        Number(exactValue) > 0
+    ){
+        return Number(exactValue);
+    }
+
+    /*
+     * 2. Academic-year version used by older Subject Master code.
+     */
     if(currentAcademicYear){
-        keys.push("subject_marks_" + currentAcademicYear + "_" + (
-            cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-        ) + "_" + exam + "_" + code);
-    }
-    keys.push("subject_marks_" + (
-        cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-    ) + "_" + exam + "_" + code);
 
-    for(const key of keys){
-        const saved=localStorage.getItem(key);
-        if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
-            return Number(saved);
+        const yearKey =
+            "subject_marks_" +
+            currentAcademicYear + "_" +
+            className + "_" +
+            exam + "_" +
+            code;
+
+        const yearValue = localStorage.getItem(yearKey);
+
+        if(
+            yearValue !== null &&
+            String(yearValue).trim() !== "" &&
+            Number.isFinite(Number(yearValue)) &&
+            Number(yearValue) > 0
+        ){
+            return Number(yearValue);
         }
+    }
+
+    /*
+     * 3. Supabase Subject Master row fallback.
+     */
+    const dbMax = Number(subject && subject.max_marks);
+
+    if(
+        Number.isFinite(dbMax) &&
+        dbMax > 0
+    ){
+        return dbMax;
     }
 
     return 100;
