@@ -259,7 +259,7 @@ td.subject{text-align:left;font-weight:700}
 .bulk-table th{position:sticky;top:0;z-index:2}
 .bulk-table td:first-child,.bulk-table th:first-child{width:55px}
 .bulk-empty{text-align:center;padding:20px!important;color:#777}
-@media(max-width:700px){.bulk-toolbar{align-items:stretch}.bulk-toolbar label:first-child{width:100%}.bulk-toolbar button{width:100%}}
+@media(max-width:700px){.bulk-toolbar{align-items:stretch}.bulk-toolbar button{width:100%}}
 
 
 /* Staff Send Results page */
@@ -280,10 +280,10 @@ td.subject{text-align:left;font-weight:700}
         <h2>📱 WhatsApp Result – Staff</h2>
         <p>ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Select ಮಾಡಿ, ನಿಮಗೆ ಬೇಡವಾದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Untick ಮಾಡಿ. ನಂತರ Selected Results ಕಳುಹಿಸಿ.</p>
         <div class="bulk-toolbar">
-            <label style="min-width:220px">
-                Academic Year
-                <select id="bulkAcademicYear"
-                        style="width:100%;padding:12px;border:1px solid #b9c8d4;border-radius:8px;font-size:16px">
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Academic Year</b>
+                <select id="bulkAcademicYear" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:120px;">
+                    <option value="">Year Load...</option>
                 </select>
             </label>
             <label class="select-all-label">
@@ -1197,10 +1197,9 @@ async function loadBulkAcademicYears(){
     try{
         await loadAppSettings();
 
-        // Settings year is the default/current year.
-        const settingsYear=String(appSettings.academic_year || "").trim();
+        const currentYear=String(appSettings.academic_year || "").trim();
 
-        // Get all academic years that actually exist in Students Database.
+        // Read years from the same Students table used by Marks Entry.
         const {data,error}=await db
             .from("students")
             .select("academic_year")
@@ -1209,18 +1208,22 @@ async function loadBulkAcademicYears(){
         if(error) throw error;
 
         const years=[...new Set((data||[])
-            .map(s=>String(s.academic_year||"").trim())
+            .map(s=>String(s.academic_year || "").trim())
             .filter(Boolean))];
 
-        if(settingsYear && !years.includes(settingsYear)){
-            years.push(settingsYear);
+        if(currentYear && !years.includes(currentYear)){
+            years.push(currentYear);
         }
 
         years.sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
 
         select.innerHTML = years.length
-            ? years.map(y=>`<option value="${esc(y)}" ${y===settingsYear?"selected":""}>${esc(y)}</option>`).join("")
-            : `<option value="">Year ಸಿಗಲಿಲ್ಲ</option>`;
+            ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
+            : `<option value="">${esc(currentYear || "Year ಸಿಗಲಿಲ್ಲ")}</option>`;
+
+        if(currentYear && years.includes(currentYear)){
+            select.value=currentYear;
+        }
 
     }catch(error){
         console.error("Academic Year Load Error:",error);
@@ -1228,31 +1231,29 @@ async function loadBulkAcademicYears(){
     }
 }
 
-$("bulkAcademicYear").addEventListener("change",function(){
-    loadBulkStudents();
-});
-
 async function loadBulkStudents(){
     await loadAppSettings();
-
     if(!$("bulkAcademicYear")?.value){
         await loadBulkAcademicYears();
     }
-
     setBulkStatus("⏳ Students load ಆಗುತ್ತಿದೆ...");
     try{
-        const academicYear=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
+        const academicYear=String(
+            $("bulkAcademicYear")?.value ||
+            appSettings.academic_year ||
+            ""
+        ).trim();
 
-        let studentQuery=db
+        let query=db
             .from("students")
             .select("*")
             .eq("is_active",true);
 
         if(academicYear){
-            studentQuery=studentQuery.eq("academic_year",academicYear);
+            query=query.eq("academic_year",academicYear);
         }
 
-        const {data,error} = await studentQuery
+        const {data,error}=await query
             .order("class_name",{ascending:true})
             .order("roll_no",{ascending:true});
         if(error) throw error;
@@ -1377,6 +1378,15 @@ WhatsApp message Ready ಆಗುತ್ತದೆ. ಪ್ರತಿ chatನಲ್�
 }
 
 
+$("bulkAcademicYear").addEventListener("change",function(){
+    loadBulkStudents();
+});
+
+(async function(){
+    await loadBulkAcademicYears();
+    await loadBulkStudents();
+})();
+
 /* Enter key support */
 $("rollNumber").addEventListener("keydown",function(e){
     if(e.key==="Enter") viewResult();
@@ -1386,10 +1396,6 @@ $("dob").addEventListener("keydown",function(e){
     if(e.key==="Enter") viewResult();
 });
 
-
-(async function(){
-    await loadBulkAcademicYears();
-})();
 </script>
 </body>
 </html>
