@@ -49,7 +49,7 @@ header h1{
 
 .grid{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(4,1fr);
     gap:15px;
 }
 
@@ -262,6 +262,13 @@ th{
     <div class="grid">
 
         <div>
+            <label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label>
+            <select id="academicYearSelect">
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <div>
             <label>ತರಗತಿ</label>
 
             <select id="classSelect">
@@ -412,6 +419,7 @@ let subjects = [];
 let currentClass = "";
 let currentDivision = "";
 let currentExam = "";
+let currentAcademicYear = "";
 
 
 /* =====================================================
@@ -525,25 +533,33 @@ function isKannada(subject){
 ===================================================== */
 
 function maximumMarks(subject){
-    /* Maximum Marks are taken from Subject Master.
-       Exam-wise values are stored in localStorage by subject.html. */
+    /* Subject Master is the single source of truth for Maximum Marks. */
+    const dbMax = Number(subject && subject.max_marks);
+    if(Number.isFinite(dbMax) && dbMax > 0){
+        return dbMax;
+    }
+
+    /* Backward compatibility for old Subject Master exam-specific marks. */
     const cls=currentClass;
     const exam=currentExam;
-    const code=String(subjectCode(subject)||'');
-    const saved=localStorage.getItem("subject_marks_" + (
+    const code=String(subjectCode(subject)||"");
+    const keys=[];
+    if(currentAcademicYear){
+        keys.push("subject_marks_" + currentAcademicYear + "_" + (
+            cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
+        ) + "_" + exam + "_" + code);
+    }
+    keys.push("subject_marks_" + (
         cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
     ) + "_" + exam + "_" + code);
 
-    if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
-        return Number(saved);
+    for(const key of keys){
+        const saved=localStorage.getItem(key);
+        if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
+            return Number(saved);
+        }
     }
 
-    /* Backward-compatible fallback to existing defaults. */
-    if(cls === "8") return 100;
-    if(cls === "9" || cls === "10"){
-        if(exam === "HALF_YEARLY") return isKannada(subject) ? 100 : 80;
-        if(exam === "ANNUAL") return isKannada(subject) ? 125 : 100;
-    }
     return 100;
 }
 
@@ -742,26 +758,79 @@ let appSettings = { school_name:"", school_address:"", exam_name:"", academic_ye
 
 async function loadAppSettings(){
     try{
-        const {data,error}=await supabaseClient.from("settings").select("*").order("id",{ascending:true}).limit(1).maybeSingle();
+        const {data,error}=await supabaseClient
+            .from("settings")
+            .select("*")
+            .order("id",{ascending:true})
+            .limit(1)
+            .maybeSingle();
         if(error) throw error;
-        if(!data) return;
+
         appSettings={
-            school_name:String(data.school_name??"").trim(),
-            school_address:String(data.school_address??"").trim(),
-            exam_name:String(data.exam_name??"").trim(),
-            academic_year:String(data.academic_year??data.school_year??"").trim(),
-            head_teacher_name:String(data.head_teacher_name??"").trim(),
-            class_teacher_8:String(data.class_teacher_8??"").trim(),
-            class_teacher_9:String(data.class_teacher_9??"").trim(),
-            class_teacher_10:String(data.class_teacher_10??"").trim()
+            school_name:String(data?.school_name??"").trim(),
+            school_address:String(data?.school_address??"").trim(),
+            exam_name:String(data?.exam_name??"").trim(),
+            academic_year:String(data?.academic_year??data?.school_year??"").trim(),
+            head_teacher_name:String(data?.head_teacher_name??"").trim(),
+            class_teacher_8:String(data?.class_teacher_8??"").trim(),
+            class_teacher_9:String(data?.class_teacher_9??"").trim(),
+            class_teacher_10:String(data?.class_teacher_10??"").trim()
         };
+
+        currentAcademicYear = appSettings.academic_year;
+
         const school=document.getElementById("schoolNameHeader");
         const exam=document.getElementById("examNameHeader");
         const year=document.getElementById("academicYearHeader");
         if(school) school.textContent=appSettings.school_name||"Marks Entry";
         if(exam) exam.textContent=appSettings.exam_name||"Marks Entry";
-        if(year) year.textContent=appSettings.academic_year ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+appSettings.academic_year : "";
-    }catch(error){ console.warn("Settings Load Error:",error.message||error); }
+        if(year) year.textContent=currentAcademicYear ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+currentAcademicYear : "";
+
+        await loadAcademicYears();
+    }catch(error){
+        console.warn("Settings Load Error:",error.message||error);
+    }
+}
+
+async function loadAcademicYears(){
+    const select=document.getElementById("academicYearSelect");
+    if(!select) return;
+
+    const years=new Set();
+    if(currentAcademicYear) years.add(currentAcademicYear);
+
+    try{
+        const [studentsRes, subjectsRes] = await Promise.all([
+            supabaseClient.from("students").select("academic_year"),
+            supabaseClient.from("subjects").select("academic_year")
+        ]);
+        (studentsRes.data||[]).forEach(r=>{ if(r.academic_year) years.add(String(r.academic_year).trim()); });
+        (subjectsRes.data||[]).forEach(r=>{ if(r.academic_year) years.add(String(r.academic_year).trim()); });
+    }catch(e){ console.warn("Academic years load:",e.message||e); }
+
+    const list=Array.from(years).filter(Boolean).sort((a,b)=>
+        parseInt(b.match(/\d{4}/)?.[0]||0)-parseInt(a.match(/\d{4}/)?.[0]||0)
+    );
+    select.innerHTML=list.length
+        ? list.map(y=>`<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join("")
+        : `<option value="">${escapeHtml(currentAcademicYear||"Year not found")}</option>`;
+
+    const saved=localStorage.getItem("marks_entry_academic_year");
+    currentAcademicYear=(saved && list.includes(saved)) ? saved : (list.includes(currentAcademicYear) ? currentAcademicYear : (list[0]||currentAcademicYear));
+    select.value=currentAcademicYear;
+
+    if(!select.dataset.bound){
+        select.addEventListener("change",()=>{
+            currentAcademicYear=select.value;
+            localStorage.setItem("marks_entry_academic_year",currentAcademicYear);
+            document.getElementById("academicYearHeader").textContent=currentAcademicYear ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+currentAcademicYear : "";
+            students=[]; subjects=[];
+            document.getElementById("marksTableContainer").innerHTML="<p>Academic Year ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ Students Load ಒತ್ತಿ.</p>";
+            document.getElementById("summaryBody").innerHTML="";
+            document.getElementById("studentCount").textContent="ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: 0";
+        });
+        select.dataset.bound="true";
+    }
 }
 
 /* =====================================================
@@ -843,7 +912,7 @@ async function loadStudents(){
             await supabaseClient
                 .from("students")
                 .select("*")
-                .eq("academic_year", appSettings.academic_year);
+                .eq("academic_year", currentAcademicYear);
 
 
         if(studentResponse.error){
@@ -925,7 +994,8 @@ async function loadStudents(){
         const subjectResponse = await supabaseClient
             .from("subjects")
             .select("*")
-            .eq("is_active",true);
+            .eq("is_active",true)
+            .eq("academic_year", currentAcademicYear);
 
         if(subjectResponse.error) throw subjectResponse.error;
 
