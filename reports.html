@@ -271,6 +271,18 @@ let currentCombinedSchool={8:[],9:[],10:[]};
 
 const $=id=>document.getElementById(id);
 
+async function getReportAcademicYear(){
+  let y=localStorage.getItem("school_result_current_academic_year")||
+        localStorage.getItem("school_current_academic_year")||
+        localStorage.getItem("currentAcademicYear")||"";
+  try{
+    const r=await db.from("settings").select("academic_year").eq("id",1).maybeSingle();
+    if(!r.error && r.data && r.data.academic_year) y=String(r.data.academic_year).trim();
+  }catch(e){}
+  return y||"2026-27";
+}
+
+
 function msg(text,type="info"){
  const e=$("message"); e.textContent=text; e.className="message show "+type;
 }
@@ -367,34 +379,43 @@ async function loadSettings(){
  if(!r.error&&r.data)appSettings=r.data;
 }
 async function loadBase(){
- currentClass=classNumber($("classSelect").value);
- currentDivision=$("divisionSelect").value.trim().toUpperCase();
- currentExam=$("examSelect").value;
- reportType=$("reportType").value;
+  currentClass=classNumber($("classSelect").value);
+  currentDivision=$("divisionSelect").value.trim().toUpperCase();
+  currentExam=$("examSelect").value;
+  reportType=$("reportType").value;
 
- await loadSettings();
+  await loadSettings();
 
- const sr=await db.from("students").select("*")
-        .eq("academic_year", document.getElementById("academicYearSelect")?.value || "2026-27");
- if(sr.error)throw sr.error;
- allStudents=(sr.data||[]).filter(s=>s.is_active!==false);
+  const year=await getReportAcademicYear();
 
- currentStudents=allStudents.filter(s=>
-  classNumber(s.class_name||s.class||s.standard||"")===currentClass &&
-  division(s)===currentDivision
- ).sort((a,b)=>Number(a.roll_no||999999)-Number(b.roll_no||999999));
+  const sr=await db.from("students").select("*")
+    .eq("academic_year",year)
+    .eq("is_active",true);
+  if(sr.error)throw sr.error;
+  allStudents=sr.data||[];
 
- const sub=await db.from("subjects").select("*").eq("is_active",true);
- if(sub.error)throw sub.error;
- currentSubjects=uniqueSubjects((sub.data||[]).filter(s=>
-  classNumber(s.class_name||s.class||s.standard||"")===currentClass
- ));
+  currentStudents=allStudents.filter(s=>
+    classNumber(s.class_name||s.class||s.standard||"")===currentClass &&
+    division(s)===currentDivision
+  ).sort((a,b)=>Number(a.roll_no||999999)-Number(b.roll_no||999999));
 
- const sel=$("studentSelect");
- sel.innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
- currentStudents.forEach(s=>{
-  const o=document.createElement("option");o.value=s.id;o.textContent=roll(s,0)+" - "+studentName(s);sel.appendChild(o);
- });
+  const sub=await db.from("subjects").select("*")
+    .eq("is_active",true)
+    .eq("academic_year",year);
+  if(sub.error)throw sub.error;
+
+  currentSubjects=uniqueSubjects((sub.data||[]).filter(s=>
+    classNumber(s.class_name||s.class||s.standard||"")===currentClass
+  ));
+
+  const sel=$("studentSelect");
+  sel.innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
+  currentStudents.forEach(s=>{
+    const o=document.createElement("option");
+    o.value=s.id;
+    o.textContent=roll(s,0)+" - "+studentName(s);
+    sel.appendChild(o);
+  });
 }
 
 async function loadResults(){
@@ -728,7 +749,7 @@ function subjectStats(rows, sub){
    const passed=(d.resultText==="PASS" && Number(x.mark)>=0) ? true : false;
    // Subject pass is based on the subject grade, not the overall result.
    const sg=String(x.grade||"");
-   const isPass=sg && sg!=="NC" && sg!=="C";
+   const isPass=sg && sg!=="NC";
    if(isPass){
     if(male){out.passed.m++;out.passed.t++}
     else if(female){out.passed.f++;out.passed.t++}
@@ -806,7 +827,7 @@ async function generate(){
         const sc=classNumber(s.class_name||s.class||s.standard||"");
         return sc===c && s.is_active!==false;
       });
-      const subs=await db.from("subjects").select("*").eq("is_active",true);
+      const subs=await db.from("subjects").select("*").eq("is_active",true).eq("academic_year",reportYear);
       if(subs.error)throw subs.error;
       currentSubjects=uniqueSubjects((subs.data||[]).filter(s=>classNumber(s.class_name||s.class||s.standard||"")===c));
       const ids=clsStudents.map(s=>s.id);
@@ -1159,3 +1180,23 @@ async function loadReportsAcademicYear(){
 </script>
 </body>
 </html>
+async function initReportYear(){
+  const el=document.getElementById("academicYearSelect");
+  if(!el)return;
+  const current=await getReportAcademicYear();
+  let years=[current];
+  try{
+    const a=JSON.parse(localStorage.getItem("school_result_academic_years")||"[]");
+    if(Array.isArray(a)) years.push(...a.map(x=>typeof x==="string"?x:(x.year||x.academic_year||"")));
+  }catch(e){}
+  years=[...new Set(years.filter(Boolean))].sort();
+  el.innerHTML=years.map(y=>`<option value="${String(y).replace(/"/g,"&quot;")}">${y}</option>`).join("");
+  el.value=current;
+  el.onchange=async()=>{
+    localStorage.setItem("school_result_current_academic_year",el.value);
+    currentRows=[];
+    try{await loadBase();}catch(e){console.error(e);}
+  };
+}
+
+
