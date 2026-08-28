@@ -436,46 +436,78 @@ function getDivision(student){
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
-    const cls=String(getClass(student)||"").trim();
-    const code=String(subject?.subject_code || "").trim();
-    const exam=String(examType||"").trim();
+    /*
+     * IMPORTANT:
+     * WhatsApp maximum marks MUST be exactly the same as Subject Master.
+     * Subject Master keeps exam-wise maximum marks in localStorage using:
+     * subject_marks_<CLASS>_<EXAM>_<CODE>
+     *
+     * Example:
+     * 8ನೇ ತರಗತಿ + HALF_YEARLY + 01K
+     * 8ನೇ ತರಗತಿ + ANNUAL + 01K
+     * 9ನೇ ತರಗತಿ + HALF_YEARLY + 31E
+     * etc.
+     */
+    const cls = String(getClass(student) || "").trim();
+    const code = String(
+        subject?.subject_code ?? subject?.code ?? ""
+    ).trim();
+    const exam = String(examType || "").trim();
 
-    // Subject Master saves the exact exam-wise Maximum Marks in localStorage.
-    // Use the exact class labels used by Subject Master.
-    const classNames={
-        "8":["8ನೇ ತರಗತಿ","8"],
-        "9":["9ನೇ ತರಗತಿ","9"],
-        "10":["10ನೇ ತರಗತಿ","10"]
+    if(!cls || !code || !exam) return "";
+
+    // Same class labels used by subjects.html.
+    const classVariants = {
+        "8":  ["8ನೇ ತರಗತಿ", "8"],
+        "9":  ["9ನೇ ತರಗತಿ", "9"],
+        "10": ["10ನೇ ತರಗತಿ", "10"]
     };
 
-    const classes=classNames[cls] || [cls];
+    const variants = classVariants[cls] || [cls];
 
-    for(const c of classes){
-        const key="subject_marks_"+c+"_"+exam+"_"+code;
-        const raw=localStorage.getItem(key);
-        if(raw!==null && raw!==""){
-            const n=Number(raw);
-            if(Number.isFinite(n) && n>0) return n;
+    // 1) First priority: EXACT Subject Master exam-wise value.
+    for(const c of variants){
+        const keys = [
+            "subject_marks_" + c + "_" + exam + "_" + code,
+            "subject_marks_" + c + "_" + exam + "_" + code.toUpperCase()
+        ];
+
+        for(const key of keys){
+            const raw = localStorage.getItem(key);
+
+            if(raw !== null && String(raw).trim() !== ""){
+                const n = Number(raw);
+
+                if(Number.isFinite(n) && n > 0){
+                    return n;
+                }
+            }
         }
     }
 
-    // Also try every localStorage key so that a class-label variation
-    // cannot make Subject Master's saved value disappear.
-    const suffix="_"+exam+"_"+code;
-    for(let i=0;i<localStorage.length;i++){
-        const k=localStorage.key(i)||"";
-        if(k.startsWith("subject_marks_") && k.endsWith(suffix)){
-            const n=Number(localStorage.getItem(k));
-            if(Number.isFinite(n) && n>0) return n;
+    /*
+     * 2) If the Subject Master value was not stored in localStorage,
+     * use the same default rules defined in subjects.html.
+     */
+    if(cls === "8"){
+        return exam === "HALF_YEARLY" ? 50 : 100;
+    }
+
+    if(cls === "9" || cls === "10"){
+        if(exam === "HALF_YEARLY"){
+            return code === "01K" ? 100 : 80;
+        }
+
+        if(exam === "ANNUAL"){
+            return code === "01K" ? 125 : 100;
         }
     }
 
-    // Final fallback: the maximum marks stored in the matching Subject
-    // Master row for the selected year.
-    const dbMax=Number(subject?.max_marks);
-    if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
+    // 3) Final fallback: current Subject Master Supabase max_marks.
+    const dbMax = Number(subject?.max_marks);
+    if(Number.isFinite(dbMax) && dbMax > 0) return dbMax;
 
-    return 0;
+    return "";
 }
 
 function grade(mark,max){
@@ -693,12 +725,23 @@ async function viewResult(){
            2. Load subjects for student's class
         --------------------------------------------- */
         const className=student.class_name;
+        const academicYear=String(
+            student.academic_year || appSettings.academic_year || ""
+        ).trim();
 
-        const {data:subjects,error:subjectError}=await db
+        let subjectQuery = db
             .from("subjects")
             .select("*")
             .eq("class_name",className)
-            .eq("is_active",true)
+            .eq("is_active",true);
+
+        // Subject Master is year-wise. Therefore WhatsApp must load
+        // subjects from the student's selected Academic Year.
+        if(academicYear){
+            subjectQuery = subjectQuery.eq("academic_year",academicYear);
+        }
+
+        const {data:subjects,error:subjectError}=await subjectQuery
             .order("display_order",{ascending:true});
 
         if(subjectError)
@@ -874,7 +917,10 @@ function buildWhatsAppMessage(){
             }
             const name = subject.subject_name || "";
             const code = subject.subject_code || "";
-            const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
+            const maxText = max === "" ? "-" : Number(max).toString();
+            const markText = hasMark
+                ? `${value}/${maxText} (${grade(value,max)})`
+                : `-/${maxText}`;
             lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
         });
 
