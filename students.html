@@ -235,30 +235,38 @@ tr:hover{
 <body>
 <div id="excelToolbar" style="
     margin:12px 0;
-    padding:14px;
-    border:2px solid #0b7fab;
-    border-radius:10px;
-    background:#eef8fc;
+    padding:12px;
+    border:1px solid #d0d7de;
+    border-radius:8px;
+    background:#f8fafc;
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
     flex-wrap:wrap;">
-    <strong style="margin-right:8px;">📊 Excel</strong>
+    <strong>Excel:</strong>
+
     <button type="button" onclick="downloadStudentExcelTemplate()"
-        style="padding:10px 16px;border:0;border-radius:7px;background:#198754;color:white;font-weight:700;cursor:pointer;">
+        style="padding:9px 14px;border:0;border-radius:6px;background:#198754;color:#fff;font-weight:700;cursor:pointer;">
         ⬇️ Excel Template
     </button>
-    <button type="button" onclick="document.getElementById('studentExcelUploadInput').click()"
-        style="padding:10px 16px;border:0;border-radius:7px;background:#0d6efd;color:white;font-weight:700;cursor:pointer;">
+
+    <label style="font-weight:700;margin-left:4px;">ತರಗತಿ:</label>
+    <select id="excelClassSelect"
+        onchange="updateExcelYearLabel()"
+        style="padding:9px 12px;border:1px solid #bbb;border-radius:6px;">
+        <option value="8">8ನೇ ತರಗತಿ</option>
+        <option value="9">9ನೇ ತರಗತಿ</option>
+        <option value="10">10ನೇ ತರಗತಿ</option>
+    </select>
+
+    <button type="button" onclick="uploadStudentsFromExcel(event)"
+        style="padding:9px 14px;border:0;border-radius:6px;background:#0d6efd;color:#fff;font-weight:700;cursor:pointer;">
         📤 Excel Upload
     </button>
-    <input id="studentExcelUploadInput" type="file" accept=".xlsx,.xls"
-        style="display:none" onchange="uploadStudentsFromExcel(event)">
-    <span style="font-size:12px;color:#455a64;">
-        Selected Year: <b id="excelYearLabel">2026-27</b>
-    </span>
-</div>
 
+    <input id="studentExcelUploadInput" type="file" accept=".xlsx"
+        style="display:none" onchange="uploadStudentsFromExcel(event)">
+</div>
 
 <div class="header">
     <h1>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
@@ -569,15 +577,32 @@ async function loadAcademicYears(){
 
 /* =========================================================
    EXCEL TEMPLATE + EXCEL UPLOAD
+   Requested format:
+   - Section A only
+   - No Academic Year/Class/Division columns in Excel
+   - Class selected on screen before upload
+   - Existing student-entry fields only
 ========================================================= */
 
 const STUDENT_EXCEL_HEADERS = [
-    "Academic Year","Class","Division","Roll No","Student Name",
-    "Father Name","Mother Name","Gender","DOB","SATS No",
-    "PEN No","Caste","Mobile Number"
+    "Reg No",
+    "Student Name",
+    "Father Name",
+    "Mother Name",
+    "Gender",
+    "DOB",
+    "SATS No",
+    "PEN No",
+    "Caste",
+    "Mobile Number"
 ];
 
-function getExcelAcademicYear(){
+function getExcelSelectedClass(){
+    const el = document.getElementById("excelClassSelect");
+    return el ? String(el.value || "8") : "8";
+}
+
+function getCurrentExcelYear(){
     if(typeof selectedAcademicYear !== "undefined" && selectedAcademicYear){
         return selectedAcademicYear;
     }
@@ -585,10 +610,7 @@ function getExcelAcademicYear(){
     return el ? (el.value || "2026-27") : "2026-27";
 }
 
-function updateExcelYearLabel(){
-    const el = document.getElementById("excelYearLabel");
-    if(el) el.textContent = getExcelAcademicYear();
-}
+function updateExcelYearLabel(){}
 
 async function downloadStudentExcelTemplate(){
     if(typeof ExcelJS === "undefined"){
@@ -602,26 +624,24 @@ async function downloadStudentExcelTemplate(){
     ws.columns = STUDENT_EXCEL_HEADERS.map(h => ({
         header:h,
         key:h,
-        width: Math.max(15, h.length + 4)
+        width:Math.max(15, h.length + 4)
     }));
 
     ws.getRow(1).font = {bold:true};
     ws.freezePanes = {row:2};
 
+    /* Only student-entry columns. No new columns. */
     ws.addRow({
-        "Academic Year": getExcelAcademicYear(),
-        "Class": "8",
-        "Division": "A",
-        "Roll No": "1",
-        "Student Name": "ಉದಾಹರಣೆ ವಿದ್ಯಾರ್ಥಿ",
-        "Father Name": "",
-        "Mother Name": "",
-        "Gender": "Male",
-        "DOB": "2013-01-01",
-        "SATS No": "",
-        "PEN No": "",
-        "Caste": "",
-        "Mobile Number": ""
+        "Reg No":"1",
+        "Student Name":"ಉದಾಹರಣೆ ವಿದ್ಯಾರ್ಥಿ",
+        "Father Name":"",
+        "Mother Name":"",
+        "Gender":"Male",
+        "DOB":"2013-01-01",
+        "SATS No":"",
+        "PEN No":"",
+        "Caste":"",
+        "Mobile Number":""
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -632,7 +652,10 @@ async function downloadStudentExcelTemplate(){
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "Students_Template_" + getExcelAcademicYear() + ".xlsx";
+    a.download =
+        "Students_Template_Class_" +
+        getExcelSelectedClass() +
+        ".xlsx";
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -648,7 +671,18 @@ function excelCellText(cell){
 }
 
 async function uploadStudentsFromExcel(event){
-    const file = event.target.files?.[0];
+    const input =
+        event?.target?.id === "studentExcelUploadInput"
+        ? event.target
+        : document.getElementById("studentExcelUploadInput");
+
+    /* If called by the Upload button, open file picker. */
+    if(!event?.target?.files?.length){
+        input.click();
+        return;
+    }
+
+    const file = event.target.files[0];
     event.target.value = "";
 
     if(!file) return;
@@ -657,6 +691,8 @@ async function uploadStudentsFromExcel(event){
         alert("Excel library load ಆಗಿಲ್ಲ. Internet ON ಮಾಡಿ page refresh ಮಾಡಿ.");
         return;
     }
+
+    const className = getExcelSelectedClass();
 
     try{
         const workbook = new ExcelJS.Workbook();
@@ -672,30 +708,28 @@ async function uploadStudentsFromExcel(event){
         });
 
         const aliases = {
-            academic_year:["academic year","academic_year"],
-            class_name:["class","class name","class_name"],
-            division:["division"],
-            roll_no:["roll no","roll number","reg no","registration no","roll_no"],
-            student_name:["student name","name","student_name"],
-            father_name:["father name","father's name","father_name"],
-            mother_name:["mother name","mother's name","mother_name"],
+            roll_no:["reg no","registration no","registration number","roll no","roll number"],
+            student_name:["student name","name"],
+            father_name:["father name","father's name"],
+            mother_name:["mother name","mother's name"],
             gender:["gender"],
-            dob:["dob","date of birth","dateofbirth"],
-            sats_no:["sats no","sats number","sats_no"],
-            pen_no:["pen no","pen number","pen_no"],
+            dob:["dob","date of birth"],
+            sats_no:["sats no","sats number","sats no."],
             caste:["caste"],
-            mobile:["mobile number","mobile","mobile_number"]
+            mobile:["mobile number","mobile","mobile no","mobile no."]
         };
 
-        function findCol(keys){
+        const findCol = keys => {
             for(const key of keys){
                 if(headerMap[key]) return headerMap[key];
             }
             return null;
-        }
+        };
 
         const cols = {};
-        for(const key in aliases) cols[key] = findCol(aliases[key]);
+        for(const key in aliases){
+            cols[key] = findCol(aliases[key]);
+        }
 
         if(!cols.student_name){
             throw new Error("Student Name column ಸಿಗಲಿಲ್ಲ.");
@@ -704,23 +738,29 @@ async function uploadStudentsFromExcel(event){
         const rows = [];
 
         for(let r=2; r<=ws.rowCount; r++){
-            const get = key => cols[key] ? excelCellText(ws.getRow(r).getCell(cols[key])) : "";
 
-            const studentName = get("student_name");
-            if(!studentName) continue;
+            const get = key =>
+                cols[key]
+                ? excelCellText(
+                    ws.getRow(r).getCell(cols[key])
+                  )
+                : "";
+
+            const name = get("student_name");
+
+            if(!name) continue;
 
             rows.push({
-                academic_year: get("academic_year") || getExcelAcademicYear(),
-                class_name: get("class_name"),
-                division: get("division"),
+                academic_year: getCurrentExcelYear(),
+                class_name: className,
+                division: "A",
                 roll_no: get("roll_no"),
-                student_name: studentName,
+                student_name: name,
                 father_name: get("father_name"),
                 mother_name: get("mother_name"),
                 gender: get("gender"),
                 dob: get("dob") || null,
                 sats_no: get("sats_no"),
-                pen_no: get("pen_no"),
                 caste: get("caste"),
                 mobile: get("mobile")
             });
@@ -731,38 +771,47 @@ async function uploadStudentsFromExcel(event){
             return;
         }
 
-        if(rows.some(r => !r.academic_year || !r.class_name || !r.division)){
-            throw new Error("ಪ್ರತಿ rowನಲ್ಲಿ Academic Year, Class ಮತ್ತು Division ಇರಬೇಕು.");
-        }
+        /* Section A only */
+        rows.forEach(row => {
+            row.division = "A";
+            row.class_name = className;
+            row.academic_year = getCurrentExcelYear();
+        });
 
         let inserted = 0;
         const errors = [];
-
-        // Insert in batches for faster upload.
         const batchSize = 50;
 
         for(let i=0; i<rows.length; i+=batchSize){
+
             const batch = rows.slice(i,i+batchSize);
 
-            const {error} = await supabaseClient
-                .from("students")
-                .insert(batch);
+            const {error} =
+                await supabaseClient
+                    .from("students")
+                    .insert(batch);
 
             if(error){
-                // Fallback row-by-row so one duplicate/bad row
-                // doesn't prevent all valid rows from importing.
+
+                /* Fallback: save valid rows individually */
                 for(const row of batch){
+
                     const {error: rowError} =
                         await supabaseClient
                             .from("students")
                             .insert(row);
 
                     if(rowError){
-                        errors.push(row.student_name + ": " + rowError.message);
+                        errors.push(
+                            row.student_name +
+                            ": " +
+                            rowError.message
+                        );
                     }else{
                         inserted++;
                     }
                 }
+
             }else{
                 inserted += batch.length;
             }
@@ -772,25 +821,35 @@ async function uploadStudentsFromExcel(event){
             await loadStudents();
         }
 
-        updateExcelYearLabel();
-
         let msg =
             "Excel Upload ಮುಗಿದಿದೆ.\n\n" +
-            "✅ Added: " + inserted +
+            "ತರಗತಿ: " + className +
+            "\nವಿಭಾಗ: A" +
+            "\nಶೈಕ್ಷಣಿಕ ವರ್ಷ: " + getCurrentExcelYear() +
+            "\n\n✅ Added: " + inserted +
             "\n❌ Failed: " + errors.length;
 
         if(errors.length){
-            msg += "\n\n" + errors.slice(0,8).join("\n");
+            msg +=
+                "\n\n" +
+                errors.slice(0,8).join("\n");
         }
 
         alert(msg);
 
     }catch(error){
-        console.error("Excel Upload Error:", error);
-        alert("Excel Upload Error: " + (error?.message || error));
+
+        console.error(
+            "Excel Upload Error:",
+            error
+        );
+
+        alert(
+            "Excel Upload Error: " +
+            (error?.message || error)
+        );
     }
 }
-
 
 document.addEventListener("DOMContentLoaded", async function(){
 
