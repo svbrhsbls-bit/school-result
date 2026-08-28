@@ -750,8 +750,23 @@ async function viewResult(){
    result_marks is linked by subject_id, so changing the row/code
    can make the displayed subject code and marks mismatch.
 ========================================================= */
+const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
+
+/*
+   IMPORTANT:
+   Supabase contains old/legacy subject rows also.
+   Only the six Subject Master codes currently used by
+   subjects.html are allowed into the result.
+   This prevents duplicate subjects such as:
+   ಕನ್ನಡ [01K] + ಕನ್ನಡ [old code]
+   English [31E] + English [ENG]
+*/
 const subjectsForResult = (subjects || [])
-    .filter(s => s && s.is_active !== false)
+    .filter(s => {
+        if(!s || s.is_active === false) return false;
+        const code = String(s.subject_code || "").trim().toUpperCase();
+        return VALID_SUBJECT_CODES.includes(code);
+    })
     .sort((a,b) => {
         const ao = Number(a.display_order);
         const bo = Number(b.display_order);
@@ -871,8 +886,7 @@ function buildWhatsAppMessage(){
         let total = 0, maximum = 0, entered = 0;
 
         subjects.forEach(subject => {
-            const ids = Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds : [subject.id];
+            const ids = [subject.id];
             let value;
             for(const id of ids){
                 const candidate = marksMap[`${result.id}_${id}`];
@@ -1054,10 +1068,7 @@ function renderExam(student,subjects,result,marksMap){
            to the same subject name. This keeps the display at one
            subject while preserving marks already entered earlier.
         */
-        const subjectIds =
-            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds
-                : [subject.id];
+        const subjectIds = [subject.id];
 
         let value;
         for(const subjectId of subjectIds){
@@ -1094,7 +1105,7 @@ function renderExam(student,subjects,result,marksMap){
             </td>
 
             <td>
-                ${esc(subject.subject_code)}
+                ${esc(exactSubjectMasterCode(subject))}
             </td>
 
             <td>
@@ -1389,9 +1400,16 @@ async function loadBulkStudents(){
 }
 
 function dedupeSubjectsForBulk(subjects){
-    // Keep the actual Subject Master rows. Do not merge by old subject names.
+    const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
+
+    // Do not merge by subject name and do not include legacy codes.
+    // result_marks is linked to the real Subject Master subject_id.
     return (subjects || [])
-        .filter(s => s && s.is_active !== false)
+        .filter(s => {
+            if(!s || s.is_active === false) return false;
+            const code = String(s.subject_code || "").trim().toUpperCase();
+            return VALID_SUBJECT_CODES.includes(code);
+        })
         .sort((a,b) => {
             const ao=Number(a.display_order), bo=Number(b.display_order);
             if(Number.isFinite(ao)&&Number.isFinite(bo)&&ao!==bo) return ao-bo;
