@@ -436,40 +436,39 @@ function getDivision(student){
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
-    const cls=getClass(student);
-    const code=String(subject?.subject_code || "").trim();
+    const cls=String(getClass(student)||"").trim();
+    const code=String(subject?.subject_code || subject?.code || "").trim();
+    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
 
-    /*
-      Subject Master uses the Kannada class names in its localStorage keys:
-      8ನೇ ತರಗತಿ / 9ನೇ ತರಗತಿ / 10ನೇ ತರಗತಿ.
-      Students may store the class as 8 / 9 / 10, so try BOTH forms.
-      This makes Send Results use exactly the Maximum Marks saved in
-      Subject Master for the selected exam.
-    */
-    const classNames={
+    // Subject Master stores the exact exam-wise maximum marks in localStorage.
+    // Try the exact class label used by Subject Master first.
+    const classVariants = {
         "8":["8ನೇ ತರಗತಿ","8"],
         "9":["9ನೇ ತರಗತಿ","9"],
         "10":["10ನೇ ತರಗತಿ","10"]
     };
-    const candidates=classNames[cls] || [cls];
+    const variants=classVariants[cls] || [cls];
 
-    for(const className of candidates){
-        const key="subject_marks_" + className + "_" + examType + "_" + code;
-        const saved=localStorage.getItem(key);
-        if(saved!==null && saved!==""){
-            const n=Number(saved);
-            if(Number.isFinite(n) && n>0) return n;
+    for(const c of variants){
+        const keys=[
+            "subject_marks_"+c+"_"+examType+"_"+code,
+            "subject_marks_"+c+"_"+examType+"_"+code.toUpperCase()
+        ];
+        for(const key of keys){
+            const raw=localStorage.getItem(key);
+            if(raw!==null && raw!==""){
+                const n=Number(raw);
+                if(Number.isFinite(n) && n>0) return n;
+            }
         }
     }
 
-    /*
-      If no exam-wise browser value exists, use the subject row's
-      max_marks from the selected Academic Year.
-    */
+    // Also read the Subject Master record directly from Supabase for the
+    // selected Academic Year, class and subject code.
     const dbMax=Number(subject?.max_marks);
     if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
 
-    return 100;
+    return "";
 }
 
 function grade(mark,max){
