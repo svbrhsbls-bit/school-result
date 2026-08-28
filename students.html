@@ -7,9 +7,6 @@
 <title>Students Database</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="auth-guard.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 *{
@@ -62,7 +59,7 @@ body{
 
 .selection{
     display:grid;
-    grid-template-columns:1fr 1fr auto auto;
+    grid-template-columns:1fr 1fr 1fr auto auto;
     gap:15px;
     align-items:end;
 }
@@ -250,9 +247,15 @@ tr:hover{
     <div class="card">
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ Database</h2>
-        <div id="currentYearBadge" style="display:inline-block;margin:0 0 15px;padding:7px 12px;border-radius:20px;background:#e8f5e9;color:#137333;font-weight:700;">ಶೈಕ್ಷಣಿಕ ವರ್ಷ: Loading...</div>
 
         <div class="selection">
+
+            <div class="field">
+                <label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ / Academic Year</label>
+                <select id="academicYearSelect">
+                    <option value="">-- ವರ್ಷ ಆಯ್ಕೆ ಮಾಡಿ --</option>
+                </select>
+            </div>
 
             <div class="field">
                 <label>ತರಗತಿ / Class</label>
@@ -269,23 +272,15 @@ tr:hover{
                 <label>ವಿಭಾಗ / Division</label>
 
                 <select id="divisionSelect">
+                    <option value="">-- ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ --</option>
                     <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
                 </select>
             </div>
 
             <button class="btn-load" onclick="loadStudents()">
                 🔍 ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Load ಮಾಡಿ
-            </button>
-
-            <button type="button" class="btn-load" onclick="document.getElementById('excelFile').click()">
-                📤 Excel Upload
-            </button>
-
-            <input id="excelFile" type="file" accept=".xlsx,.xls,.csv"
-                   style="display:none" onchange="handleExcelUpload(event)">
-
-            <button class="btn-clear" onclick="downloadStudentExcelTemplate()">
-                📥 Excel Template
             </button>
 
             <button class="btn-new" onclick="newStudent()">
@@ -385,11 +380,6 @@ tr:hover{
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
 
-        <div style="display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-bottom:12px;">
-            <span id="selectedCount" style="font-weight:bold;">ಆಯ್ಕೆ: 0</span>
-            <button type="button" class="btn-delete" onclick="deleteSelectedStudents()">🗑️ ಆಯ್ಕೆ ಮಾಡಿದವರನ್ನು Delete</button>
-        </div>
-
         <div id="loading" class="loading" style="display:none;">
             Loading...
         </div>
@@ -400,9 +390,6 @@ tr:hover{
 
                 <thead>
                     <tr>
-                        <th style="width:55px;text-align:center;">
-                            <input type="checkbox" id="selectAll" title="ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ" onclick="toggleSelectAll(this)">
-                        </th>
                         <th>Roll No</th>
                         <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
                         <th>ತಂದೆಯ ಹೆಸರು</th>
@@ -418,7 +405,7 @@ tr:hover{
 
                 <tbody id="studentTableBody">
                     <tr>
-                        <td colspan="11" class="empty">
+                        <td colspan="10" class="empty">
                             ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
                         </td>
                     </tr>
@@ -456,39 +443,109 @@ const db = window.supabase.createClient(
     SUPABASE_KEY
 );
 
-/* =========================================================
-   YEAR WISE DATA
-========================================================= */
-let currentAcademicYear = "";
 
-async function loadCurrentAcademicYear(){
-    const {data,error} = await db
-        .from("settings")
-        .select("academic_year")
-        .eq("id",1)
-        .maybeSingle();
-    if(error) throw error;
-    currentAcademicYear = String(data?.academic_year || "").trim();
-    if(!currentAcademicYear) throw new Error("Settingsನಲ್ಲಿ Current Academic Year ಆಯ್ಕೆ ಮಾಡಿಲ್ಲ.");
-    const badge = document.getElementById("currentYearBadge");
-    if(badge) badge.textContent = "ಶೈಕ್ಷಣಿಕ ವರ್ಷ: " + currentAcademicYear;
+/* =========================================================
+   ACADEMIC YEAR
+   Same year list used by Settings page
+   ========================================================= */
+
+const YEAR_STORAGE_KEY = "school_result_academic_years";
+let currentAcademicYear = "2026-27";
+
+function validAcademicYear(value){
+    return /^\d{4}-\d{2}$/.test(String(value || "").trim());
 }
 
+function getSavedAcademicYears(){
+    try{
+        const raw = localStorage.getItem(YEAR_STORAGE_KEY);
+        const years = raw ? JSON.parse(raw) : [];
+        return Array.isArray(years)
+            ? years.filter(validAcademicYear)
+            : [];
+    }catch(e){
+        return [];
+    }
+}
 
+function sortAcademicYears(years){
+    return [...new Set(years.filter(validAcademicYear))].sort((a,b)=>
+        parseInt(b.slice(0,4),10) - parseInt(a.slice(0,4),10)
+    );
+}
+
+async function loadAcademicYears(){
+    const select = document.getElementById("academicYearSelect");
+    if(!select) return;
+
+    const years = new Set(getSavedAcademicYears());
+
+    try{
+        const {data,error} = await db
+            .from("settings")
+            .select("academic_year")
+            .eq("id",1)
+            .maybeSingle();
+
+        if(!error && data?.academic_year){
+            const y = String(data.academic_year).trim();
+            if(validAcademicYear(y)) years.add(y);
+        }
+    }catch(e){
+        console.warn("Settings year load:",e);
+    }
+
+    /* Also recover years already present in students table. */
+    try{
+        const {data,error} = await db
+            .from("students")
+            .select("academic_year");
+
+        if(!error){
+            (data || []).forEach(row=>{
+                const y = String(row.academic_year || "").trim();
+                if(validAcademicYear(y)) years.add(y);
+            });
+        }
+    }catch(e){
+        console.warn("Student years load:",e);
+    }
+
+    if(!years.size) years.add("2026-27");
+
+    const ordered = sortAcademicYears([...years]);
+    const saved = localStorage.getItem("students_selected_academic_year");
+    const wanted = validAcademicYear(saved) ? saved : ordered[0];
+
+    select.innerHTML = ordered.map(y =>
+        `<option value="${safe(y)}">${safe(y)}</option>`
+    ).join("");
+
+    currentAcademicYear = ordered.includes(wanted) ? wanted : ordered[0];
+    select.value = currentAcademicYear;
+    localStorage.setItem("students_selected_academic_year", currentAcademicYear);
+
+    select.onchange = function(){
+        currentAcademicYear = this.value;
+        localStorage.setItem("students_selected_academic_year", currentAcademicYear);
+        clearForm();
+        const cls = document.getElementById("classSelect").value;
+        const div = document.getElementById("divisionSelect").value;
+        if(cls && div) loadStudents();
+    };
+}
 
 /* =========================================================
    PAGE LOAD
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", async function(){
+
     console.log("Students Database loaded.");
     console.log("Supabase URL:", SUPABASE_URL);
-    try{
-        await loadCurrentAcademicYear();
-    }catch(error){
-        console.error("Academic Year Load Error:", error);
-        showMessage("Current Academic Year Load Error: " + getSupabaseError(error), "error");
-    }
+
+    await loadAcademicYears();
+
 });
 
 
@@ -565,7 +622,9 @@ function getFormData(){
             divisionValue,
 
         academic_year:
-            currentAcademicYear,
+            currentAcademicYear ||
+            document.getElementById("academicYearSelect").value ||
+            "2026-27",
 
         is_active:true
     };
@@ -577,11 +636,6 @@ function getFormData(){
    ========================================================= */
 
 function validateForm(){
-
-    if(!currentAcademicYear){
-        showMessage("Current Academic Year Load ಆಗಿಲ್ಲ. Settings ಪರಿಶೀಲಿಸಿ.", "error");
-        return false;
-    }
 
     const data = getFormData();
 
@@ -700,10 +754,6 @@ async function saveStudent(){
 
 async function loadStudents(){
 
-    if(!currentAcademicYear){
-        try{ await loadCurrentAcademicYear(); }catch(error){ showMessage("Academic Year Load Error: " + getSupabaseError(error), "error"); return; }
-    }
-
     const classValue =
         document.getElementById("classSelect").value;
 
@@ -777,7 +827,7 @@ async function loadStudents(){
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="empty">
+                <td colspan="10" class="empty">
                     ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.
                 </td>
             </tr>
@@ -812,7 +862,7 @@ function renderStudents(students){
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="11" class="empty">
+                <td colspan="10" class="empty">
                     ಈ ತರಗತಿ ಮತ್ತು ವಿಭಾಗದಲ್ಲಿ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ಇಲ್ಲ.
                 </td>
             </tr>
@@ -829,10 +879,6 @@ function renderStudents(students){
             document.createElement("tr");
 
         tr.innerHTML = `
-
-            <td style="text-align:center;">
-                <input type="checkbox" class="student-check" value="${safe(student.id)}" onchange="updateSelectAllState()">
-            </td>
 
             <td>${safe(student.roll_no)}</td>
 
@@ -869,52 +915,6 @@ function renderStudents(students){
 
 
 /* =========================================================
-   SELECT ALL STUDENTS
-   ========================================================= */
-
-function toggleSelectAll(master){
-    document.querySelectorAll(".student-check").forEach(function(cb){
-        cb.checked = master.checked;
-    });
-}
-
-function updateSelectAllState(){
-    const all = document.querySelectorAll(".student-check");
-    const checked = document.querySelectorAll(".student-check:checked");
-    const master = document.getElementById("selectAll");
-    if(master){
-        master.checked = all.length > 0 && checked.length === all.length;
-        master.indeterminate = checked.length > 0 && checked.length < all.length;
-    }
-    const count = document.getElementById("selectedCount");
-    if(count) count.textContent = "ಆಯ್ಕೆ: " + checked.length;
-}
-
-async function deleteSelectedStudents(){
-    const ids = Array.from(document.querySelectorAll(".student-check:checked"))
-        .map(cb => cb.value).filter(Boolean);
-
-    if(!ids.length){
-        showMessage("ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ.", "error");
-        return;
-    }
-
-    if(!confirm(ids.length + " ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲು ಖಚಿತವೇ?")) return;
-
-    try{
-        const {error} = await db.from("students")
-            .update({is_active:false})
-            .in("id", ids);
-        if(error) throw error;
-        showMessage("✅ ಆಯ್ಕೆ ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲಾಗಿದೆ.", "success");
-        await loadStudents();
-    }catch(error){
-        console.error(error);
-        showMessage("Delete Error: " + getSupabaseError(error), "error");
-    }
-}
-
-/* =========================================================
    EDIT STUDENT
    ========================================================= */
 
@@ -922,6 +922,17 @@ function editStudent(student){
 
     document.getElementById("studentId").value =
         student.id || "";
+
+    const studentYear = String(student.academic_year || currentAcademicYear || "2026-27").trim();
+    currentAcademicYear = studentYear;
+    const yearSelect = document.getElementById("academicYearSelect");
+    if(yearSelect && !Array.from(yearSelect.options).some(o => o.value === studentYear)){
+        const opt = document.createElement("option");
+        opt.value = studentYear;
+        opt.textContent = studentYear;
+        yearSelect.appendChild(opt);
+    }
+    if(yearSelect) yearSelect.value = studentYear;
 
     document.getElementById("classSelect").value =
         student.class_name || "";
@@ -1254,332 +1265,6 @@ function getSupabaseError(error){
     return String(error);
 }
 
-
-
-/* =========================================================
-   EXCEL STUDENT UPLOAD
-   ========================================================= */
-
-function normalizeExcelHeader(value){
-    return String(value ?? "")
-        .trim()
-        .toLowerCase()
-        .replace(/[\s_\-\/().]+/g, "");
-}
-
-function excelValue(row, aliases){
-    const normalized = {};
-    Object.keys(row || {}).forEach(function(key){
-        normalized[normalizeExcelHeader(key)] = row[key];
-    });
-
-    for(const alias of aliases){
-        const key = normalizeExcelHeader(alias);
-        if(Object.prototype.hasOwnProperty.call(normalized, key)){
-            return normalized[key];
-        }
-    }
-    return "";
-}
-
-function excelText(value){
-    if(value === null || value === undefined) return "";
-    if(typeof value === "number"){
-        return Number.isInteger(value) ? String(value) : String(value);
-    }
-    return String(value).trim();
-}
-
-function excelDateToISO(value){
-    if(value === null || value === undefined || value === "") return "";
-
-    if(value instanceof Date && !isNaN(value.getTime())){
-        const y = value.getFullYear();
-        const m = String(value.getMonth()+1).padStart(2,"0");
-        const d = String(value.getDate()).padStart(2,"0");
-        return `${y}-${m}-${d}`;
-    }
-
-    if(typeof value === "number" && window.XLSX && XLSX.SSF){
-        const date = XLSX.SSF.parse_date_code(value);
-        if(date){
-            return `${date.y}-${String(date.m).padStart(2,"0")}-${String(date.d).padStart(2,"0")}`;
-        }
-    }
-
-    const s = String(value).trim();
-
-    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-
-    let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if(m){
-        return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
-    }
-
-    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
-    if(m){
-        const year = Number(m[3]) >= 50 ? 1900 + Number(m[3]) : 2000 + Number(m[3]);
-        return `${year}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
-    }
-
-    const parsed = new Date(s);
-    if(!isNaN(parsed.getTime())){
-        return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,"0")}-${String(parsed.getDate()).padStart(2,"0")}`;
-    }
-
-    return "";
-}
-
-async function handleExcelUpload(event){
-    const file = event.target.files && event.target.files[0];
-    event.target.value = "";
-
-    if(!file) return;
-
-    const classValue = document.getElementById("classSelect").value;
-    const divisionValue = document.getElementById("divisionSelect").value || "A";
-
-    if(!classValue){
-        showMessage("ಮೊದಲು ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.", "error");
-        return;
-    }
-
-    if(!divisionValue){
-        showMessage("ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ.", "error");
-        return;
-    }
-
-    if(typeof XLSX === "undefined"){
-        showMessage("Excel library Load ಆಗಿಲ್ಲ. Internet connection ಪರಿಶೀಲಿಸಿ.", "error");
-        return;
-    }
-
-    try{
-        showMessage("Excel file ಓದಲಾಗುತ್ತಿದೆ...", "info");
-
-        const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer, {
-            type:"array",
-            cellDates:true
-        });
-
-        if(!workbook.SheetNames.length){
-            throw new Error("Excelನಲ್ಲಿ ಯಾವುದೇ Sheet ಕಂಡುಬಂದಿಲ್ಲ.");
-        }
-
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, {
-            defval:"",
-            raw:true
-        });
-
-        if(!rows.length){
-            throw new Error("Excelನಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳ data ಇಲ್ಲ.");
-        }
-
-        let added = 0;
-        let updated = 0;
-        let skipped = 0;
-        const errors = [];
-
-        for(let i=0; i<rows.length; i++){
-            const row = rows[i];
-            const excelRowNo = i + 2;
-
-            const rollNo = excelText(excelValue(row, [
-                "Roll No","RollNo","Reg No","RegNo","Registration No","RegistrationNo"
-            ]));
-
-            const studentName = excelText(excelValue(row, [
-                "Student Name","StudentName","Name","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು"
-            ]));
-
-            const fatherName = excelText(excelValue(row, [
-                "Father Name","FatherName","Father","ತಂದೆಯ ಹೆಸರು"
-            ]));
-
-            const motherName = excelText(excelValue(row, [
-                "Mother Name","MotherName","Mother","ತಾಯಿಯ ಹೆಸರು"
-            ]));
-
-            const genderRaw = excelText(excelValue(row, [
-                "Gender","ಲಿಂಗ"
-            ]));
-
-            const dobRaw = excelValue(row, [
-                "DOB","Date of Birth","DateofBirth","Birth Date","ಜನ್ಮ ದಿನಾಂಕ"
-            ]);
-
-            const satsNo = excelText(excelValue(row, [
-                "SATS No","SATSNo","SATS","SATS Number"
-            ]));
-
-            const caste = excelText(excelValue(row, [
-                "Caste","ಜಾತಿ"
-            ]));
-
-            const mobile = excelText(excelValue(row, [
-                "Mobile","Mobile Number","MobileNumber","Phone","ಮೊಬೈಲ್ ಸಂಖ್ಯೆ"
-            ]));
-
-            if(!rollNo || !studentName){
-                skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Roll No ಮತ್ತು Student Name ಕಡ್ಡಾಯ.`);
-                continue;
-            }
-
-            if(!/^\d{9}$/.test(satsNo)){
-                skipped++;
-                errors.push(`Excel Row ${excelRowNo}: SATS No 9 digits ಇರಬೇಕು (${satsNo || "ಖಾಲಿ"}).`);
-                continue;
-            }
-
-            const genderMap = {
-                "male":"ಗಂಡು",
-                "m":"ಗಂಡು",
-                "ಗಂಡು":"ಗಂಡು",
-                "female":"ಹೆಣ್ಣು",
-                "f":"ಹೆಣ್ಣು",
-                "ಹೆಣ್ಣು":"ಹೆಣ್ಣು"
-            };
-            const gender = genderMap[genderRaw.toLowerCase()] || genderRaw || null;
-
-            if(gender && gender !== "ಗಂಡು" && gender !== "ಹೆಣ್ಣು"){
-                skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Gender 'ಗಂಡು' ಅಥವಾ 'ಹೆಣ್ಣು' ಇರಬೇಕು.`);
-                continue;
-            }
-
-            const mobileClean = mobile.replace(/\D/g,"");
-            if(mobileClean && !/^\d{10}$/.test(mobileClean)){
-                skipped++;
-                errors.push(`Excel Row ${excelRowNo}: Mobile Number 10 digits ಇರಬೇಕು.`);
-                continue;
-            }
-
-            const data = {
-                roll_no: rollNo,
-                student_name: studentName,
-                father_name: fatherName,
-                mother_name: motherName,
-                gender: gender,
-                dob: excelDateToISO(dobRaw) || null,
-                sats_no: satsNo,
-                caste: caste,
-                mobile: mobileClean,
-                class_name: classValue,
-                division: divisionValue,
-                academic_year: currentAcademicYear,
-                is_active: true
-            };
-
-            // Avoid duplicate students by Class + Division + Roll No.
-            const { data: existing, error: findError } = await db
-                .from("students")
-                .select("id")
-                .eq("class_name", classValue)
-                .eq("division", divisionValue)
-                .eq("academic_year", currentAcademicYear)
-                .eq("roll_no", rollNo)
-                .limit(1);
-
-            if(findError){
-                throw findError;
-            }
-
-            if(existing && existing.length){
-                const { error:updateError } = await db
-                    .from("students")
-                    .update(data)
-                    .eq("id", existing[0].id);
-
-                if(updateError){
-                    skipped++;
-                    errors.push(`Excel Row ${excelRowNo}: ${updateError.message}`);
-                }else{
-                    updated++;
-                }
-            }else{
-                const { error:insertError } = await db
-                    .from("students")
-                    .insert([data]);
-
-                if(insertError){
-                    skipped++;
-                    errors.push(`Excel Row ${excelRowNo}: ${insertError.message}`);
-                }else{
-                    added++;
-                }
-            }
-        }
-
-        await loadStudents();
-
-        let message = `✅ Excel Upload ಪೂರ್ಣಗೊಂಡಿದೆ. ಹೊಸ ವಿದ್ಯಾರ್ಥಿಗಳು: ${added}, Update: ${updated}, Skip: ${skipped}.`;
-
-        if(errors.length){
-            console.warn("Excel Upload Errors:", errors);
-            message += " ಕೆಲವು rows skip ಆಗಿವೆ. Browser Consoleನಲ್ಲಿ ವಿವರಗಳಿವೆ.";
-        }
-
-        showMessage(message, errors.length ? "info" : "success");
-
-    }catch(error){
-        console.error("EXCEL UPLOAD ERROR:", error);
-        showMessage(
-            "Excel Upload ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " + getSupabaseError(error),
-            "error"
-        );
-    }
-}
-
-function downloadStudentExcelTemplate(){
-
-    const headers = [
-        "Roll No","Student Name","Father Name","Mother Name",
-        "Gender","DOB","SATS No","Caste","Mobile"
-    ];
-
-    const sample = [
-        "1","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತಂದೆಯ ಹೆಸರು","ತಾಯಿಯ ಹೆಸರು",
-        "ಗಂಡು","2013-05-10","123456789","2A","9876543210"
-    ];
-
-    // Create a real XLSX when SheetJS is available.
-    if(typeof XLSX !== "undefined"){
-        const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Students");
-        XLSX.writeFile(wb, "Students-Excel-Template.xlsx");
-        showMessage("✅ Excel Template Download ಆಗಿದೆ.", "success");
-        return;
-    }
-
-    // Fallback: Excel-compatible CSV, so template still downloads.
-    const esc = value => '"' + String(value ?? "").replace(/"/g, '""') + '"';
-    const csv = [
-        headers.map(esc).join(","),
-        sample.map(esc).join(",")
-    ].join("\r\n");
-
-    const blob = new Blob(["\uFEFF" + csv], {
-        type:"text/csv;charset=utf-8;"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "Students-Excel-Template.csv";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-
-    showMessage(
-        "✅ Excel-compatible Template Download ಆಗಿದೆ.",
-        "success"
-    );
-}
 
 /* =========================================================
    CONNECTION TEST
