@@ -806,7 +806,8 @@ function subjectHTML(rows){
 }
 
 async function generate(){
- try{
+     const reportYear = await getReportAcademicYear();
+try{
   msg("Report loading...","info");
   reportType=$("reportType").value;
 
@@ -956,7 +957,16 @@ function genderLabel(g){
 
 function casteExcelData(studentList){
   const CASTES=["SC","ST","C-1","2A","2B","3A","3B"];
-  const normCaste=v=>String(v??"").trim().toUpperCase().replace(/\s+/g,"");
+  const normCaste=v=>{
+    const x=String(v??"").trim().toUpperCase()
+      .replace(/[‐‑‒–—]/g,"-").replace(/\s+/g,"");
+    const aliases={
+      "C1":"C-1","CAT1":"C-1","CAT-1":"C-1",
+      "CATEGORY1":"C-1","CATEGORY-1":"C-1","1":"C-1",
+      "2-A":"2A","3-A":"3A","3-B":"3B"
+    };
+    return aliases[x]||x;
+  };
   const rows={
    "8":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
    "9":Object.fromEntries(CASTES.map(c=>[c,{m:0,f:0,t:0}])),
