@@ -286,6 +286,19 @@ td.subject{text-align:left;font-weight:700}
                     <option value="">Year Load...</option>
                 </select>
             </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Class</b>
+                <select id="bulkClass" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:100px;">
+                    <option value="">All Classes</option>
+                </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
+                <b>Exam</b>
+                <select id="bulkExam" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:150px;">
+                    <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+                    <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+                </select>
+            </label>
             <label class="select-all-label">
                 <input type="checkbox" id="bulkSelectAll" onchange="toggleBulkSelectAll(this.checked)">
                 <b>☑ All Students</b>
@@ -1177,7 +1190,18 @@ function renderBulkStudents(){
         updateBulkCount();
         return;
     }
-    body.innerHTML = bulkStudents.map((s,i)=>`
+    const selectedClass=String($("bulkClass")?.value||"").trim();
+    const visibleStudents=bulkStudents
+        .map((s,i)=>({s,i}))
+        .filter(x=>!selectedClass || String(x.s.class_name||"").trim()===selectedClass);
+
+    if(!visibleStudents.length){
+        body.innerHTML=`<tr><td colspan="6" class="bulk-empty">ಈ ತರಗತಿಗೆ Students ಸಿಗಲಿಲ್ಲ.</td></tr>`;
+        updateBulkCount();
+        return;
+    }
+
+    body.innerHTML = visibleStudents.map(({s,i})=>`
         <tr>
             <td><input type="checkbox" class="bulk-student-check" data-index="${i}" onchange="updateBulkCount()"></td>
             <td>${esc(s.roll_no || "")}</td>
@@ -1231,6 +1255,58 @@ async function loadBulkAcademicYears(){
     }
 }
 
+
+
+async function filterPublishedStudents(){
+    const exam=String($("bulkExam")?.value || "HALF_YEARLY").trim();
+    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
+
+    const allStudents=bulkStudents.slice();
+    if(!allStudents.length) return;
+
+    const ids=allStudents.map(s=>s.id).filter(Boolean);
+    if(!ids.length) return;
+
+    let q=db
+        .from("exam_results")
+        .select("student_id,published,exam_type,academic_year")
+        .in("student_id",ids)
+        .eq("exam_type",exam)
+        .eq("published",true);
+
+    if(year) q=q.eq("academic_year",year);
+
+    let {data,error}=await q;
+    if(error){
+        // Compatibility if exam_results does not have academic_year.
+        const msg=String(error.message||error).toLowerCase();
+        if(msg.includes("academic_year") && msg.includes("column")){
+            const retry=await db
+                .from("exam_results")
+                .select("student_id,published,exam_type")
+                .in("student_id",ids)
+                .eq("exam_type",exam)
+                .eq("published",true);
+            if(retry.error) throw retry.error;
+            data=retry.data||[];
+        }else{
+            throw error;
+        }
+    }
+
+    const publishedIds=new Set((data||[]).map(r=>String(r.student_id)));
+    bulkStudents=allStudents.filter(s=>publishedIds.has(String(s.id)));
+}
+
+function populateBulkClasses(){
+    const select=$("bulkClass");
+    if(!select) return;
+    const classes=[...new Set(bulkStudents.map(s=>String(s.class_name||"").trim()).filter(Boolean))]
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    select.innerHTML='<option value="">All Classes</option>'+
+        classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+}
+
 async function loadBulkStudents(){
     await loadAppSettings();
     if(!$("bulkAcademicYear")?.value){
@@ -1258,6 +1334,8 @@ async function loadBulkStudents(){
             .order("roll_no",{ascending:true});
         if(error) throw error;
         bulkStudents = data || [];
+        populateBulkClasses();
+        await filterPublishedStudents();
         renderBulkStudents();
         setBulkStatus(`✅ ${bulkStudents.length} active students load ಆಗಿದ್ದಾರೆ. ಬೇಡದವರನ್ನು Untick ಮಾಡಿ.`);
     }catch(error){
@@ -1386,6 +1464,14 @@ $("bulkAcademicYear").addEventListener("change",function(){
     await loadBulkAcademicYears();
     await loadBulkStudents();
 })();
+
+$("bulkClass").addEventListener("change",function(){
+    renderBulkStudents();
+});
+
+$("bulkExam").addEventListener("change",async function(){
+    await loadBulkStudents();
+});
 
 /* Enter key support */
 $("rollNumber").addEventListener("keydown",function(e){
