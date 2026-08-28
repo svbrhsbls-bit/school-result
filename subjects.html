@@ -2,360 +2,815 @@
 <html lang="kn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Send Results – WhatsApp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subject Master</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="auth-guard.js"></script>
 <style>
 *{box-sizing:border-box}
-body{
-    margin:0;
-    font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;
-    background:#eef6fb;
-    color:#17324d;
-}
-.header{
-    background:#0b82b8;
-    color:#fff;
-    text-align:center;
-    padding:22px 12px;
-}
-.header h1{margin:0;font-size:28px}
-.header p{margin:7px 0 0;font-size:16px}
-.container{max-width:1200px;margin:22px auto;padding:0 14px}
-.card{
-    background:#fff;
-    border-radius:14px;
-    box-shadow:0 3px 15px rgba(0,0,0,.10);
-    padding:20px;
-    margin-bottom:20px;
-}
-.search-card h2{margin-top:0}
-.search-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
-}
-label{display:block;font-weight:700;margin-bottom:7px}
-input{
-    width:100%;
-    padding:12px;
-    border:1px solid #b9c8d4;
-    border-radius:8px;
-    font-size:16px;
-}
-.button-row{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
-button{
-    border:0;
-    border-radius:8px;
-    padding:12px 20px;
-    font-size:16px;
-    font-weight:700;
-    cursor:pointer;
-}
-.btn-blue{background:#087fba;color:white}
-.btn-gray{background:#5d6870;color:white}
-.btn-print{background:#168a55;color:white}
-.btn-whatsapp{background:#25D366;color:white}
-.message{
-    margin-top:15px;
-    padding:11px 14px;
-    border-radius:8px;
-    display:none;
-    background:#fff3cd;
-    color:#765600;
-}
-.message.show{display:block}
-.message.error{background:#fde2e2;color:#9b1c1c}
-.message.success{background:#dff5e7;color:#126b38}
-
-.result-head{
-    text-align:center;
-    border-bottom:2px solid #0b82b8;
-    padding-bottom:12px;
-    margin-bottom:15px;
-}
-.result-head h2{margin:0 0 6px}
-.student-info{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10px;
-    background:#f4f9fc;
-    border-radius:10px;
-    padding:13px;
-    margin-bottom:18px;
-}
-.info-item{font-size:15px}
-.info-item b{color:#075f89}
-
-.exam-title{
-    background:#0b82b8;
-    color:#fff;
-    padding:11px 14px;
-    border-radius:8px 8px 0 0;
-    font-size:19px;
-    font-weight:800;
-    margin-top:22px;
-}
-.exam-status{
-    padding:10px 14px;
-    background:#fff8e1;
-    color:#795b00;
-    border:1px solid #f0df9b;
-    border-top:0;
-}
+body{margin:0;font-family:Arial,"Noto Sans Kannada",sans-serif;background:#f4f7fb;color:#1f2937}
+.header{background:#087eae;color:white;padding:20px 24px}
+.header h1{margin:0;font-size:26px}
+.header p{margin:6px 0 0}
+.container{max-width:1200px;margin:24px auto;padding:0 16px}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+h2{margin:0 0 18px;color:#075985}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+label{display:block;font-weight:bold;margin-bottom:6px}
+input,select{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{border:0;border-radius:7px;padding:11px 17px;cursor:pointer;font-weight:bold}
+.save{background:#16a34a;color:#fff}.update{background:#2563eb;color:#fff}
+.delete{background:#dc2626;color:#fff}.clear{background:#64748b;color:#fff}
+.load{background:#0f766e;color:#fff}
+.message{display:none;padding:12px 15px;border-radius:7px;margin-bottom:18px;font-weight:bold}
+.success{display:block;background:#dcfce7;color:#166534}
+.error{display:block;background:#fee2e2;color:#991b1b}
+.info{display:block;background:#dbeafe;color:#1e40af}
 .table-wrap{overflow-x:auto}
-table{
-    width:100%;
-    border-collapse:collapse;
-    min-width:700px;
-}
-th,td{
-    border:1px solid #ccd8df;
-    padding:9px 8px;
-    text-align:center;
-}
-th{
-    background:#087fb5;
-    color:#fff;
-}
-td.subject{text-align:left;font-weight:700}
-.summary{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:10px;
-    margin-top:14px;
-}
-.summary-box{
-    background:#f3f8fb;
-    border:1px solid #d5e3ea;
-    border-radius:8px;
-    padding:10px;
-    text-align:center;
-}
-.summary-box b{display:block;font-size:18px}
-.pass{color:#118044;font-weight:800}
-.fail{color:#c02020;font-weight:800}
-.pending{color:#a16a00;font-weight:800}
-
-.no-result{
-    text-align:center;
-    padding:30px;
-    color:#666;
-}
-.loading{text-align:center;padding:25px}
-
-.result-settings-head{
-    text-align:center;
-}
-.result-settings-head .school-name{
-    margin:0 0 5px;
-    font-size:26px;
-    font-weight:800;
-}
-.result-settings-head .exam-name{
-    margin:0 0 4px;
-    font-size:21px;
-    font-weight:800;
-}
-.result-settings-head .academic-year{
-    margin:0;
-    font-size:16px;
-    font-weight:700;
-}
-.teacher-footer{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-    margin-top:42px;
-    padding-top:25px;
-    page-break-inside:avoid;
-}
-.teacher-block{
-    text-align:center;
-    min-height:70px;
-    font-weight:700;
-}
-.teacher-block .role{
-    display:block;
-    margin-bottom:10px;
-    font-size:16px;
-}
-.teacher-block .name{
-    display:block;
-    font-size:16px;
-    font-weight:800;
-}
-@media print{
-    body{
-        background:#fff;
-    }
-
-    /* ಮೇಲಿನ website header Print ಆಗಬಾರದು */
-    .header{
-        display:none !important;
-    }
-
-    .no-print{
-        display:none !important;
-    }
-
-    .container{
-        max-width:none;
-        margin:0;
-        padding:0;
-    }
-
-    .card{
-        box-shadow:none;
-        padding:0;
-    }
-
-    .exam-title{
-        break-after:avoid;
-    }
-
-    .table-wrap{
-        overflow:visible;
-    }
-
-    table{
-        min-width:0;
-        font-size:11px;
-    }
-
-    th,td{
-        padding:5px;
-    }
-}
-    .teacher-footer{margin-top:35px}
-}
-
-@media(max-width:700px){
-    .search-grid,.student-info{grid-template-columns:1fr}
-    .summary{grid-template-columns:repeat(2,1fr)}
-    .header h1{font-size:22px}
-}
-@media print{
-    body{background:#fff}
-    .no-print{display:none!important}
-    .container{max-width:none;margin:0;padding:0}
-    .card{box-shadow:none;padding:0}
-    .exam-title{break-after:avoid}
-    .table-wrap{overflow:visible}
-    table{min-width:0;font-size:11px}
-    th,td{padding:5px}
-}
-
-.bulk-card h2{margin-top:0}
-.bulk-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
-.select-all-label{display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px}
-.select-all-label input,.bulk-table input{width:18px;height:18px}
-#bulkSelectedCount{font-weight:700;color:#075f89}
-.bulk-status{margin:8px 0;padding:9px 12px;border-radius:8px;background:#f4f9fc;display:none}
-.bulk-status.show{display:block}
-.bulk-table-wrap{overflow-x:auto;max-height:430px;overflow-y:auto}
-.bulk-table{min-width:760px}
-.bulk-table th{position:sticky;top:0;z-index:2}
-.bulk-table td:first-child,.bulk-table th:first-child{width:55px}
-.bulk-empty{text-align:center;padding:20px!important;color:#777}
-@media(max-width:700px){.bulk-toolbar{align-items:stretch}.bulk-toolbar button{width:100%}}
-
-
-/* Staff Send Results page */
-.staff-note{background:#fff8e1;border:1px solid #f0df9b;color:#6b5200;padding:12px 14px;border-radius:8px;margin:12px 0;line-height:1.5}
-.school-business{background:#e9f8ef;border:1px solid #b9e2c7;color:#176b38;padding:12px 14px;border-radius:8px;margin:12px 0}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th,td{border:1px solid #e2e8f0;padding:10px;text-align:left}
+th{background:#e0f2fe;color:#075985}
+tr:nth-child(even){background:#f8fafc}
+.badge{padding:4px 9px;border-radius:20px;font-size:12px;font-weight:bold}
+.active{background:#dcfce7;color:#166534}
+.inactive{background:#e5e7eb;color:#374151}
+.small{font-size:13px;color:#64748b;margin-top:7px}
+.yearbar{display:flex;gap:12px;align-items:end;margin-bottom:18px;flex-wrap:wrap}.yearbar>div{min-width:220px}.yearbar label{margin-bottom:6px}.yearbar select{font-weight:bold}.year-note{font-size:12px;color:#64748b;margin-top:5px}
+.action{padding:6px 10px;margin:2px;font-size:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:550px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
+
 <body>
+
 <div class="header">
-  <h1 id="schoolNameHeader">ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</h1>
-  <p id="schoolAddressHeader">ಬಲ್ಲಾಳಸಮುದ್ರ, ಹೊಸದುರ್ಗ ತಾಲ್ಲೂಕು, ಚಿತ್ರದುರ್ಗ ಜಿಲ್ಲೆ</p>
+  <h1>📚 Subject Master</h1>
+  <p>ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ</p>
 </div>
+
 <div class="container">
-  <div class="card no-print">
-    <div class="school-business"><b>🏫 ಶಾಲೆಯ WhatsApp Business Account ಬಳಸಿ</b><br>ಈ pageನಲ್ಲಿ result message ಸಿದ್ಧವಾಗುತ್ತದೆ. WhatsApp Web/WhatsApp Desktopನಲ್ಲಿ ಶಾಲೆಯ Business number account login ಆಗಿದ್ದರೆ message ಅದೇ accountನಿಂದ ಕಳುಹಿಸಬಹುದು.</div>
-    <div class="staff-note"><b>ಸೂಚನೆ:</b> All Students ಆಯ್ಕೆ ಮಾಡಿ, ಬೇಡವಾದವರನ್ನು Untick ಮಾಡಿ. ನಂತರ Send Selected Results ಒತ್ತಿ. WhatsApp API ಇಲ್ಲದ ಕಾರಣ ಪ್ರತಿಯೊಂದು chatನಲ್ಲಿ ಕೊನೆಯಲ್ಲಿ <b>Send</b> ಒತ್ತಬೇಕು.</div>
-        <div class="card no-print bulk-card">
-        <h2>📱 WhatsApp Result – Staff</h2>
-        <p>ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Select ಮಾಡಿ, ನಿಮಗೆ ಬೇಡವಾದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Untick ಮಾಡಿ. ನಂತರ Selected Results ಕಳುಹಿಸಿ.</p>
-        <div class="bulk-toolbar">
-            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
-                <b>Academic Year</b>
-                <select id="bulkAcademicYear" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:120px;">
-                    <option value="">Year Load...</option>
-                </select>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
-                <b>Class</b>
-                <select id="bulkClass" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:100px;">
-                    <option value="">All Classes</option>
-                </select>
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;margin:0;background:#eef8ff;padding:10px 12px;border-radius:8px;">
-                <b>Exam</b>
-                <select id="bulkExam" style="padding:8px 10px;border:1px solid #b9c8d4;border-radius:7px;font-size:15px;min-width:150px;">
-                    <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
-                    <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
-                </select>
-            </label>
-            <label class="select-all-label">
-                <input type="checkbox" id="bulkSelectAll" onchange="toggleBulkSelectAll(this.checked)">
-                <b>☑ All Students</b>
-            </label>
-            <span id="bulkSelectedCount">0 ವಿದ್ಯಾರ್ಥಿಗಳು ಆಯ್ಕೆ</span>
-            <button type="button" class="btn-blue" onclick="loadBulkStudents()">🔄 Students Load</button>
-            <button type="button" class="btn-whatsapp" onclick="sendSelectedResultsToWhatsApp()">📱 Send Selected Results</button>
-        </div>
-        <div id="bulkStatus" class="bulk-status"></div>
-        <div class="bulk-table-wrap">
-            <table class="bulk-table">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="bulkHeaderCheck" onchange="toggleBulkSelectAll(this.checked)"></th>
-                        <th>Roll No</th>
-                        <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
-                        <th>ತರಗತಿ</th>
-                        <th>ವಿಭಾಗ</th>
-                        <th>Mobile</th>
-                    </tr>
-                </thead>
-                <tbody id="bulkStudentsBody">
-                    <tr><td colspan="6" class="bulk-empty">Students Load ಒತ್ತಿ ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿಯನ್ನು ಪಡೆಯಿರಿ.</td></tr>
-                </tbody>
-            </table>
-        </div>
+
+<div id="message" class="message"></div>
+
+<div class="card">
+  <div class="yearbar">
+    <div>
+      <label for="academicYear">📅 Academic Year</label>
+      <select id="academicYear" onchange="onAcademicYearChange()"></select>
+      <div class="year-note">ಯಾವ ವರ್ಷ ಆಯ್ಕೆ ಮಾಡುತ್ತೀರೋ ಆ ವರ್ಷದ Subjects ಮಾತ್ರ Load / Save ಆಗುತ್ತವೆ.</div>
     </div>
-
-
   </div>
 </div>
-<script>
 
+<div class="card">
+<h2>ವಿಷಯ ವಿವರ</h2>
+
+<div class="grid">
+
+<div>
+<label>ತರಗತಿ *</label>
+<select id="classSelect" onchange="loadSubjects()">
+<option value="">-- ಆಯ್ಕೆ ಮಾಡಿ --</option>
+<option value="8ನೇ ತರಗತಿ">8ನೇ ತರಗತಿ</option>
+<option value="9ನೇ ತರಗತಿ">9ನೇ ತರಗತಿ</option>
+<option value="10ನೇ ತರಗತಿ">10ನೇ ತರಗತಿ</option>
+</select>
+</div>
+
+<div>
+<label>ಪರೀಕ್ಷೆ *</label>
+<select id="examType" onchange="applyExamMarks();loadSubjects()">
+<option value="">-- ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ --</option>
+<option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+</select>
+</div>
+
+<div>
+<label>Subject Code *</label>
+<select id="subjectCode" onchange="setSubjectName();applyExamMarks()">
+<option value="">-- Code ಆಯ್ಕೆ ಮಾಡಿ --</option>
+<option value="01K">01K</option>
+<option value="31E">31E</option>
+<option value="61H">61H</option>
+<option value="81K">81K</option>
+<option value="83K">83K</option>
+<option value="85K">85K</option>
+</select>
+</div>
+
+<div>
+<label>Subject Name *</label>
+<input id="subjectName" readonly>
+</div>
+
+</div>
+
+<div class="grid" style="margin-top:14px">
+
+<div>
+<label>Maximum Marks *</label>
+<input id="maxMarks" type="number" min="1" max="200">
+<div class="small">ಅರ್ಧವಾರ್ಷಿಕ / ವಾರ್ಷಿಕಕ್ಕೆ ಪ್ರತ್ಯೇಕವಾಗಿ ಉಳಿಸಲಾಗುತ್ತದೆ.</div>
+</div>
+
+<div>
+<label>Display Order *</label>
+<input id="displayOrder" type="number" min="1" value="1">
+</div>
+
+<div>
+<label>Status</label>
+<select id="isActive">
+<option value="true">Active</option>
+<option value="false">Inactive</option>
+</select>
+</div>
+
+</div>
+
+<div class="buttons">
+<button class="save" id="saveBtn" onclick="saveSubject()">💾 Save</button>
+<button class="update" id="updateBtn" onclick="updateSubject()" disabled>✏️ Update</button>
+<button class="delete" id="deleteBtn" onclick="deleteSubject()" disabled>🗑️ Delete</button>
+<button class="clear" onclick="clearForm()">↺ Clear</button>
+<button class="load" onclick="loadSubjects()">🔄 Load</button>
+</div>
+
+</div>
+
+<div class="card">
+<h2 id="listTitle">Subject List</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Sl.No</th>
+<th>Class</th>
+<th>Exam</th>
+<th>Code</th>
+<th>Subject</th>
+<th>Maximum Marks</th>
+<th>Display Order</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="subjectTableBody">
+<tr><td colspan="9" style="text-align:center">ತರಗತಿ ಮತ್ತು ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
 /* =========================================================
    SUPABASE CONNECTION
-   Same working connection as Students Database / Marks Entry
-========================================================= */
-const SUPABASE_URL =
-    "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+   ========================================================= */
+const SUPABASE_URL = "https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
 
-const SUPABASE_KEY =
-    "sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
 
-const db =
-    window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+let editingId = null;
+let selectedAcademicYear = "";
+const YEAR_STORAGE_KEY = "school_result_academic_years";
 
-/* =========================================================
-   HELPERS
-========================================================= */
-function $(id){
-    return document.getElementById(id);
+const SUBJECTS = {
+    "01K":"ಕನ್ನಡ",
+    "31E":"English",
+    "61H":"Hindi",
+    "81K":"Mathematics",
+    "83K":"Science",
+    "85K":"Social Science"
+};
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+    await testConnection();
+    await initAcademicYears();
+});
+
+async function initAcademicYears(){
+    const years = new Set();
+    try{
+        const raw = localStorage.getItem(YEAR_STORAGE_KEY);
+        if(raw){ JSON.parse(raw).forEach(y=>{ if(/^\d{4}-\d{2}$/.test(String(y))) years.add(String(y)); }); }
+    }catch(e){}
+    try{
+        const {data,error}=await db.from("settings").select("academic_year").limit(1);
+        if(!error && data && data[0] && /^\d{4}-\d{2}$/.test(String(data[0].academic_year||""))) years.add(String(data[0].academic_year));
+    }catch(e){}
+    if(!years.size) years.add("2026-27");
+    const list=[...years].sort((a,b)=>parseInt(b)-parseInt(a));
+    try{ localStorage.setItem(YEAR_STORAGE_KEY,JSON.stringify(list)); }catch(e){}
+    const sel=document.getElementById("academicYear");
+    sel.innerHTML=list.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("");
+    const saved=localStorage.getItem("subject_master_selected_year");
+    selectedAcademicYear=(saved && list.includes(saved))?saved:list[0];
+    sel.value=selectedAcademicYear;
+    await loadSubjects();
 }
 
+async function onAcademicYearChange(){
+    selectedAcademicYear=document.getElementById("academicYear").value;
+    localStorage.setItem("subject_master_selected_year",selectedAcademicYear);
+    editingId=null;
+    document.getElementById("saveBtn").disabled=false;
+    document.getElementById("updateBtn").disabled=true;
+    document.getElementById("deleteBtn").disabled=true;
+    clearForm();
+    await loadSubjects();
+    showMessage("✅ "+selectedAcademicYear+" ವರ್ಷದ Subjects ತೋರಿಸಲಾಗುತ್ತಿದೆ.","info");
+}
+
+async function testConnection(){
+    try{
+        const {error} = await db
+            .from("subjects")
+            .select("id")
+            .limit(1);
+
+        if(error){
+            console.error(error);
+            showMessage("Supabase / subjects table error: " + error.message,"error");
+            return false;
+        }
+
+        showMessage("✅ Supabase connection ಯಶಸ್ವಿಯಾಗಿದೆ.","success");
+        return true;
+
+    }catch(error){
+        console.error(error);
+        showMessage("Supabase connection error: " + error.message,"error");
+        return false;
+    }
+}
+
+function showMessage(text,type){
+    const box=document.getElementById("message");
+    box.className="message "+type;
+    box.textContent=text;
+
+    clearTimeout(window.messageTimer);
+    window.messageTimer=setTimeout(()=>{
+        box.className="message";
+        box.textContent="";
+    },5000);
+}
+
+function setSubjectName(){
+    const code=document.getElementById("subjectCode").value;
+    document.getElementById("subjectName").value=SUBJECTS[code] || "";
+}
+
+function examName(exam){
+    return exam==="HALF_YEARLY"
+        ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
+        : "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+}
+
+/* =========================================================
+   Exam-wise marks
+   NOTE:
+   Your current subjects table does NOT have exam_type.
+   Therefore exam-wise maximum marks are stored separately
+   in browser localStorage. Existing Supabase columns are
+   NOT changed.
+   ========================================================= */
+
+function marksKey(cls,exam,code){
+    return "subject_marks_" + cls + "_" + exam + "_" + code;
+}
+
+function getSavedExamMarks(cls,exam,code){
+    const value=localStorage.getItem(marksKey(cls,exam,code));
+    return value === null ? null : Number(value);
+}
+
+function saveExamMarks(cls,exam,code,marks){
+    localStorage.setItem(
+        marksKey(cls,exam,code),
+        String(marks)
+    );
+}
+
+function defaultMarks(cls,exam,code){
+
+    if(cls==="8ನೇ ತರಗತಿ"){
+        return exam==="HALF_YEARLY" ? 50 : 100;
+    }
+
+    if(cls==="9ನೇ ತರಗತಿ" || cls==="10ನೇ ತರಗತಿ"){
+
+        if(exam==="HALF_YEARLY"){
+            return code==="01K" ? 100 : 80;
+        }
+
+        if(exam==="ANNUAL"){
+            return code==="01K" ? 125 : 100;
+        }
+    }
+
+    return 100;
+}
+
+function applyExamMarks(){
+
+    const cls=document.getElementById("classSelect").value;
+    const exam=document.getElementById("examType").value;
+    const code=document.getElementById("subjectCode").value;
+
+    if(!cls || !exam || !code) return;
+
+    const saved=getSavedExamMarks(cls,exam,code);
+
+    document.getElementById("maxMarks").value =
+        saved !== null
+        ? saved
+        : defaultMarks(cls,exam,code);
+}
+
+/* =========================================================
+   CLEAR
+   ========================================================= */
+
+function clearForm(){
+
+    editingId=null;
+
+    document.getElementById("subjectCode").value="";
+    document.getElementById("subjectName").value="";
+    document.getElementById("maxMarks").value="";
+    document.getElementById("displayOrder").value="1";
+    document.getElementById("isActive").value="true";
+
+    document.getElementById("saveBtn").disabled=false;
+    document.getElementById("updateBtn").disabled=true;
+    document.getElementById("deleteBtn").disabled=true;
+}
+
+/* =========================================================
+   SAVE
+   ========================================================= */
+
+async function saveSubject(){
+
+    const cls=document.getElementById("classSelect").value;
+    const exam=document.getElementById("examType").value;
+    const code=document.getElementById("subjectCode").value;
+    const name=document.getElementById("subjectName").value.trim();
+    const marks=Number(document.getElementById("maxMarks").value);
+    const order=Number(document.getElementById("displayOrder").value);
+    const active=document.getElementById("isActive").value==="true";
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
+    if(!year){ showMessage("Academic Year ಆಯ್ಕೆ ಮಾಡಿ.","error"); return; }
+
+    if(!cls){
+        showMessage("ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.","error");
+        return;
+    }
+
+    if(!exam){
+        showMessage("ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ.","error");
+        return;
+    }
+
+    if(!code){
+        showMessage("Subject Code ಆಯ್ಕೆ ಮಾಡಿ.","error");
+        return;
+    }
+
+    if(!name){
+        showMessage("Subject Name ಇಲ್ಲ.","error");
+        return;
+    }
+
+    if(!marks || marks<=0){
+        showMessage("Maximum Marks ನಮೂದಿಸಿ.","error");
+        return;
+    }
+
+    try{
+
+        /*
+          IMPORTANT:
+          Current Supabase table has:
+          id
+          class_name
+          subject_code
+          subject_name
+          max_marks
+          display_order
+          is_active
+          created_at
+
+          Therefore ONLY these columns are sent to Supabase.
+        */
+
+        const {data:existing,error:checkError}=await db
+            .from("subjects")
+            .select("id")
+            .eq("class_name",cls)
+            .eq("subject_code",code)
+            .eq("academic_year",year)
+            .limit(1);
+
+        if(checkError) throw checkError;
+
+        if(existing && existing.length>0){
+
+            /*
+              Existing subject:
+              Do not insert duplicate.
+              Just save exam-specific marks locally.
+            */
+
+            saveExamMarks(cls,exam,code,marks);
+
+            showMessage(
+                "ಈ Subject ಈಗಾಗಲೇ ಇದೆ. " +
+                examName(exam) +
+                " Maximum Marks ಉಳಿಸಲಾಗಿದೆ.",
+                "success"
+            );
+
+            await loadSubjects();
+            return;
+        }
+
+        const {error}=await db
+            .from("subjects")
+            .insert([{
+                academic_year:year,
+                academic_year:year,
+                class_name:cls,
+                subject_code:code,
+                subject_name:name,
+                max_marks:marks,
+                display_order:order,
+                is_active:active
+            }]);
+
+        if(error) throw error;
+
+        saveExamMarks(cls,exam,code,marks);
+
+        showMessage("✅ Subject ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ.","success");
+
+        clearForm();
+        await loadSubjects();
+
+    }catch(error){
+
+        console.error(error);
+
+        showMessage(
+            "Save Error: " + error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   LOAD
+   ========================================================= */
+
+async function loadSubjects(){
+
+    const cls=document.getElementById("classSelect").value;
+    const exam=document.getElementById("examType").value;
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
+    const tbody=document.getElementById("subjectTableBody");
+
+    if(!cls || !exam){
+
+        tbody.innerHTML=
+        '<tr><td colspan="9" style="text-align:center">ತರಗತಿ ಮತ್ತು ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ.</td></tr>';
+
+        return;
+    }
+
+    tbody.innerHTML=
+    '<tr><td colspan="9" style="text-align:center">Loading...</td></tr>';
+
+    try{
+
+        const {data,error}=await db
+            .from("subjects")
+            .select("*")
+            .eq("academic_year",year)
+            .eq("class_name",cls)
+            .order("display_order",{ascending:true})
+            .order("subject_code",{ascending:true});
+
+        if(error) throw error;
+
+        document.getElementById("listTitle").textContent =
+            "Subject List — " +
+            year + " — " +
+            cls +
+            " — " +
+            examName(exam);
+
+        if(!data || data.length===0){
+
+            tbody.innerHTML=
+            '<tr><td colspan="9" style="text-align:center">Subjects ಇಲ್ಲ.</td></tr>';
+
+            return;
+        }
+
+        tbody.innerHTML="";
+
+        data.forEach((s,index)=>{
+
+            const savedMarks=getSavedExamMarks(
+                cls,
+                exam,
+                s.subject_code
+            );
+
+            const displayMarks=
+                savedMarks !== null
+                ? savedMarks
+                : s.max_marks;
+
+            const tr=document.createElement("tr");
+
+            tr.innerHTML=`
+                <td>${index+1}</td>
+                <td>${esc(s.class_name)}</td>
+                <td>${examName(exam)}</td>
+                <td><strong>${esc(s.subject_code)}</strong></td>
+                <td>${esc(s.subject_name)}</td>
+                <td>${esc(displayMarks)}</td>
+                <td>${esc(s.display_order)}</td>
+                <td>
+                    <span class="badge ${s.is_active ? "active":"inactive"}">
+                    ${s.is_active ? "Active":"Inactive"}
+                    </span>
+                </td>
+                <td>
+                    <button
+                        class="action update"
+                        onclick="editSubject('${s.id}')">
+                        Edit
+                    </button>
+
+                    <button
+                        class="action delete"
+                        onclick="deleteById('${s.id}')">
+                        Delete
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    }catch(error){
+
+        console.error(error);
+
+        tbody.innerHTML=
+        '<tr><td colspan="9" style="text-align:center;color:#b91c1c">Load Error</td></tr>';
+
+        showMessage(
+            "Load Error: " + error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   EDIT
+   ========================================================= */
+
+async function editSubject(id){
+
+    try{
+
+        const {data,error}=await db
+            .from("subjects")
+            .select("*")
+            .eq("id",id)
+            .single();
+
+        if(error) throw error;
+
+        editingId=id;
+
+        const cls=data.class_name;
+        const exam=document.getElementById("examType").value;
+        if(data.academic_year){
+            selectedAcademicYear=String(data.academic_year);
+            document.getElementById("academicYear").value=selectedAcademicYear;
+            localStorage.setItem("subject_master_selected_year",selectedAcademicYear);
+        }
+
+        document.getElementById("classSelect").value=cls;
+        document.getElementById("subjectCode").value=data.subject_code;
+        document.getElementById("subjectName").value=data.subject_name;
+        document.getElementById("displayOrder").value=data.display_order;
+        document.getElementById("isActive").value=
+            data.is_active ? "true":"false";
+
+        if(exam){
+
+            const saved=getSavedExamMarks(
+                cls,
+                exam,
+                data.subject_code
+            );
+
+            document.getElementById("maxMarks").value=
+                saved !== null
+                ? saved
+                : data.max_marks;
+        }else{
+
+            document.getElementById("maxMarks").value=
+                data.max_marks;
+        }
+
+        document.getElementById("saveBtn").disabled=true;
+        document.getElementById("updateBtn").disabled=false;
+        document.getElementById("deleteBtn").disabled=false;
+
+        window.scrollTo({
+            top:0,
+            behavior:"smooth"
+        });
+
+    }catch(error){
+
+        showMessage(
+            "Edit Error: " + error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   UPDATE
+   ========================================================= */
+
+async function updateSubject(){
+
+    if(!editingId){
+
+        showMessage(
+            "ಮೊದಲು Subject ಆಯ್ಕೆ ಮಾಡಿ.",
+            "error"
+        );
+
+        return;
+    }
+
+    const cls=document.getElementById("classSelect").value;
+    const exam=document.getElementById("examType").value;
+    const code=document.getElementById("subjectCode").value;
+    const name=document.getElementById("subjectName").value.trim();
+    const marks=Number(document.getElementById("maxMarks").value);
+    const order=Number(document.getElementById("displayOrder").value);
+    const active=document.getElementById("isActive").value==="true";
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
+    if(!year){ showMessage("Academic Year ಆಯ್ಕೆ ಮಾಡಿ.","error"); return; }
+
+    if(!cls || !exam || !code || !name || !marks){
+
+        showMessage(
+            "ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ಸರಿಯಾಗಿ ನಮೂದಿಸಿ.",
+            "error"
+        );
+
+        return;
+    }
+
+    try{
+
+        /*
+          EXACT CURRENT TABLE COLUMNS ONLY.
+          NO active column.
+          NO exam_type column.
+          NO class_id column.
+        */
+
+        const {error}=await db
+            .from("subjects")
+            .update({
+                class_name:cls,
+                subject_code:code,
+                subject_name:name,
+                max_marks:marks,
+                display_order:order,
+                is_active:active
+            })
+            .eq("id",editingId);
+
+        if(error) throw error;
+
+        /*
+          Half-yearly / Annual marks are kept separately
+          because current table has no exam_type column.
+        */
+        saveExamMarks(
+            cls,
+            exam,
+            code,
+            marks
+        );
+
+        showMessage(
+            "✅ Subject Update ಯಶಸ್ವಿಯಾಗಿದೆ.",
+            "success"
+        );
+
+        clearForm();
+
+        await loadSubjects();
+
+    }catch(error){
+
+        console.error(error);
+
+        showMessage(
+            "Update Error: " + error.message,
+            "error"
+        );
+    }
+}
+
+/* =========================================================
+   DELETE
+   ========================================================= */
+
+async function deleteById(id){
+
+    if(!confirm("ಈ Subject ಅನ್ನು Delete ಮಾಡಬೇಕೇ?")) return;
+
+    try{
+
+        const {error}=await db
+            .from("subjects")
+            .delete()
+            .eq("id",id);
+
+        if(error) throw error;
+
+        if(editingId===id){
+            clearForm();
+        }
+
+        showMessage(
+            "✅ Subject Delete ಆಗಿದೆ.",
+            "success"
+        );
+
+        await loadSubjects();
+
+    }catch(error){
+
+        console.error(error);
+
+        showMessage(
+            "Delete Error: " + error.message,
+            "error"
+        );
+    }
+}
+
+async function deleteSubject(){
+
+    if(!editingId){
+
+        showMessage(
+            "Delete ಮಾಡಲು Subject ಆಯ್ಕೆ ಮಾಡಿ.",
+            "error"
+        );
+
+        return;
+    }
+
+    await deleteById(editingId);
+}
+
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
+
 function esc(value){
+
     return String(value ?? "")
         .replace(/&/g,"&amp;")
         .replace(/</g,"&lt;")
@@ -363,1149 +818,7 @@ function esc(value){
         .replace(/"/g,"&quot;")
         .replace(/'/g,"&#039;");
 }
-
-function normalizeDate(value){
-    if(!value) return "";
-
-    const s=String(value).trim();
-
-    if(/^\d{4}-\d{2}-\d{2}$/.test(s))
-        return s;
-
-    const d=new Date(s);
-
-    if(isNaN(d.getTime()))
-        return s.substring(0,10);
-
-    return [
-        d.getFullYear(),
-        String(d.getMonth()+1).padStart(2,"0"),
-        String(d.getDate()).padStart(2,"0")
-    ].join("-");
-}
-
-function formatDate(value){
-    const s=normalizeDate(value);
-    if(!s) return "-";
-
-    const p=s.split("-");
-    if(p.length===3)
-        return `${p[2]}-${p[1]}-${p[0]}`;
-
-    return s;
-}
-
-function normalizeClass(value){
-    let v=String(value ?? "")
-        .trim()
-        .toLowerCase();
-
-    v=v.replace(/೧೦/g,"10")
-        .replace(/೯/g,"9")
-        .replace(/೮/g,"8");
-
-    if(v.includes("10")) return "10";
-    if(v.includes("9")) return "9";
-    if(v.includes("8")) return "8";
-
-    return v;
-}
-
-function getClass(student){
-    return normalizeClass(
-        student.class_name ??
-        student.class ??
-        ""
-    );
-}
-
-function getStudentName(student){
-    return student.student_name ??
-           student.name ??
-           "";
-}
-
-function getDivision(student){
-    return String(
-        student.division ??
-        student.section_name ??
-        student.section ??
-        ""
-    ).trim().toUpperCase();
-}
-
-/* Current Marks Entry rules */
-function getMaxMarks(student, examType, subject){
-    const cls=String(getClass(student)||"").trim();
-    const code=String(subject?.subject_code || "").trim();
-    const exam=String(examType||"").trim();
-
-    // Subject Master saves the exact exam-wise Maximum Marks in localStorage.
-    // Use the exact class labels used by Subject Master.
-    const classNames={
-        "8":["8ನೇ ತರಗತಿ","8"],
-        "9":["9ನೇ ತರಗತಿ","9"],
-        "10":["10ನೇ ತರಗತಿ","10"]
-    };
-
-    const classes=classNames[cls] || [cls];
-
-    for(const c of classes){
-        const key="subject_marks_"+c+"_"+exam+"_"+code;
-        const raw=localStorage.getItem(key);
-        if(raw!==null && raw!==""){
-            const n=Number(raw);
-            if(Number.isFinite(n) && n>0) return n;
-        }
-    }
-
-    // Also try every localStorage key so that a class-label variation
-    // cannot make Subject Master's saved value disappear.
-    const suffix="_"+exam+"_"+code;
-    for(let i=0;i<localStorage.length;i++){
-        const k=localStorage.key(i)||"";
-        if(k.startsWith("subject_marks_") && k.endsWith(suffix)){
-            const n=Number(localStorage.getItem(k));
-            if(Number.isFinite(n) && n>0) return n;
-        }
-    }
-
-    // Final fallback: the maximum marks stored in the matching Subject
-    // Master row for the selected year.
-    const dbMax=Number(subject?.max_marks);
-    if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
-
-    return 0;
-}
-
-function grade(mark,max){
-    if(mark===null || mark===undefined || mark==="")
-        return "-";
-
-    const n=Number(mark);
-
-    if(!Number.isFinite(n) || !max)
-        return "-";
-
-    const p=n/max*100;
-
-    if(p>=90) return "A+";
-    if(p>=70) return "A";
-    if(p>=50) return "B+";
-    if(p>=30) return "B";
-    return "C";
-}
-
-function overallGrade(percent){
-    if(percent>=90) return "A+";
-    if(percent>=70) return "A";
-    if(percent>=50) return "B+";
-    if(percent>=30) return "B";
-    return "C";
-}
-
-function passMark(student,percent){
-    return getClass(student)==="8"
-        ? percent>=30
-        : percent>=35;
-}
-
-function showMessage(text,type="info"){
-    const box=$("message");
-    box.textContent=text;
-    box.className="message show "+type;
-}
-
-function hideMessage(){
-    $("message").className="message";
-    $("message").textContent="";
-}
-
-function clearResult(){
-    $("rollNumber").value="";
-    $("dob").value="";
-    $("resultArea").innerHTML="";
-    hideMessage();
-}
-
-/* =========================================================
-   SETTINGS
-   Only presentation/header/footer values are loaded here.
-   Existing result/marks logic is unchanged.
-========================================================= */
-let appSettings = {
-    school_name: "",
-    school_address: "",
-    head_teacher_name: "",
-    class_teacher_8: "",
-    class_teacher_9: "",
-    class_teacher_10: "",
-    academic_year: "2026-27"
-};
-
-async function loadAppSettings(){
-    try{
-        /*
-         * Settings page saves ONE record with id = 1.
-         * We intentionally select the complete row and use the first
-         * available record, so the Result page does not fail silently
-         * if the id value was changed/recreated.
-         */
-        const {data,error} = await db
-            .from("settings")
-            .select("*")
-            .order("id",{ascending:true})
-            .limit(1)
-            .maybeSingle();
-
-        if(error) throw error;
-
-        if(data){
-            appSettings = {
-                school_name: String(data.school_name ?? "").trim(),
-                school_address: String(data.school_address ?? "").trim(),
-                head_teacher_name: String(data.head_teacher_name ?? "").trim(),
-                class_teacher_8: String(data.class_teacher_8 ?? "").trim(),
-                class_teacher_9: String(data.class_teacher_9 ?? "").trim(),
-                class_teacher_10: String(data.class_teacher_10 ?? "").trim(),
-                academic_year: String(data.academic_year ?? "2026-27").trim()
-            };
-
-            const school = $("schoolNameHeader");
-            const address = $("schoolAddressHeader");
-
-            if(school)
-                school.textContent =
-                    appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು";
-
-            if(address && appSettings.school_address)
-                address.textContent = appSettings.school_address;
-
-            console.log("Settings loaded:", appSettings);
-        }else{
-            console.warn("Settings record not found.");
-        }
-
-    }catch(error){
-        console.error("Settings Load Error:",error);
-    }
-}
-
-function getClassTeacherForStudent(student){
-    /*
-     * The Students table may store class as 8, 8th, 8ನೇ ತರಗತಿ,
-     * etc. getClass() already normalizes the value.
-     */
-    const cls = String(getClass(student) || "")
-        .trim()
-        .toLowerCase();
-
-    if(cls.includes("8"))
-        return appSettings.class_teacher_8;
-
-    if(cls.includes("9"))
-        return appSettings.class_teacher_9;
-
-    if(cls.includes("10"))
-        return appSettings.class_teacher_10;
-
-    return "";
-}
-
-function getHeadTeacherName(){
-    return String(appSettings.head_teacher_name || "").trim();
-}
-
-function examDisplayName(examType){
-    if(examType === "HALF_YEARLY") return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
-    if(examType === "ANNUAL") return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
-    return examType || "";
-}
-
-/* =========================================================
-   VIEW RESULT
-========================================================= */
-async function viewResult(){
-
-    hideMessage();
-
-    await loadAppSettings();
-
-    const roll=$("rollNumber").value.trim();
-    const dob=$("dob").value;
-
-    if(!roll){
-        showMessage("Roll Number ನಮೂದಿಸಿ.","error");
-        $("rollNumber").focus();
-        return;
-    }
-
-    if(!dob){
-        showMessage("Date of Birth ಆಯ್ಕೆ ಮಾಡಿ.","error");
-        $("dob").focus();
-        return;
-    }
-
-    $("resultArea").innerHTML =
-        `<div class="card loading">⏳ ಫಲಿತಾಂಶ ಹುಡುಕಲಾಗುತ್ತಿದೆ...</div>`;
-
-    try{
-
-        /* ---------------------------------------------
-           1. Find student
-           Mobile field is NOT selected/displayed.
-        --------------------------------------------- */
-        const {data:students,error:studentError}=await db
-            .from("students")
-            .select("*")
-            .eq("roll_no",roll);
-
-        if(studentError)
-            throw studentError;
-
-        const wantedDob=normalizeDate(dob);
-
-        const matches=(students || []).filter(s =>
-            normalizeDate(s.dob)===wantedDob
-        );
-
-        if(!matches.length){
-            $("resultArea").innerHTML="";
-            showMessage(
-                "ಈ Roll Number ಮತ್ತು Date of Birthಗೆ ವಿದ್ಯಾರ್ಥಿ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.",
-                "error"
-            );
-            return;
-        }
-
-        if(matches.length>1){
-            $("resultArea").innerHTML="";
-            showMessage(
-                "ಈ Roll Number + DOBಗೆ ಒಂದಕ್ಕಿಂತ ಹೆಚ್ಚು ದಾಖಲೆಗಳಿವೆ. Students Database ಪರಿಶೀಲಿಸಿ.",
-                "error"
-            );
-            return;
-        }
-
-        const student=matches[0];
-
-        /* ---------------------------------------------
-           2. Load subjects for student's class
-        --------------------------------------------- */
-        const className=student.class_name;
-
-        const {data:subjects,error:subjectError}=await db
-            .from("subjects")
-            .select("*")
-            .eq("class_name",className)
-            .eq("is_active",true)
-            .order("display_order",{ascending:true});
-
-        if(subjectError)
-            throw subjectError;
-
-        if(!subjects || !subjects.length)
-            throw new Error(
-                `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
-            );
-
-        /* =========================================================
-   SUBJECT MASTER — CURRENT ACTIVE CODE ONLY
-========================================================= */
-const normalizeSubjectName = (name) =>
-    String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
-
-const subjectGroups = new Map();
-(subjects || []).forEach(subject => {
-    const key = normalizeSubjectName(subject.subject_name);
-    if(!key) return;
-    if(!subjectGroups.has(key)) subjectGroups.set(key, []);
-    subjectGroups.get(key).push(subject);
-});
-
-const uniqueSubjects = [];
-subjectGroups.forEach(group => {
-    /* If duplicate historical rows exist, highest ID is the newest
-       Subject Master record and therefore its current code is used. */
-    group.sort((a,b) => {
-        const aId = Number(a.id), bId = Number(b.id);
-        if(Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) return bId-aId;
-        return Number(a.display_order || 999) - Number(b.display_order || 999);
-    });
-    const chosen = {...group[0]};
-    /* Only for finding old marks; display/WhatsApp always uses chosen.subject_code. */
-    chosen._allSubjectIds = group.map(x => x.id);
-    uniqueSubjects.push(chosen);
-});
-
-uniqueSubjects.sort((a,b) =>
-    Number(a.display_order || 999) - Number(b.display_order || 999)
-);
-
-const subjectsForResult = uniqueSubjects.slice(0, 6);
-
-        /* ---------------------------------------------
-           3. Load only published results
-           Existing database uses exam_results.exam_type
-           and exam_results.published.
-        --------------------------------------------- */
-        const examTypes=[
-            "HALF_YEARLY",
-            "ANNUAL"
-        ];
-
-        const {data:results,error:resultError}=await db
-            .from("exam_results")
-            .select("id,student_id,exam_type,published")
-            .eq("student_id",student.id)
-            .in("exam_type",examTypes)
-            .eq("published",true)
-            .order("id",{ascending:true});
-
-        if(resultError)
-            throw resultError;
-
-        /* ---------------------------------------------
-           4. Load marks for published results
-        --------------------------------------------- */
-        const resultIds=(results || []).map(r=>r.id);
-
-        let marks=[];
-
-        if(resultIds.length){
-
-            const {data:markRows,error:markError}=await db
-                .from("result_marks")
-                .select("exam_result_id,subject_id,marks")
-                .in("exam_result_id",resultIds);
-
-            if(markError)
-                throw markError;
-
-            marks=markRows || [];
-        }
-
-        const marksMap={};
-
-        marks.forEach(m=>{
-            marksMap[
-                `${m.exam_result_id}_${m.subject_id}`
-            ]=m.marks;
-        });
-
-        /* ---------------------------------------------
-           5. Render
-        --------------------------------------------- */
-        renderResult(
-            student,
-            subjectsForResult,
-            results || [],
-            marksMap
-        );
-
-    }catch(error){
-
-        console.error("Student Result Error:",error);
-
-        $("resultArea").innerHTML="";
-
-        showMessage(
-            "Result Load Error: " +
-            (error.message || String(error)),
-            "error"
-        );
-    }
-}
-
-/* =========================================================
-   WHATSAPP RESULT STATE
-========================================================= */
-let currentResultData = {
-    student: null,
-    subjects: [],
-    results: [],
-    marksMap: {}
-};
-
-function cleanIndianMobile(value){
-    let digits = String(value || "").replace(/\D/g, "");
-    if(digits.length === 10) return "91" + digits;
-    if(digits.length === 12 && digits.startsWith("91")) return digits;
-    return digits;
-}
-
-function buildWhatsAppMessage(){
-    const {student,subjects,results,marksMap} = currentResultData;
-    if(!student) return "";
-
-    const lines = [];
-    lines.push(`*${appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು"}*`);
-    if(appSettings.school_address) lines.push(appSettings.school_address);
-    lines.push(`ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${appSettings.academic_year || "2026-27"}`);
-    lines.push("");
-    lines.push(`*ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ*`);
-    lines.push(`ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು: ${getStudentName(student) || "-"}`);
-    lines.push(`Roll No: ${student.roll_no || "-"}`);
-    lines.push(`ತರಗತಿ: ${student.class_name || "-"}`);
-    lines.push(`ವಿಭಾಗ: ${getDivision(student) || "-"}`);
-    lines.push("");
-
-    results.forEach(result => {
-        lines.push(`*${examDisplayName(result.exam_type)}*`);
-        let total = 0, maximum = 0, entered = 0;
-
-        subjects.forEach(subject => {
-            const ids = Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds : [subject.id];
-            let value;
-            for(const id of ids){
-                const candidate = marksMap[`${result.id}_${id}`];
-                if(candidate !== null && candidate !== undefined && candidate !== ""){
-                    value = candidate;
-                    break;
-                }
-            }
-            const max = getMaxMarks(student, result.exam_type, subject);
-            maximum += max;
-            const hasMark = value !== null && value !== undefined && value !== "";
-            if(hasMark){
-                total += Number(value);
-                entered++;
-            }
-            const name = subject.subject_name || "";
-            const code = subject.subject_code || "";
-            const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
-            lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
-        });
-
-        const percentage = maximum ? total / maximum * 100 : 0;
-        const finalGrade = entered ? overallGrade(percentage) : "-";
-        const resultText = entered === 0 ? "PENDING" : (passMark(student, percentage) ? "PASS" : "FAIL");
-        lines.push(`ಒಟ್ಟು: ${total.toFixed(2)}/${maximum.toFixed(2)}`);
-        lines.push(`Percentage: ${percentage.toFixed(2)}%`);
-        lines.push(`Grade: ${finalGrade}`);
-        lines.push(`Result: ${resultText}`);
-        lines.push("");
-    });
-
-    lines.push("ಶುಭಾಶಯಗಳೊಂದಿಗೆ,");
-    lines.push("ಮುಖ್ಯಶಿಕ್ಷಕರು");
-    return lines.join("\n");
-}
-
-function sendResultToWhatsApp(){
-    const mobile = cleanIndianMobile(currentResultData.student?.mobile);
-    if(!mobile || (mobile.length !== 12)) {
-        showMessage("ವಿದ್ಯಾರ್ಥಿಯ Mobile Number ಸರಿಯಾಗಿ ನಮೂದಿಸಿಲ್ಲ. Students Databaseನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.", "error");
-        return;
-    }
-
-    const message = buildWhatsAppMessage();
-    const url = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-}
-
-/* =========================================================
-   RENDER RESULT
-========================================================= */
-function renderResult(student,subjects,results,marksMap){
-
-    currentResultData = {student, subjects, results, marksMap};
-
-    let html=`
-    <div class="card">
-
-        <div class="result-head result-settings-head">
-            <h2 class="school-name">
-                ${esc(appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು")}
-            </h2>
-            <div class="exam-name">
-                ${esc(
-                    results.length === 1
-                        ? examDisplayName(results[0].exam_type)
-                        : results.map(r => examDisplayName(r.exam_type)).filter(Boolean).join(" / ")
-                )}
-            </div>
-            <div class="academic-year">
-                ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year || "2026-27")}
-            </div>
-        </div>
-
-        <div class="student-info">
-
-            <div class="info-item">
-                <b>Roll No:</b>
-                ${esc(student.roll_no)}
-            </div>
-
-            <div class="info-item">
-                <b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:</b>
-                ${esc(getStudentName(student))}
-            </div>
-
-            <div class="info-item">
-                <b>ತರಗತಿ:</b>
-                ${esc(student.class_name)}
-            </div>
-
-            <div class="info-item">
-                <b>ವಿಭಾಗ:</b>
-                ${esc(getDivision(student))}
-            </div>
-
-            <div class="info-item">
-                <b>DOB:</b>
-                ${esc(formatDate(student.dob))}
-            </div>
-
-            <div class="info-item">
-                <b>SATS No:</b>
-                ${esc(student.sats_no)}
-            </div>
-
-        </div>
-    `;
-
-    if(!results.length){
-
-        html+=`
-        <div class="no-result">
-            <h3>📢 ಫಲಿತಾಂಶ ಇನ್ನೂ ಪ್ರಕಟಿಸಲಾಗಿಲ್ಲ</h3>
-            <p>ಶಾಲೆಯಿಂದ ಫಲಿತಾಂಶ ಪ್ರಕಟಿಸಿದ ನಂತರ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ.</p>
-        </div>
-        `;
-
-    }else{
-
-        results.forEach(result=>{
-            html+=renderExam(
-                student,
-                subjects,
-                result,
-                marksMap
-            );
-        });
-
-    }
-
-    html+=`
-        <div class="teacher-footer">
-            <div class="teacher-block">
-                <span class="role">Class Teacher</span>
-                <span class="name">${esc(getClassTeacherForStudent(student) || " ")}</span>
-            </div>
-            <div class="teacher-block">
-                <span class="role">Head Teacher</span>
-                <span class="name">${esc(getHeadTeacherName() || " ")}</span>
-            </div>
-        </div>
-
-        <div class="button-row no-print">
-            <button class="btn-print"
-                    onclick="window.print()">
-                🖨️ Print Result
-            </button>
-            <button class="btn-whatsapp"
-                    onclick="sendResultToWhatsApp()">
-                📱 WhatsApp ಮೂಲಕ ಫಲಿತಾಂಶ ಕಳುಹಿಸಿ
-            </button>
-        </div>
-    </div>
-    `;
-
-    $("resultArea").innerHTML=html;
-}
-
-/* =========================================================
-   RENDER ONE EXAM
-========================================================= */
-function renderExam(student,subjects,result,marksMap){
-
-    let total=0;
-    let maximum=0;
-    let entered=0;
-
-    let rows="";
-
-    subjects.forEach(subject=>{
-
-        /*
-           Find marks using the selected subject ID first, then
-           fall back to any duplicate/legacy subject IDs belonging
-           to the same subject name. This keeps the display at one
-           subject while preserving marks already entered earlier.
-        */
-        const subjectIds =
-            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds
-                : [subject.id];
-
-        let value;
-        for(const subjectId of subjectIds){
-            const candidate = marksMap[`${result.id}_${subjectId}`];
-            if(candidate !== null && candidate !== undefined && candidate !== ""){
-                value = candidate;
-                break;
-            }
-        }
-
-        const max=
-            getMaxMarks(
-                student,
-                result.exam_type,
-                subject
-            );
-
-        maximum+=max;
-
-        const hasMark=
-            value!==null &&
-            value!==undefined &&
-            value!=="";
-
-        if(hasMark){
-            total+=Number(value);
-            entered++;
-        }
-
-        rows+=`
-        <tr>
-            <td class="subject">
-                ${esc(subject.subject_name)}
-            </td>
-
-            <td>
-                ${esc(subject.subject_code)}
-            </td>
-
-            <td>
-                ${hasMark ? esc(value) : "-"}
-            </td>
-
-            <td>${max}</td>
-
-            <td>
-                ${hasMark ? grade(value,max) : "-"}
-            </td>
-        </tr>
-        `;
-    });
-
-    const percentage=
-        maximum ? total/maximum*100 : 0;
-
-    const finalGrade=
-        entered
-        ? overallGrade(percentage)
-        : "-";
-
-    const resultText=
-        entered===0
-        ? "PENDING"
-        : passMark(student,percentage)
-            ? "PASS"
-            : "FAIL";
-
-    const resultClass=
-        resultText==="PASS"
-        ? "pass"
-        : resultText==="FAIL"
-            ? "fail"
-            : "pending";
-
-    return `
-        <div class="exam-title">
-            📝 ${esc(result.exam_type==="HALF_YEARLY" ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type==="ANNUAL" ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" : result.exam_type)}
-        </div>
-
-        <div class="exam-status">
-            ಫಲಿತಾಂಶ: <b class="${resultClass}">
-                ${resultText}
-            </b>
-        </div>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ವಿಷಯ</th>
-                        <th>Subject Code</th>
-                        <th>ಅಂಕ</th>
-                        <th>ಗರಿಷ್ಠ</th>
-                        <th>Grade</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    ${rows}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="summary">
-
-            <div class="summary-box">
-                ಒಟ್ಟು ಅಂಕ
-                <b>${total.toFixed(2)}</b>
-            </div>
-
-            <div class="summary-box">
-                ಗರಿಷ್ಠ ಅಂಕ
-                <b>${maximum.toFixed(2)}</b>
-            </div>
-
-            <div class="summary-box">
-                Percentage
-                <b>${percentage.toFixed(2)}%</b>
-            </div>
-
-            <div class="summary-box">
-                Overall Grade
-                <b>${finalGrade}</b>
-            </div>
-
-            <div class="summary-box">
-                Result
-                <b class="${resultClass}">
-                    ${resultText}
-                </b>
-            </div>
-
-        </div>
-    `;
-}
-
-/* =========================================================
-   BULK WHATSAPP RESULT
-   No API: opens WhatsApp Ready Messages for selected students.
-========================================================= */
-let bulkStudents = [];
-
-function setBulkStatus(text, show=true){
-    const el = $("bulkStatus");
-    if(!el) return;
-    el.textContent = text || "";
-    el.className = show ? "bulk-status show" : "bulk-status";
-}
-
-function updateBulkCount(){
-    const checks = document.querySelectorAll(".bulk-student-check:checked");
-    const count = checks.length;
-    const el = $("bulkSelectedCount");
-    if(el) el.textContent = `${count} ವಿದ್ಯಾರ್ಥಿಗಳು ಆಯ್ಕೆ`;
-    const all = bulkStudents.length > 0 && count === bulkStudents.length;
-    const master = $("bulkSelectAll");
-    const header = $("bulkHeaderCheck");
-    if(master) master.checked = all;
-    if(header) header.checked = all;
-}
-
-function toggleBulkSelectAll(checked){
-    document.querySelectorAll(".bulk-student-check").forEach(cb => cb.checked = checked);
-    updateBulkCount();
-}
-
-function renderBulkStudents(){
-    const body = $("bulkStudentsBody");
-    if(!body) return;
-    if(!bulkStudents.length){
-        body.innerHTML = `<tr><td colspan="6" class="bulk-empty">Active students ಸಿಗಲಿಲ್ಲ.</td></tr>`;
-        updateBulkCount();
-        return;
-    }
-    const selectedClass=String($("bulkClass")?.value||"").trim();
-    const visibleStudents=bulkStudents
-        .map((s,i)=>({s,i}))
-        .filter(x=>!selectedClass || String(x.s.class_name||"").trim()===selectedClass);
-
-    if(!visibleStudents.length){
-        body.innerHTML=`<tr><td colspan="6" class="bulk-empty">ಈ ತರಗತಿಗೆ Students ಸಿಗಲಿಲ್ಲ.</td></tr>`;
-        updateBulkCount();
-        return;
-    }
-
-    body.innerHTML = visibleStudents.map(({s,i})=>`
-        <tr>
-            <td><input type="checkbox" class="bulk-student-check" data-index="${i}" onchange="updateBulkCount()"></td>
-            <td>${esc(s.roll_no || "")}</td>
-            <td>${esc(getStudentName(s) || "")}</td>
-            <td>${esc(s.class_name || "")}</td>
-            <td>${esc(getDivision(s) || "")}</td>
-            <td>${esc(s.mobile || "-" )}</td>
-        </tr>`).join("");
-    updateBulkCount();
-}
-
-
-async function loadBulkAcademicYears(){
-    const select=$("bulkAcademicYear");
-    if(!select) return;
-
-    try{
-        await loadAppSettings();
-
-        const currentYear=String(appSettings.academic_year || "").trim();
-
-        // Read years from the same Students table used by Marks Entry.
-        const {data,error}=await db
-            .from("students")
-            .select("academic_year")
-            .eq("is_active",true);
-
-        if(error) throw error;
-
-        const years=[...new Set((data||[])
-            .map(s=>String(s.academic_year || "").trim())
-            .filter(Boolean))];
-
-        if(currentYear && !years.includes(currentYear)){
-            years.push(currentYear);
-        }
-
-        years.sort((a,b)=>b.localeCompare(a,undefined,{numeric:true}));
-
-        select.innerHTML = years.length
-            ? years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("")
-            : `<option value="">${esc(currentYear || "Year ಸಿಗಲಿಲ್ಲ")}</option>`;
-
-        if(currentYear && years.includes(currentYear)){
-            select.value=currentYear;
-        }
-
-    }catch(error){
-        console.error("Academic Year Load Error:",error);
-        select.innerHTML=`<option value="">Year Load Error</option>`;
-    }
-}
-
-
-
-async function filterPublishedStudents(){
-    const exam=String($("bulkExam")?.value || "HALF_YEARLY").trim();
-    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
-
-    const allStudents=bulkStudents.slice();
-    if(!allStudents.length) return;
-
-    const ids=allStudents.map(s=>s.id).filter(Boolean);
-    if(!ids.length) return;
-
-    let q=db
-        .from("exam_results")
-        .select("student_id,published,exam_type,academic_year")
-        .in("student_id",ids)
-        .eq("exam_type",exam)
-        .eq("published",true);
-
-    if(year) q=q.eq("academic_year",year);
-
-    let {data,error}=await q;
-    if(error){
-        // Compatibility if exam_results does not have academic_year.
-        const msg=String(error.message||error).toLowerCase();
-        if(msg.includes("academic_year") && msg.includes("column")){
-            const retry=await db
-                .from("exam_results")
-                .select("student_id,published,exam_type")
-                .in("student_id",ids)
-                .eq("exam_type",exam)
-                .eq("published",true);
-            if(retry.error) throw retry.error;
-            data=retry.data||[];
-        }else{
-            throw error;
-        }
-    }
-
-    const publishedIds=new Set((data||[]).map(r=>String(r.student_id)));
-    bulkStudents=allStudents.filter(s=>publishedIds.has(String(s.id)));
-}
-
-function populateBulkClasses(){
-    const select=$("bulkClass");
-    if(!select) return;
-    const classes=[...new Set(bulkStudents.map(s=>String(s.class_name||"").trim()).filter(Boolean))]
-        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
-    select.innerHTML='<option value="">All Classes</option>'+
-        classes.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-}
-
-async function loadBulkStudents(){
-    await loadAppSettings();
-    if(!$("bulkAcademicYear")?.value){
-        await loadBulkAcademicYears();
-    }
-    setBulkStatus("⏳ Students load ಆಗುತ್ತಿದೆ...");
-    try{
-        const academicYear=String(
-            $("bulkAcademicYear")?.value ||
-            appSettings.academic_year ||
-            ""
-        ).trim();
-
-        let query=db
-            .from("students")
-            .select("*")
-            .eq("is_active",true);
-
-        if(academicYear){
-            query=query.eq("academic_year",academicYear);
-        }
-
-        const {data,error}=await query
-            .order("class_name",{ascending:true})
-            .order("roll_no",{ascending:true});
-        if(error) throw error;
-        bulkStudents = data || [];
-        populateBulkClasses();
-        await filterPublishedStudents();
-        renderBulkStudents();
-        setBulkStatus(`✅ ${bulkStudents.length} active students load ಆಗಿದ್ದಾರೆ. ಬೇಡದವರನ್ನು Untick ಮಾಡಿ.`);
-    }catch(error){
-        console.error("Bulk Students Load Error:",error);
-        bulkStudents=[];
-        renderBulkStudents();
-        setBulkStatus("❌ Students load failed: " + (error.message || String(error)));
-    }
-}
-
-function dedupeSubjectsForBulk(subjects){
-    const normalize = name => String(name || "").trim().replace(/\\s+/g," ").toLowerCase();
-    const groups = new Map();
-    (subjects || []).forEach(subject=>{
-        const key=normalize(subject.subject_name);
-        if(!key) return;
-        if(!groups.has(key)) groups.set(key,[]);
-        groups.get(key).push(subject);
-    });
-    const unique=[];
-    groups.forEach(group=>{
-        group.sort((a,b)=>{
-            const ai=Number(a.id), bi=Number(b.id);
-            if(Number.isFinite(ai)&&Number.isFinite(bi)&&ai!==bi) return bi-ai;
-            return Number(a.display_order||999)-Number(b.display_order||999);
-        });
-        const chosen={...group[0]};
-        chosen._allSubjectIds=group.map(x=>x.id).filter(x=>x!==null&&x!==undefined);
-        unique.push(chosen);
-    });
-    unique.sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999));
-    return unique.slice(0,6);
-}
-
-async function loadResultDataForStudent(student){
-    const className=student.class_name;
-    const {data:subjects,error:subjectError}=await db
-        .from("subjects").select("*")
-        .eq("class_name",className)
-        .eq("academic_year",String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim())
-        .eq("is_active",true)
-        .order("display_order",{ascending:true});
-    if(subjectError) throw subjectError;
-
-    const subjectsForResult=dedupeSubjectsForBulk(subjects || []);
-    const {data:results,error:resultError}=await db
-        .from("exam_results")
-        .select("id,student_id,exam_type,published")
-        .eq("student_id",student.id)
-        .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
-        .eq("published",true)
-        .order("id",{ascending:true});
-    if(resultError) throw resultError;
-
-    const resultIds=(results||[]).map(r=>r.id);
-    let marks=[];
-    if(resultIds.length){
-        const {data:markRows,error:markError}=await db
-            .from("result_marks")
-            .select("exam_result_id,subject_id,marks")
-            .in("exam_result_id",resultIds);
-        if(markError) throw markError;
-        marks=markRows||[];
-    }
-    const marksMap={};
-    marks.forEach(m=>marksMap[`${m.exam_result_id}_${m.subject_id}`]=m.marks);
-    return {student,subjects:subjectsForResult,results:results||[],marksMap};
-}
-
-async function openBulkWhatsAppForStudent(student){
-    const mobile=cleanIndianMobile(student.mobile);
-    if(!mobile || mobile.length!==12) return {ok:false,reason:"Mobile Number ಇಲ್ಲ/ತಪ್ಪಾಗಿದೆ"};
-    const data=await loadResultDataForStudent(student);
-    if(!data.results.length) return {ok:false,reason:"Published result ಇಲ್ಲ"};
-    const message=buildWhatsAppMessageFromData(data);
-    const url=`https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
-    window.open(url,"_blank","noopener,noreferrer");
-    return {ok:true};
-}
-
-function buildWhatsAppMessageFromData(data){
-    const old=currentResultData;
-    currentResultData=data;
-    const msg=buildWhatsAppMessage();
-    currentResultData=old;
-    return msg;
-}
-
-async function sendSelectedResultsToWhatsApp(){
-    const selected=[...document.querySelectorAll(".bulk-student-check:checked")]
-        .map(cb=>bulkStudents[Number(cb.dataset.index)])
-        .filter(Boolean);
-    if(!selected.length){
-        setBulkStatus("⚠️ ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Select ಮಾಡಿ.");
-        return;
-    }
-
-    if(!confirm(`${selected.length} ವಿದ್ಯಾರ್ಥಿಗಳ WhatsApp Resultಗಳನ್ನು open ಮಾಡಬೇಕೇ?\
-\
-WhatsApp message Ready ಆಗುತ್ತದೆ. ಪ್ರತಿ chatನಲ್ಲಿ Send ಒತ್ತಬೇಕು.`)) return;
-
-    setBulkStatus(`⏳ ${selected.length} ವಿದ್ಯಾರ್ಥಿಗಳ result ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ...`);
-    let opened=0, skipped=0;
-
-    for(let i=0;i<selected.length;i++){
-        const student=selected[i];
-        try{
-            const result=await openBulkWhatsAppForStudent(student);
-            if(result.ok) opened++; else skipped++;
-        }catch(error){
-            console.error("Bulk WhatsApp Error:",student,error);
-            skipped++;
-        }
-        setBulkStatus(`📱 ${i+1}/${selected.length} processed — ${opened} opened, ${skipped} skipped.`);
-        await new Promise(resolve=>setTimeout(resolve,700));
-    }
-
-    setBulkStatus(`✅ ಪೂರ್ಣಗೊಂಡಿದೆ: ${opened} WhatsApp chats open ಮಾಡಲು ಪ್ರಯತ್ನಿಸಲಾಗಿದೆ. ${skipped} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು skip ಮಾಡಲಾಗಿದೆ. WhatsAppನಲ್ಲಿ ಪ್ರತಿ messageಗೆ Send ಒತ್ತಿ.`);
-}
-
-
-$("bulkAcademicYear").addEventListener("change",function(){
-    loadBulkStudents();
-});
-
-(async function(){
-    await loadBulkAcademicYears();
-    await loadBulkStudents();
-})();
-
-$("bulkClass").addEventListener("change",function(){
-    renderBulkStudents();
-});
-
-$("bulkExam").addEventListener("change",async function(){
-    await loadBulkStudents();
-});
-
-/* Enter key support */
-$("rollNumber").addEventListener("keydown",function(e){
-    if(e.key==="Enter") viewResult();
-});
-
-$("dob").addEventListener("keydown",function(e){
-    if(e.key==="Enter") viewResult();
-});
-
 </script>
+
 </body>
 </html>
