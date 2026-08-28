@@ -1190,23 +1190,3 @@ async function loadReportsAcademicYear(){
 </script>
 </body>
 </html>
-async function initReportYear(){
-  const el=document.getElementById("academicYearSelect");
-  if(!el)return;
-  const current=await getReportAcademicYear();
-  let years=[current];
-  try{
-    const a=JSON.parse(localStorage.getItem("school_result_academic_years")||"[]");
-    if(Array.isArray(a)) years.push(...a.map(x=>typeof x==="string"?x:(x.year||x.academic_year||"")));
-  }catch(e){}
-  years=[...new Set(years.filter(Boolean))].sort();
-  el.innerHTML=years.map(y=>`<option value="${String(y).replace(/"/g,"&quot;")}">${y}</option>`).join("");
-  el.value=current;
-  el.onchange=async()=>{
-    localStorage.setItem("school_result_current_academic_year",el.value);
-    currentRows=[];
-    try{await loadBase();}catch(e){console.error(e);}
-  };
-}
-
-
