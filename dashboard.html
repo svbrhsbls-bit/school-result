@@ -160,6 +160,50 @@ body{
     font-size:13px;
 }
 
+
+/* ================= ACADEMIC YEAR ================= */
+
+.year-selector{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:#fff;
+    border:1px solid #dce3ed;
+    padding:10px 13px;
+    border-radius:9px;
+    box-shadow:0 2px 6px rgba(23,54,93,.04);
+}
+
+.year-selector label{
+    font-size:13px;
+    font-weight:800;
+    color:#526075;
+    white-space:nowrap;
+}
+
+.year-selector select{
+    min-width:150px;
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#172033;
+    padding:8px 32px 8px 10px;
+    border-radius:7px;
+    font-size:14px;
+    font-weight:800;
+    outline:none;
+}
+
+.year-selector select:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.10);
+}
+
+.year-note{
+    margin-top:10px;
+    color:#68758a;
+    font-size:12px;
+}
+
 /* ================= CARDS ================= */
 
 .cards{
@@ -561,10 +605,28 @@ td:first-child{
 
         </div>
 
-        <div
-            class="date-box"
-            id="today">
-            Loading...
+        <div>
+            <div class="year-selector">
+                <label for="academicYearSelect">
+                    Current Academic Year
+                </label>
+
+                <select
+                    id="academicYearSelect"
+                    aria-label="Current Academic Year">
+                </select>
+            </div>
+
+            <div class="year-note">
+                Dropdownನಲ್ಲಿ ಇರುವ ವರ್ಷ ಆಯ್ಕೆ ಮಾಡಿದಾಗ ಆ ವರ್ಷದ ವಿದ್ಯಾರ್ಥಿಗಳ Data ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತದೆ.
+            </div>
+
+            <div
+                class="date-box"
+                id="today"
+                style="margin-top:10px;">
+                Loading...
+            </div>
         </div>
 
     </div>
@@ -945,13 +1007,46 @@ async function supabaseFetch(
 ===================================================== */
 
 function updateDashboard(
-    students
+    students,
+    selectedYear = ""
 ){
 
-    const active =
-        (students || [])
-        .filter(
+    const allStudents =
+        Array.isArray(students)
+        ? students
+        : [];
+
+
+    /* ---------------------------------------------
+       Only active students
+    --------------------------------------------- */
+
+    const activeAll =
+        allStudents.filter(
             s => s.is_active !== false
+        );
+
+
+    /* ---------------------------------------------
+       Filter by selected Academic Year
+    --------------------------------------------- */
+
+    const active =
+        activeAll.filter(
+            s => {
+
+                const year =
+                    String(
+                        s.academic_year ??
+                        s.academicYear ??
+                        s.year ??
+                        ""
+                    ).trim();
+
+                return year ===
+                    String(selectedYear).trim();
+
+            }
         );
 
 
@@ -976,6 +1071,7 @@ function updateDashboard(
 
 
     let male = 0;
+
     let female = 0;
 
 
@@ -1041,7 +1137,18 @@ function updateDashboard(
     );
 
 
-    ["8","9","10"]
+    setText(
+        "academicYear",
+        selectedYear ||
+        "-"
+    );
+
+
+    [
+        "8",
+        "9",
+        "10"
+    ]
     .forEach(
         c => {
 
@@ -1097,6 +1204,10 @@ async function loadSettingsAndStudents(){
 
     try{
 
+        /* ---------------------------------------------
+           Load Settings
+        --------------------------------------------- */
+
         const settings =
             await supabaseFetch(
                 "settings",
@@ -1117,6 +1228,9 @@ async function loadSettingsAndStudents(){
             : settings;
 
 
+        let settingsYear = "";
+
+
         if(s){
 
             const schoolName =
@@ -1126,7 +1240,7 @@ async function loadSettingsAndStudents(){
                 ).trim();
 
 
-            const academicYear =
+            settingsYear =
                 (
                     s.academic_year ||
                     ""
@@ -1139,15 +1253,14 @@ async function loadSettingsAndStudents(){
                     schoolName
                 );
 
-
-            if(academicYear)
-                setText(
-                    "academicYear",
-                    academicYear
-                );
-
         }
 
+
+        /* ---------------------------------------------
+           Load ALL students
+           We need all years so the dropdown can show
+           previous academic years too.
+        --------------------------------------------- */
 
         const students =
             await supabaseFetch(
@@ -1156,13 +1269,211 @@ async function loadSettingsAndStudents(){
             );
 
 
+        const activeAll =
+            (students || [])
+            .filter(
+                st =>
+                    st.is_active !== false
+            );
+
+
+        /* ---------------------------------------------
+           Build Academic Year dropdown
+
+           Years come from:
+           1. Settings current academic_year
+           2. Students academic_year values
+
+           Therefore:
+           - 2026-27 exists -> appears
+           - change Settings to 2027-28 -> 2027-28 appears
+           - old 2026-27 students remain selectable
+        --------------------------------------------- */
+
+        const yearsSet =
+            new Set();
+
+
+        if(settingsYear)
+            yearsSet.add(
+                settingsYear
+            );
+
+
+        activeAll.forEach(
+            st => {
+
+                const year =
+                    String(
+                        st.academic_year ??
+                        st.academicYear ??
+                        st.year ??
+                        ""
+                    ).trim();
+
+
+                if(year)
+                    yearsSet.add(
+                        year
+                    );
+
+            }
+        );
+
+
+        const years =
+            Array.from(
+                yearsSet
+            );
+
+
+        /* ---------------------------------------------
+           Sort academic years newest first
+           Example:
+           2027-28
+           2026-27
+           2025-26
+        --------------------------------------------- */
+
+        years.sort(
+            (a,b) => {
+
+                const ay =
+                    parseInt(
+                        String(a)
+                        .match(/\d{4}/)?.[0] ||
+                        "0",
+                        10
+                    );
+
+                const by =
+                    parseInt(
+                        String(b)
+                        .match(/\d{4}/)?.[0] ||
+                        "0",
+                        10
+                    );
+
+
+                return by - ay;
+
+            }
+        );
+
+
+        const select =
+            $("academicYearSelect");
+
+
+        if(!select){
+
+            throw new Error(
+                "Academic Year dropdown ಸಿಗಲಿಲ್ಲ."
+            );
+
+        }
+
+
+        select.innerHTML = "";
+
+
+        years.forEach(
+            year => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value =
+                    year;
+
+
+                option.textContent =
+                    year;
+
+
+                select.appendChild(
+                    option
+                );
+
+            }
+        );
+
+
+        /* ---------------------------------------------
+           Default selected year
+
+           Priority:
+           1. Previously selected year in this browser
+           2. Settings current academic year
+           3. First available year
+        --------------------------------------------- */
+
+        const savedYear =
+            String(
+                localStorage.getItem(
+                    "dashboard_selected_academic_year"
+                ) ||
+                ""
+            ).trim();
+
+
+        let selectedYear = "";
+
+
+        if(
+            savedYear &&
+            years.includes(savedYear)
+        ){
+
+            selectedYear =
+                savedYear;
+
+        }
+        else if(
+            settingsYear &&
+            years.includes(settingsYear)
+        ){
+
+            selectedYear =
+                settingsYear;
+
+        }
+        else if(
+            years.length
+        ){
+
+            selectedYear =
+                years[0];
+
+        }
+
+
+        select.value =
+            selectedYear;
+
+
+        localStorage.setItem(
+            "dashboard_selected_academic_year",
+            selectedYear
+        );
+
+
+        /* ---------------------------------------------
+           Show selected year data
+        --------------------------------------------- */
+
         updateDashboard(
-            students
+            students,
+            selectedYear
         );
 
 
         showStatus(
-            "Dashboard data ಯಶಸ್ವಿಯಾಗಿ load ಆಗಿದೆ.",
+            "Dashboard data ಯಶಸ್ವಿಯಾಗಿ load ಆಗಿದೆ. Academic Year: " +
+            selectedYear,
             "ok"
         );
 
@@ -1178,6 +1489,65 @@ async function loadSettingsAndStudents(){
             1800
         );
 
+
+        /* ---------------------------------------------
+           Dropdown change event
+        --------------------------------------------- */
+
+        if(
+            !select.dataset.bound
+        ){
+
+            select.addEventListener(
+                "change",
+                function(){
+
+                    const year =
+                        String(
+                            this.value ||
+                            ""
+                        ).trim();
+
+
+                    localStorage.setItem(
+                        "dashboard_selected_academic_year",
+                        year
+                    );
+
+
+                    updateDashboard(
+                        students,
+                        year
+                    );
+
+
+                    showStatus(
+                        "✅ " +
+                        year +
+                        " ಶೈಕ್ಷಣಿಕ ವರ್ಷದ Data ತೋರಿಸಲಾಗುತ್ತಿದೆ.",
+                        "ok"
+                    );
+
+
+                    setTimeout(
+                        () => {
+
+                            $("status")
+                            .className =
+                                "status";
+
+                        },
+                        1800
+                    );
+
+                }
+            );
+
+
+            select.dataset.bound =
+                "true";
+
+        }
 
     }
     catch(err){
@@ -1688,3 +2058,4 @@ loadDashboard();
 
 </body>
 </html>
+
