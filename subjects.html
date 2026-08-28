@@ -36,6 +36,7 @@ tr:nth-child(even){background:#f8fafc}
 .active{background:#dcfce7;color:#166534}
 .inactive{background:#e5e7eb;color:#374151}
 .small{font-size:13px;color:#64748b;margin-top:7px}
+.yearbar{display:flex;gap:12px;align-items:end;margin-bottom:18px;flex-wrap:wrap}.yearbar>div{min-width:220px}.yearbar label{margin-bottom:6px}.yearbar select{font-weight:bold}.year-note{font-size:12px;color:#64748b;margin-top:5px}
 .action{padding:6px 10px;margin:2px;font-size:12px}
 @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
 @media(max-width:550px){.grid{grid-template-columns:1fr}}
@@ -52,6 +53,16 @@ tr:nth-child(even){background:#f8fafc}
 <div class="container">
 
 <div id="message" class="message"></div>
+
+<div class="card">
+  <div class="yearbar">
+    <div>
+      <label for="academicYear">📅 Academic Year</label>
+      <select id="academicYear" onchange="onAcademicYearChange()"></select>
+      <div class="year-note">ಯಾವ ವರ್ಷ ಆಯ್ಕೆ ಮಾಡುತ್ತೀರೋ ಆ ವರ್ಷದ Subjects ಮಾತ್ರ Load / Save ಆಗುತ್ತವೆ.</div>
+    </div>
+  </div>
+</div>
 
 <div class="card">
 <h2>ವಿಷಯ ವಿವರ</h2>
@@ -169,6 +180,8 @@ const db = window.supabase.createClient(
 );
 
 let editingId = null;
+let selectedAcademicYear = "";
+const YEAR_STORAGE_KEY = "school_result_academic_years";
 
 const SUBJECTS = {
     "01K":"ಕನ್ನಡ",
@@ -181,7 +194,41 @@ const SUBJECTS = {
 
 document.addEventListener("DOMContentLoaded", async ()=>{
     await testConnection();
+    await initAcademicYears();
 });
+
+async function initAcademicYears(){
+    const years = new Set();
+    try{
+        const raw = localStorage.getItem(YEAR_STORAGE_KEY);
+        if(raw){ JSON.parse(raw).forEach(y=>{ if(/^\d{4}-\d{2}$/.test(String(y))) years.add(String(y)); }); }
+    }catch(e){}
+    try{
+        const {data,error}=await db.from("settings").select("academic_year").limit(1);
+        if(!error && data && data[0] && /^\d{4}-\d{2}$/.test(String(data[0].academic_year||""))) years.add(String(data[0].academic_year));
+    }catch(e){}
+    if(!years.size) years.add("2026-27");
+    const list=[...years].sort((a,b)=>parseInt(b)-parseInt(a));
+    try{ localStorage.setItem(YEAR_STORAGE_KEY,JSON.stringify(list)); }catch(e){}
+    const sel=document.getElementById("academicYear");
+    sel.innerHTML=list.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("");
+    const saved=localStorage.getItem("subject_master_selected_year");
+    selectedAcademicYear=(saved && list.includes(saved))?saved:list[0];
+    sel.value=selectedAcademicYear;
+    await loadSubjects();
+}
+
+async function onAcademicYearChange(){
+    selectedAcademicYear=document.getElementById("academicYear").value;
+    localStorage.setItem("subject_master_selected_year",selectedAcademicYear);
+    editingId=null;
+    document.getElementById("saveBtn").disabled=false;
+    document.getElementById("updateBtn").disabled=true;
+    document.getElementById("deleteBtn").disabled=true;
+    clearForm();
+    await loadSubjects();
+    showMessage("✅ "+selectedAcademicYear+" ವರ್ಷದ Subjects ತೋರಿಸಲಾಗುತ್ತಿದೆ.","info");
+}
 
 async function testConnection(){
     try{
@@ -322,6 +369,9 @@ async function saveSubject(){
     const marks=Number(document.getElementById("maxMarks").value);
     const order=Number(document.getElementById("displayOrder").value);
     const active=document.getElementById("isActive").value==="true";
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
+    if(!year){ showMessage("Academic Year ಆಯ್ಕೆ ಮಾಡಿ.","error"); return; }
 
     if(!cls){
         showMessage("ತರಗತಿ ಆಯ್ಕೆ ಮಾಡಿ.","error");
@@ -370,6 +420,7 @@ async function saveSubject(){
             .select("id")
             .eq("class_name",cls)
             .eq("subject_code",code)
+            .eq("academic_year",year)
             .limit(1);
 
         if(checkError) throw checkError;
@@ -398,6 +449,8 @@ async function saveSubject(){
         const {error}=await db
             .from("subjects")
             .insert([{
+                academic_year:year,
+                academic_year:year,
                 class_name:cls,
                 subject_code:code,
                 subject_name:name,
@@ -434,6 +487,7 @@ async function loadSubjects(){
 
     const cls=document.getElementById("classSelect").value;
     const exam=document.getElementById("examType").value;
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
 
     const tbody=document.getElementById("subjectTableBody");
 
@@ -453,6 +507,7 @@ async function loadSubjects(){
         const {data,error}=await db
             .from("subjects")
             .select("*")
+            .eq("academic_year",year)
             .eq("class_name",cls)
             .order("display_order",{ascending:true})
             .order("subject_code",{ascending:true});
@@ -461,6 +516,7 @@ async function loadSubjects(){
 
         document.getElementById("listTitle").textContent =
             "Subject List — " +
+            year + " — " +
             cls +
             " — " +
             examName(exam);
@@ -555,6 +611,11 @@ async function editSubject(id){
 
         const cls=data.class_name;
         const exam=document.getElementById("examType").value;
+        if(data.academic_year){
+            selectedAcademicYear=String(data.academic_year);
+            document.getElementById("academicYear").value=selectedAcademicYear;
+            localStorage.setItem("subject_master_selected_year",selectedAcademicYear);
+        }
 
         document.getElementById("classSelect").value=cls;
         document.getElementById("subjectCode").value=data.subject_code;
@@ -622,6 +683,9 @@ async function updateSubject(){
     const marks=Number(document.getElementById("maxMarks").value);
     const order=Number(document.getElementById("displayOrder").value);
     const active=document.getElementById("isActive").value==="true";
+    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
+    if(!year){ showMessage("Academic Year ಆಯ್ಕೆ ಮಾಡಿ.","error"); return; }
 
     if(!cls || !exam || !code || !name || !marks){
 
