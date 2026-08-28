@@ -731,7 +731,8 @@ async function loadStudents(){
         const studentResponse =
             await supabaseClient
                 .from("students")
-                .select("*");
+                .select("*")
+                .eq("academic_year", appSettings.academic_year);
 
 
         if(studentResponse.error){
