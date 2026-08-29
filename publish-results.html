@@ -271,21 +271,123 @@ async function loadResults(){
       markRows=mr.data||[];
     }
 
-    const marksByResult={};
+    /*
+     * PUBLISH RULE:
+     * Marks Entry displays the CURRENT 6 active Subject Master subjects.
+     *
+     * Old/duplicate Subject Master rows may still exist in result_marks.
+     * Therefore we must NOT count every distinct subject_id in result_marks.
+     * We first build the exact current 6-subject set using the SAME rule
+     * used by Marks Entry: active + academic year + class, duplicate
+     * subject names collapsed to the latest Subject Master row.
+     */
+
+    const subjectResponse=await db.from("subjects")
+      .select("*")
+      .eq("is_active",true)
+      .eq("academic_year",academicYear);
+
+    if(subjectResponse.error) throw subjectResponse.error;
+
+    function normalizePublishSubjectName(name){
+      const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+      const map={
+        "ಕನ್ನಡ":"kannada",
+        "kannada":"kannada",
+        "ಇಂಗ್ಲಿಷ್":"english",
+        "ಇಂಗ್ಲೀಷ್":"english",
+        "english":"english",
+        "ಹಿಂದಿ":"hindi",
+        "hindi":"hindi",
+        "ಗಣಿತ":"mathematics",
+        "maths":"mathematics",
+        "math":"mathematics",
+        "mathematics":"mathematics",
+        "ವಿಜ್ಞಾನ":"science",
+        "science":"science",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science",
+        "ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
+        "social science":"social science",
+        "socialscience":"social science"
+      };
+      return map[n]||n;
+    }
+
+    function publishSubjectName(row){
+      return row.subject_name ?? row.subject ?? row.name ?? "";
+    }
+
+    function chooseLatestPublishSubject(group){
+      return [...group].sort((a,b)=>{
+        const aid=Number(a.id), bid=Number(b.id);
+        if(Number.isFinite(aid)&&Number.isFinite(bid)&&aid!==bid) return bid-aid;
+        const at=new Date(a.updated_at||a.created_at||0).getTime();
+        const bt=new Date(b.updated_at||b.created_at||0).getTime();
+        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt) return bt-at;
+        return Number(a.display_order||999)-Number(b.display_order||999);
+      })[0];
+    }
+
+    const currentSubjectGroups=new Map();
+
+    (subjectResponse.data||[])
+      .filter(subject=>{
+        const raw=subject.class_name ?? subject.class ?? subject.standard ?? subject.className ?? "";
+        const digits=String(raw).match(/\d+/);
+        return digits && String(Number(digits[0]))===String(Number(currentClass));
+      })
+      .forEach(subject=>{
+        const key=normalizePublishSubjectName(publishSubjectName(subject));
+        if(!key) return;
+        if(!currentSubjectGroups.has(key)) currentSubjectGroups.set(key,[]);
+        currentSubjectGroups.get(key).push(subject);
+      });
+
+    const currentSubjects=Array.from(currentSubjectGroups.values())
+      .map(chooseLatestPublishSubject)
+      .sort((a,b)=>{
+        const ao=Number(a.display_order||999), bo=Number(b.display_order||999);
+        if(ao!==bo) return ao-bo;
+        return Number(a.id||999999)-Number(b.id||999999);
+      });
+
+    /*
+     * Marks Entry screenshot shows 6 current subjects.
+     * Use those exact Subject Master IDs only.
+     */
+    const currentSubjectIds=new Set(
+      currentSubjects.map(s=>String(s.id))
+    );
+
+    const marksCountByResult={};
+
     markRows.forEach(m=>{
-      if(m.marks!==null && m.marks!==undefined && m.marks!==""){
-        marksByResult[m.exam_result_id]=true;
+      if(
+        currentSubjectIds.has(String(m.subject_id)) &&
+        m.marks!==null &&
+        m.marks!==undefined &&
+        String(m.marks).trim()!==""
+      ){
+        if(!marksCountByResult[m.exam_result_id]){
+          marksCountByResult[m.exam_result_id]=new Set();
+        }
+        marksCountByResult[m.exam_result_id].add(String(m.subject_id));
       }
     });
 
     rows=students.map((s,i)=>{
       const result=results.find(r=>String(r.student_id)===String(s.id))||null;
-      const hasMarks=!!(result && marksByResult[result.id]);
+
+      const subjectCount=result && marksCountByResult[result.id]
+        ? marksCountByResult[result.id].size
+        : 0;
+
       return {
         student:s,
         index:i,
         result:result,
-        hasMarks:hasMarks
+        subjectCount:subjectCount,
+        hasMarks:!!(result && subjectCount===6)
       };
     });
 
@@ -310,8 +412,8 @@ function render(){
     const res=r.result;
     const hasMarks=!!r.hasMarks;
     const recordText=hasMarks
-      ? "<span class='published'>✅ Result record ಇದೆ</span>"
-      : "<span class='unpublished'>❌ Result record ಇಲ್ಲ</span>";
+      ? "<span class='published'>✅ 6/6 Subjects Marks ಇದೆ</span>"
+      : `<span class='unpublished'>❌ ${Number(r.subjectCount||0)}/6 Subjects Marks</span>`;
 
     const status=!hasMarks
       ? "<span class='unpublished'>⏳ NOT PUBLISHED</span>"
@@ -363,6 +465,12 @@ async function changePublish(value){
 
     for(const r of selected){
       if(!r.result || !r.hasMarks){
+        skipped++;
+        continue;
+      }
+
+      /* Never publish unless all 6 subjects have marks. */
+      if(value===true && Number(r.subjectCount||0)!==6){
         skipped++;
         continue;
       }
