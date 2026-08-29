@@ -914,16 +914,26 @@ function buildWhatsAppMessage(){
             const max = getMaxMarks(student, result.exam_type, subject);
             if(Number.isFinite(Number(max)) && Number(max) > 0) maximum += Number(max);
             const hasMark = value !== null && value !== undefined && value !== "";
-            if(hasMark){
-                total += Number(value);
+            const isAbsent = hasMark && String(value).trim().toUpperCase() === "AB";
+
+            if(hasMark && !isAbsent){
+                const numericValue = Number(value);
+                if(Number.isFinite(numericValue)){
+                    total += numericValue;
+                }
+                entered++;
+            }else if(isAbsent){
                 entered++;
             }
+
             const name = subject.subject_name || "";
             const code = exactSubjectMasterCode(subject);
             const maxText = (max === null || max === undefined || max === "") ? "-" : Number(max).toString();
-            const markText = hasMark
-                ? `${value}/${maxText} (${grade(value,max)})`
-                : `-/${maxText}`;
+            const markText = isAbsent
+                ? `AB/${maxText}`
+                : hasMark
+                    ? `${value}/${maxText} (${grade(value,max)})`
+                    : `-/${maxText}`;
             lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
         });
 
