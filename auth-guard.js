@@ -73,20 +73,77 @@ student-result.html public page ಆಗಿರುವುದರಿಂದ
 
     function goToLogin() {
 
-        if (redirecting) {
-            return;
-        }
-
-        redirecting = true;
-
-        console.log(
-            "AUTH GUARD: Login required."
-        );
-
-        window.location.replace(
-            LOGIN_PAGE
-        );
+    if (redirecting) {
+        return;
     }
+
+    redirecting = true;
+
+    console.log(
+        "AUTH GUARD: Login required."
+    );
+
+    // Show 404 page instead of opening login
+    document.documentElement.style.visibility = "visible";
+
+    document.title = "404 - File not found";
+
+    document.body.innerHTML = `
+        <div style="
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#f6f6f6;
+            font-family:Arial,sans-serif;
+            text-align:center;
+            padding:20px;
+        ">
+
+            <div>
+
+                <div style="
+                    font-size:90px;
+                    font-weight:700;
+                    color:#333;
+                    line-height:1;
+                ">
+                    404
+                </div>
+
+                <h2 style="
+                    margin:20px 0 10px;
+                    color:#333;
+                    font-size:28px;
+                ">
+                    File not found
+                </h2>
+
+                <p style="
+                    color:#666;
+                    font-size:16px;
+                    margin:0;
+                ">
+                    The requested page could not be found.
+                </p>
+
+            </div>
+
+        </div>
+    `;
+
+    // Prevent the protected page from being restored
+    // using browser history
+    try {
+        window.history.replaceState(
+            null,
+            "",
+            window.location.href
+        );
+    } catch (e) {
+        console.log("History protection:", e);
+    }
+}
 
 
     /* =====================================================
