@@ -533,59 +533,44 @@ function isKannada(subject){
 ===================================================== */
 
 function maximumMarks(subject){
-    /* Subject Master is the single source of truth for Maximum Marks. */
-    const dbMax = Number(subject && subject.max_marks);
-    if(Number.isFinite(dbMax) && dbMax > 0){
-        return dbMax;
-    }
+    /*
+       SUBJECT MASTER = SINGLE SOURCE OF TRUTH.
+       Subject Master saves exam-wise Maximum Marks in localStorage
+       using: subject_marks_[class]_[exam]_[subjectCode]
+       Therefore read that value FIRST.  Only if it does not exist,
+       use the Supabase subjects.max_marks value as fallback.
+    */
+    const cls = currentClass === "8"
+        ? "8ನೇ ತರಗತಿ"
+        : currentClass + "ನೇ ತರಗತಿ";
 
-    /* Backward compatibility for old Subject Master exam-specific marks. */
-    const cls=currentClass;
-    const exam=currentExam;
-    const code=String(subjectCode(subject)||"");
-    const keys=[];
-    if(currentAcademicYear){
-        keys.push("subject_marks_" + currentAcademicYear + "_" + (
-            cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-        ) + "_" + exam + "_" + code);
-    }
-    keys.push("subject_marks_" + (
-        cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-    ) + "_" + exam + "_" + code);
+    const exam = currentExam;
+    const code = String(subjectCode(subject) || "").trim();
 
-    for(const key of keys){
-        const saved=localStorage.getItem(key);
-        if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
+    if(cls && exam && code){
+        const exactKey =
+            "subject_marks_" + cls + "_" + exam + "_" + code;
+
+        const saved = localStorage.getItem(exactKey);
+
+        if(
+            saved !== null &&
+            saved !== "" &&
+            Number.isFinite(Number(saved)) &&
+            Number(saved) > 0
+        ){
             return Number(saved);
         }
     }
 
+    const dbMax = Number(subject && subject.max_marks);
+
+    if(Number.isFinite(dbMax) && dbMax > 0){
+        return dbMax;
+    }
+
     return 100;
 }
-
-/* =====================================================
-   ABSENT / MARK INPUT HELPERS
-===================================================== */
-
-function isAbsentMark(value){
-    const v = String(value ?? "").trim().toUpperCase();
-    return v === "AB" || v === "ABSENT";
-}
-
-function numericMark(value){
-    if(isAbsentMark(value)) return null;
-    if(value === null || value === undefined || String(value).trim()===""){
-        return null;
-    }
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-}
-
-function displayMarkValue(value){
-    if(isAbsentMark(value)) return "AB";
-    return value ?? "";
-}
-
 
 /* =====================================================
    PERCENTAGE BASED GRADING
@@ -680,41 +665,18 @@ function gradeByRawMark(mark,bands){
    applied: A+ 45-50, A 35-44, B+ 25-34, B 15-24, C 0-14.
 ===================================================== */
 function grade8(mark,max){
+    /*
+       8th class ALL SUBJECTS:
+       A+ = 90-100%
+       A  = 70-89%
+       B+ = 50-69%
+       B  = 30-49%
+       C  = 0-29%
 
-    const m=Number(mark);
-    const mx=Number(max);
-
-    if(!Number.isFinite(m) || !Number.isFinite(mx) || mx<=0){
-        return "";
-    }
-
-    /* FA */
-    if(mx===10){
-        return gradeByRawMark(m,GRADE_8_FA);
-    }
-
-    /* SA */
-    if(mx===30){
-        return gradeByRawMark(m,GRADE_8_SA);
-    }
-
-    /* Annual */
-    if(mx===100){
-        return gradeByRawMark(m,GRADE_8_ANNUAL);
-    }
-
-    /* 50-mark TERM: same grading bands scaled to 50 */
-    if(mx===50){
-        if(m>=45) return "A+";
-        if(m>=35) return "A";
-        if(m>=25) return "B+";
-        if(m>=15) return "B";
-        return "C";
-    }
-
-    /* Any other maximum entered in Subject Master:
-       apply the same 8th-class percentage scale. */
-    return gradeByPercentage(m,mx,GRADE_8_ANNUAL);
+       Maximum Marks can be any value entered in Subject Master.
+       Grade is always calculated from the percentage.
+    */
+    return gradeByPercentage(mark,max,GRADE_8_ANNUAL);
 }
 
 function grade910(mark,subject){
@@ -1302,10 +1264,10 @@ function renderMarksTable(){
 
                 "<input " +
                 "class='mark-input' " +
-                "type='text' " +
-                "inputmode='decimal' " +
-                "autocomplete='off' " +
-                "minlength='0' " +
+                "type='number' " +
+                "min='0' " +
+                "max='" + max + "' " +
+                "step='0.01' " +
                 "value='" +
                 escapeHtml(oldMark) +
                 "' " +
@@ -1339,15 +1301,15 @@ function renderMarksTable(){
                 "'>" +
 
                 (
-                    oldMark !== "" && !isAbsentMark(oldMark)
+                    oldMark !== ""
                     ?
                     subjectGrade(
-                        numericMark(oldMark),
+                        Number(oldMark),
                         max,
                         subject
                     )
                     :
-                    (isAbsentMark(oldMark) ? "AB" : "")
+                    ""
                 ) +
 
                 "</td>";
@@ -1417,77 +1379,36 @@ function renderMarksTable(){
 
 function markChanged(input){
 
-    let raw = String(input.value ?? "").trim();
+    const value =
+        input.value === ""
+        ?
+        ""
+        :
+        Number(input.value);
 
-    /* Allow AB / Absent without the number spinner. */
-    if(isAbsentMark(raw)){
-        input.value = "AB";
+    const max =
+        Number(input.dataset.max);
 
-        const gradeElement =
-            document.getElementById(
-                "grade-" +
-                input.dataset.student +
-                "-" +
-                input.dataset.subject
-            );
-
-        if(gradeElement){
-            gradeElement.textContent = "AB";
-        }
-
-        calculateStudent(input.dataset.student);
-        updateSummary();
-        return;
-    }
-
-    /* Empty is allowed. */
-    if(raw === ""){
-        const gradeElement =
-            document.getElementById(
-                "grade-" +
-                input.dataset.student +
-                "-" +
-                input.dataset.subject
-            );
-
-        if(gradeElement) gradeElement.textContent = "";
-
-        calculateStudent(input.dataset.student);
-        updateSummary();
-        return;
-    }
-
-    /* Numeric marks only beyond this point. */
-    const value = Number(raw);
-    const max = Number(input.dataset.max);
 
     if(
-        !Number.isFinite(value) ||
-        value < 0 ||
-        value > max
+        value !== "" &&
+        (
+            value < 0 ||
+            value > max
+        )
     ){
+
         alert(
-            "0 ರಿಂದ " + max +
-            " marks ಅಥವಾ AB ಮಾತ್ರ ನಮೂದಿಸಿ."
+            "ಗರಿಷ್ಠ " +
+            max +
+            " marks ಮಾತ್ರ."
         );
+
         input.value = "";
 
-        const gradeElement =
-            document.getElementById(
-                "grade-" +
-                input.dataset.student +
-                "-" +
-                input.dataset.subject
-            );
-
-        if(gradeElement) gradeElement.textContent = "";
-
-        calculateStudent(input.dataset.student);
-        updateSummary();
         return;
     }
 
-    input.value = String(value);
 
     const subject =
         subjects.find(
@@ -1495,6 +1416,7 @@ function markChanged(input){
             String(s.id) ===
             String(input.dataset.subject)
         );
+
 
     const gradeElement =
         document.getElementById(
@@ -1504,7 +1426,14 @@ function markChanged(input){
             input.dataset.subject
         );
 
-    if(gradeElement){
+
+    if(value === ""){
+
+        gradeElement.textContent = "";
+
+    }
+    else{
+
         gradeElement.textContent =
             subjectGrade(
                 value,
@@ -1513,9 +1442,14 @@ function markChanged(input){
             );
     }
 
-    calculateStudent(input.dataset.student);
+
+    calculateStudent(
+        input.dataset.student
+    );
+
     updateSummary();
 }
+
 
 /* =====================================================
    CALCULATE STUDENT
@@ -1545,16 +1479,13 @@ function calculateStudent(studentId){
 
         if(
             input &&
-            input.value !== "" &&
-            !isAbsentMark(input.value)
+            input.value !== ""
         ){
 
-            const numeric = numericMark(input.value);
+            total +=
+                Number(input.value);
 
-            if(numeric !== null){
-                total += numeric;
-                entered++;
-            }
+            entered++;
         }
     });
 
@@ -1776,17 +1707,10 @@ async function saveMarks(){
                     continue;
                 }
 
-                const rawValue =
-                    String(input.value ?? "").trim();
-
                 const marks =
-                    rawValue === ""
+                    input.value === ""
                     ? null
-                    : (
-                        isAbsentMark(rawValue)
-                        ? "AB"
-                        : Number(rawValue)
-                    );
+                    : Number(input.value);
 
                 const max =
                     maximumMarks(subject);
@@ -1899,7 +1823,7 @@ async function saveMarks(){
             }
         }
 
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 20;
 
         for(
             let i = 0;
@@ -1940,34 +1864,13 @@ async function saveMarks(){
         }
 
         /* ---------------------------------------------
-           Fast screen refresh
-           Do not make another Supabase read after saving.
-           The inputs already contain the saved values.
+           Refresh screen
         --------------------------------------------- */
 
-        markRows.forEach(row => {
-            const student = students.find(
-                s => String(getValue(s,["id","student_id"])) === String(row.studentId)
-            );
-
-            if(student){
-                if(!student.marks) student.marks = {};
-                student.marks[row.subjectId] = row.marks;
-            }
-        });
-
-        students.forEach(student => {
-            const studentId = getValue(student,["id","student_id"]);
-            subjects.forEach(subject => {
-                const input = getInput(studentId,subject.id);
-                if(input){
-                    if(!student.marks) student.marks = {};
-                    student.marks[subject.id] = input.value;
-                }
-            });
-        });
+        await loadSavedMarks();
 
         renderMarksTable();
+
         updateSummary();
 
         showMessage(
