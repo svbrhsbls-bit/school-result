@@ -81,82 +81,10 @@ student-result.html public page ಆಗಿರುವುದರಿಂದ
 
     console.log("AUTH GUARD: Login required.");
 
-    document.open();
-
-    document.write(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>404 - File not found</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #ffffff;
-            font-family: Arial, sans-serif;
-            color: #333;
-            text-align: center;
-        }
-
-        .error-box {
-            padding: 30px;
-        }
-
-        .error-code {
-            font-size: 96px;
-            font-weight: bold;
-            line-height: 1;
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            font-size: 28px;
-            margin: 0 0 12px;
-        }
-
-        p {
-            font-size: 16px;
-            color: #666;
-            margin: 0;
-        }
-    </style>
-</head>
-
-<body>
-
-    <div class="error-box">
-
-        <div class="error-code">
-            404
-        </div>
-
-        <h2>
-            File not found
-        </h2>
-
-        <p>
-            The requested page could not be found.
-        </p>
-
-    </div>
-
-</body>
-</html>
-    `);
-
-    document.close();
+    // GitHub Pages 404 page
+    window.location.replace(
+        "/school-result/page-not-found-404"
+    );
 }
 
     /* =====================================================
