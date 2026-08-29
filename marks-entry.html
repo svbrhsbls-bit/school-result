@@ -806,44 +806,260 @@ async function loadAppSettings(){
     }
 }
 
-async function loadAcademicYears(){
-    const select=document.getElementById("academicYearSelect");
-    if(!select) return;
+async function loadAcademicYears() {
 
-    const years=new Set();
-    if(currentAcademicYear) years.add(currentAcademicYear);
+    const select =
+        document.getElementById("academicYearSelect");
 
-    try{
-        const [studentsRes, subjectsRes] = await Promise.all([
-            supabaseClient.from("students").select("academic_year"),
-            supabaseClient.from("subjects").select("academic_year")
-        ]);
-        (studentsRes.data||[]).forEach(r=>{ if(r.academic_year) years.add(String(r.academic_year).trim()); });
-        (subjectsRes.data||[]).forEach(r=>{ if(r.academic_year) years.add(String(r.academic_year).trim()); });
-    }catch(e){ console.warn("Academic years load:",e.message||e); }
+    if (!select) {
+        console.warn("Academic Year dropdown not found.");
+        return;
+    }
 
-    const list=Array.from(years).filter(Boolean).sort((a,b)=>
-        parseInt(b.match(/\d{4}/)?.[0]||0)-parseInt(a.match(/\d{4}/)?.[0]||0)
-    );
-    select.innerHTML=list.length
-        ? list.map(y=>`<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join("")
-        : `<option value="">${escapeHtml(currentAcademicYear||"Year not found")}</option>`;
+    try {
 
-    const saved=localStorage.getItem("marks_entry_academic_year");
-    currentAcademicYear=(saved && list.includes(saved)) ? saved : (list.includes(currentAcademicYear) ? currentAcademicYear : (list[0]||currentAcademicYear));
-    select.value=currentAcademicYear;
+        /* =================================================
+           SETTINGS CURRENT YEAR
+           Settings table is the MASTER source
+           ================================================= */
 
-    if(!select.dataset.bound){
-        select.addEventListener("change",()=>{
-            currentAcademicYear=select.value;
-            localStorage.setItem("marks_entry_academic_year",currentAcademicYear);
-            document.getElementById("academicYearHeader").textContent=currentAcademicYear ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+currentAcademicYear : "";
-            students=[]; subjects=[];
-            document.getElementById("marksTableContainer").innerHTML="<p>Academic Year ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ Students Load ಒತ್ತಿ.</p>";
-            document.getElementById("summaryBody").innerHTML="";
-            document.getElementById("studentCount").textContent="ಒಟ್ಟು ವಿದ್ಯಾರ್ಥಿಗಳು: 0";
+        const {
+            data: settingsData,
+            error: settingsError
+        } = await supabaseClient
+            .from("settings")
+            .select("academic_year")
+            .eq("id", 1)
+            .maybeSingle();
+
+        if (settingsError) {
+            throw settingsError;
+        }
+
+
+        let settingsYear =
+            String(
+                settingsData?.academic_year || ""
+            ).trim();
+
+
+        /*
+         * If Settings year is available,
+         * make it the current year immediately.
+         */
+
+        if (settingsYear) {
+            currentAcademicYear = settingsYear;
+        }
+
+
+        /* =================================================
+           LOAD AVAILABLE YEARS
+           From academic_years table only
+           ================================================= */
+
+        const {
+            data: yearRows,
+            error: yearError
+        } = await supabaseClient
+            .from("academic_years")
+            .select("academic_year")
+            .order("academic_year", {
+                ascending: false
+            });
+
+        if (yearError) {
+            throw yearError;
+        }
+
+
+        const years = [];
+
+
+        (yearRows || []).forEach(row => {
+
+            const year =
+                String(
+                    row.academic_year || ""
+                ).trim();
+
+            if (
+                year &&
+                !years.includes(year)
+            ) {
+                years.push(year);
+            }
+
         });
-        select.dataset.bound="true";
+
+
+        /*
+         * Settings current year must always
+         * be present in the dropdown.
+         */
+
+        if (
+            settingsYear &&
+            !years.includes(settingsYear)
+        ) {
+            years.unshift(settingsYear);
+        }
+
+
+        /*
+         * If no years are available,
+         * at least show Settings year.
+         */
+
+        if (
+            years.length === 0 &&
+            settingsYear
+        ) {
+            years.push(settingsYear);
+        }
+
+
+        /* =================================================
+           FILL DROPDOWN
+           ================================================= */
+
+        select.innerHTML = "";
+
+
+        years.forEach(year => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = year;
+            option.textContent = year;
+
+            select.appendChild(option);
+
+        });
+
+
+        /* =================================================
+           SETTINGS YEAR = FIRST PRIORITY
+
+           DO NOT USE old localStorage year here.
+           ================================================= */
+
+        if (
+            settingsYear &&
+            years.includes(settingsYear)
+        ) {
+
+            currentAcademicYear =
+                settingsYear;
+
+        }
+        else if (
+            currentAcademicYear &&
+            years.includes(currentAcademicYear)
+        ) {
+
+            /* keep current */
+
+        }
+        else if (years.length > 0) {
+
+            currentAcademicYear =
+                years[0];
+
+        }
+
+
+        /* =================================================
+           SELECT CURRENT YEAR
+           ================================================= */
+
+        select.value =
+            currentAcademicYear || "";
+
+
+        /* =================================================
+           UPDATE HEADER
+           ================================================= */
+
+        const header =
+            document.getElementById(
+                "academicYearHeader"
+            );
+
+        if (header) {
+
+            header.textContent =
+                currentAcademicYear
+                    ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - " +
+                      currentAcademicYear
+                    : "";
+
+        }
+
+
+        /*
+         * Synchronize localStorage.
+         * It is NOT used as the master source.
+         */
+
+        if (currentAcademicYear) {
+
+            localStorage.setItem(
+                "marks_entry_academic_year",
+                currentAcademicYear
+            );
+
+        }
+
+
+    }
+    catch (error) {
+
+        console.error(
+            "Academic Year Load Error:",
+            error
+        );
+
+
+        /*
+         * Never leave the dropdown
+         * in Loading state.
+         */
+
+        select.innerHTML = "";
+
+
+        const fallback =
+            currentAcademicYear || "2026-27";
+
+
+        const option =
+            document.createElement("option");
+
+        option.value = fallback;
+        option.textContent = fallback;
+
+        select.appendChild(option);
+
+        select.value = fallback;
+
+        currentAcademicYear = fallback;
+
+
+        const header =
+            document.getElementById(
+                "academicYearHeader"
+            );
+
+        if (header) {
+
+            header.textContent =
+                "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - " +
+                fallback;
+
+        }
+
     }
 }
 
