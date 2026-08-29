@@ -434,6 +434,109 @@ function getDivision(student){
     ).trim().toUpperCase();
 }
 
+/* =========================================================
+   SUBJECT LOGIC — SAME AS MARKS ENTRY
+========================================================= */
+function classNumber(value){
+    let v=String(value ?? "").trim().toLowerCase();
+    v=v.replace(/೧೦/g,"10").replace(/೯/g,"9").replace(/೮/g,"8");
+    if(v.includes("10")) return "10";
+    if(v.includes("9")) return "9";
+    if(v.includes("8")) return "8";
+    return v;
+}
+
+function subjectCode(subject){
+    return subject?.subject_code ??
+           subject?.code ??
+           subject?.subjectCode ??
+           "";
+}
+
+function subjectName(subject){
+    const code=String(subjectCode(subject)||"").trim().toUpperCase();
+
+    const names={
+        "01K":"ಕನ್ನಡ",
+        "31E":"ಇಂಗ್ಲೀಷ್",
+        "61H":"ಹಿಂದಿ",
+        "81K":"ಗಣಿತ",
+        "83K":"ವಿಜ್ಞಾನ",
+        "85K":"ಸಮಾಜ ವಿಜ್ಞಾನ"
+    };
+
+    if(names[code]) return names[code];
+
+    return subject?.subject_name ??
+           subject?.name ??
+           subject?.subject ??
+           subject?.subjectName ??
+           subject?.title ??
+           "Subject";
+}
+
+function normalizeSubjectKey(name){
+    const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+    const map={
+        "ಕನ್ನಡ":"kannada","kannada":"kannada",
+        "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
+        "ಹಿಂದಿ":"hindi","hindi":"hindi",
+        "ಗಣಿತ":"mathematics","maths":"mathematics",
+        "math":"mathematics","mathematics":"mathematics",
+        "ವಿಜ್ಞಾನ":"science","science":"science",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science",
+        "ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
+        "social science":"social science",
+        "socialscience":"social science"
+    };
+    return map[n]||n;
+}
+
+function chooseLatestSubject(group){
+    return [...group].sort((a,b)=>{
+        const aid=Number(a.id), bid=Number(b.id);
+
+        if(Number.isFinite(aid)&&Number.isFinite(bid)&&aid!==bid)
+            return bid-aid;
+
+        const at=new Date(a.updated_at||a.created_at||0).getTime();
+        const bt=new Date(b.updated_at||b.created_at||0).getTime();
+
+        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)
+            return bt-at;
+
+        return Number(a.display_order||999)-Number(b.display_order||999);
+    })[0];
+}
+
+function uniqueCurrentSubjects(rows){
+    const groups=new Map();
+
+    (rows||[])
+        .filter(r=>r.is_active!==false)
+        .forEach(row=>{
+            const key=normalizeSubjectKey(subjectName(row));
+            if(!key) return;
+
+            if(!groups.has(key))
+                groups.set(key,[]);
+
+            groups.get(key).push(row);
+        });
+
+    return Array.from(groups.values())
+        .map(chooseLatestSubject)
+        .sort((a,b)=>{
+            const ao=Number(a.display_order||999);
+            const bo=Number(b.display_order||999);
+
+            if(ao!==bo) return ao-bo;
+
+            return Number(a.id||999999)-Number(b.id||999999);
+        });
+}
+
+
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
 
@@ -726,77 +829,84 @@ async function viewResult(){
         const student=matches[0];
 
         /* ---------------------------------------------
-           2. Load subjects for student's class
+           2. Load subjects EXACTLY like Marks Entry
         --------------------------------------------- */
-        const className=student.class_name;
+        const resultAcademicYear=String(
+            student.academic_year ||
+            appSettings.academic_year ||
+            ""
+        ).trim();
 
-        const {data:subjects,error:subjectError}=await db
+        const resultClass=classNumber(
+            student.class_name ??
+            student.class ??
+            ""
+        );
+
+        const {data:subjectRows,error:subjectError}=await db
             .from("subjects")
             .select("*")
-            .eq("class_name",className)
             .eq("is_active",true)
-            .order("display_order",{ascending:true});
+            .eq("academic_year",resultAcademicYear);
 
         if(subjectError)
             throw subjectError;
 
-        if(!subjects || !subjects.length)
-            throw new Error(
-                `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
+        const classSubjectRows=(subjectRows||[]).filter(subject=>{
+            const cls=classNumber(
+                subject.class_name ??
+                subject.class ??
+                subject.standard ??
+                subject.className ??
+                ""
             );
+            return cls===resultClass;
+        });
 
-        /* =========================================================
-   SUBJECT MASTER — CURRENT ACTIVE CODE ONLY
-========================================================= */
-const normalizeSubjectName = (name) =>
-    String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+        const subjectsForResult=uniqueCurrentSubjects(classSubjectRows);
 
-const subjectGroups = new Map();
-(subjects || []).forEach(subject => {
-    const key = normalizeSubjectName(subject.subject_name);
-    if(!key) return;
-    if(!subjectGroups.has(key)) subjectGroups.set(key, []);
-    subjectGroups.get(key).push(subject);
-});
-
-const uniqueSubjects = [];
-subjectGroups.forEach(group => {
-    /* If duplicate historical rows exist, highest ID is the newest
-       Subject Master record and therefore its current code is used. */
-    group.sort((a,b) => {
-        const aId = Number(a.id), bId = Number(b.id);
-        if(Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) return bId-aId;
-        return Number(a.display_order || 999) - Number(b.display_order || 999);
-    });
-    const chosen = {...group[0]};
-    /* Only for finding old marks; display/WhatsApp always uses chosen.subject_code. */
-    chosen._allSubjectIds = group.map(x => x.id);
-    uniqueSubjects.push(chosen);
-});
-
-uniqueSubjects.sort((a,b) =>
-    Number(a.display_order || 999) - Number(b.display_order || 999)
-);
-
-const subjectsForResult = uniqueSubjects.slice(0, 6);
+        if(!subjectsForResult.length){
+            throw new Error(
+                `${student.class_name || resultClass}ನೇ ತರಗತಿಗೆ Subject Masterನಲ್ಲಿ active subjects ಸಿಗಲಿಲ್ಲ.`
+            );
+        }
 
         /* ---------------------------------------------
-           3. Load only published results
-           Existing database uses exam_results.exam_type
-           and exam_results.published.
+           3. Load the selected exam result
+           Do NOT require published=true. The WhatsApp result
+           must use the marks already saved by Marks Entry.
         --------------------------------------------- */
         const examTypes=[
             "HALF_YEARLY",
             "ANNUAL"
         ];
 
+        const selectedExam=String(
+            $("examSelect")?.value ||
+            $("examType")?.value ||
+            "HALF_YEARLY"
+        ).trim();
+
         const {data:results,error:resultError}=await db
             .from("exam_results")
             .select("id,student_id,exam_type,published")
             .eq("student_id",student.id)
             .in("exam_type",examTypes)
-            .eq("published",true)
             .order("id",{ascending:true});
+
+        if(resultError)
+            throw resultError;
+
+        /* Prefer the exam selected on the page. */
+        if(results && results.length && selectedExam){
+            const selected=results.filter(
+                r=>String(r.exam_type).trim()===selectedExam
+            );
+            if(selected.length){
+                results.length=0;
+                selected.forEach(r=>results.push(r));
+            }
+        }
 
         if(resultError)
             throw resultError;
@@ -854,6 +964,39 @@ const subjectsForResult = uniqueSubjects.slice(0, 6);
 }
 
 /* =========================================================
+   WHATSAPP STUDENT INFO — ROBUST FIELD MAPPING
+========================================================= */
+function getStudentClassForWhatsApp(student){
+    return String(
+        student?.class_name ??
+        student?.class ??
+        student?.standard ??
+        student?.className ??
+        ""
+    ).trim();
+}
+
+function getStudentAcademicYearForWhatsApp(student, fallback=""){
+    return String(
+        student?.academic_year ??
+        student?.academicYear ??
+        fallback ??
+        appSettings.academic_year ??
+        ""
+    ).trim();
+}
+
+function getStudentDivisionForWhatsApp(student){
+    return String(
+        student?.division ??
+        student?.section ??
+        student?.division_name ??
+        student?.section_name ??
+        ""
+    ).trim().toUpperCase();
+}
+
+/* =========================================================
    WHATSAPP RESULT STATE
 ========================================================= */
 let currentResultData = {
@@ -871,57 +1014,105 @@ function cleanIndianMobile(value){
 }
 
 function buildWhatsAppMessage(){
-    const {student,subjects,results,marksMap} = currentResultData;
+    const {student,subjects,results,marksMap}=currentResultData;
     if(!student) return "";
 
-    const lines = [];
-    lines.push(`*${appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು"}*`);
-    if(appSettings.school_address) lines.push(appSettings.school_address);
-    lines.push(`ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${
-        student.academic_year ||
-        appSettings.academic_year ||
-        "2026-27"
-    }`);
+    const lines=[];
+
+    const schoolName=String(appSettings.school_name||"").trim();
+    const schoolAddress=String(appSettings.school_address||"").trim();
+
+    /* School name + address on one line, as requested. */
+    const schoolLine=[schoolName,schoolAddress]
+        .filter(Boolean)
+        .join(" ");
+
+    lines.push(`*${schoolLine || "ಶ್ರೀ ವೀರಬಲ್ಲಾಳ ಗ್ರಾಮಾಂತರ ಪ್ರೌಢಶಾಲೆ"}*`);
+
+    lines.push(
+        `ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${
+            getStudentAcademicYearForWhatsApp(
+                student,
+                $("bulkAcademicYear")?.value || appSettings.academic_year || "2026-27"
+            )
+        }`
+    );
+
     lines.push("");
-    lines.push(`*ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ*`);
+    lines.push("*ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ*");
     lines.push(`ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು: ${getStudentName(student) || "-"}`);
     lines.push(`Roll No: ${student.roll_no || "-"}`);
-    lines.push(`ತರಗತಿ: ${student.class_name || "-"}`);
-    lines.push(`ವಿಭಾಗ: ${getDivision(student) || "-"}`);
+    lines.push(`ತರಗತಿ: ${getStudentClassForWhatsApp(student) || "-"}`);
+    lines.push(`ವಿಭಾಗ: ${getStudentDivisionForWhatsApp(student) || "-"}`);
     lines.push("");
 
-    results.forEach(result => {
+    results.forEach(result=>{
         lines.push(`*${examDisplayName(result.exam_type)}*`);
-        let total = 0, maximum = 0, entered = 0;
 
-        subjects.forEach(subject => {
-            const ids = Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds : [subject.id];
-            let value;
-            for(const id of ids){
-                const candidate = marksMap[`${result.id}_${id}`];
-                if(candidate !== null && candidate !== undefined && candidate !== ""){
-                    value = candidate;
-                    break;
+        let total=0;
+        let maximum=0;
+        let entered=0;
+
+        subjects.forEach(subject=>{
+            const value=marksMap[`${result.id}_${subject.id}`];
+
+            const max=Number(
+                getMaxMarks(
+                    student,
+                    result.exam_type,
+                    subject
+                )
+            ) || 0;
+
+            maximum += max;
+
+            const hasMark =
+                value!==null &&
+                value!==undefined &&
+                String(value)!=="";
+
+            if(hasMark){
+                entered++;
+
+                const upper=String(value).trim().toUpperCase();
+
+                if(upper!=="AB"){
+                    const numeric=Number(value);
+
+                    if(Number.isFinite(numeric))
+                        total += numeric;
                 }
             }
-            const max = getMaxMarks(student, result.exam_type, subject);
-            maximum += max;
-            const hasMark = value !== null && value !== undefined && value !== "";
-            if(hasMark){
-                total += Number(value);
-                entered++;
-            }
-            const name = subject.subject_name || "";
-            const code = subject.subject_code || "";
-            const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
-            lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
+
+            /* Only Subject Name - Marks. No code/max/per-subject grade. */
+            lines.push(
+                `${subjectName(subject)}-${hasMark ? value : "-"}`
+            );
         });
 
-        const percentage = maximum ? total / maximum * 100 : 0;
-        const finalGrade = entered ? overallGrade(percentage) : "-";
-        const resultText = entered === 0 ? "PENDING" : (passMark(student, percentage) ? "PASS" : "FAIL");
-        lines.push(`ಒಟ್ಟು: ${total.toFixed(2)}/${maximum.toFixed(2)}`);
+        const percentage=
+            maximum>0
+            ? (total/maximum)*100
+            : 0;
+
+        /* Same completion rule used by Marks Entry. */
+        const complete=
+            entered===subjects.length &&
+            subjects.length>0;
+
+        const finalGrade=
+            complete
+            ? overallGrade(percentage)
+            : "-";
+
+        const resultText=
+            !complete
+            ? "PENDING"
+            : passMark(student,percentage)
+                ? "PASS"
+                : "FAIL";
+
+        lines.push(`ಒಟ್ಟು ಅಂಕ: ${total.toFixed(2)}`);
         lines.push(`Percentage: ${percentage.toFixed(2)}%`);
         lines.push(`Grade: ${finalGrade}`);
         lines.push(`Result: ${resultText}`);
@@ -930,9 +1121,9 @@ function buildWhatsAppMessage(){
 
     lines.push("ಶುಭಾಶಯಗಳೊಂದಿಗೆ,");
     lines.push("ಮುಖ್ಯಶಿಕ್ಷಕರು");
+
     return lines.join("\n");
 }
-
 function sendResultToWhatsApp(){
     try{
         const student=currentResultData?.student;
@@ -970,7 +1161,7 @@ function sendResultToWhatsApp(){
 
         const message=buildWhatsAppMessage();
         const url=
-            "https://api.whatsapp.com/send?phone="+
+            "https://web.whatsapp.com/send?phone="+
             encodeURIComponent(mobile)+
             "&text="+
             encodeURIComponent(message);
@@ -991,7 +1182,18 @@ function sendResultToWhatsApp(){
 ========================================================= */
 function renderResult(student,subjects,results,marksMap){
 
-    currentResultData = {student, subjects, results, marksMap};
+    currentResultData = {
+        student,
+        subjects,
+        results,
+        marksMap,
+        academicYear: getStudentAcademicYearForWhatsApp(
+            student,
+            appSettings.academic_year || ""
+        ),
+        className: getStudentClassForWhatsApp(student),
+        division: getStudentDivisionForWhatsApp(student)
+    };
 
     let html=`
     <div class="card">
@@ -1317,7 +1519,10 @@ async function loadBulkAcademicYears(){
     try{
         await loadAppSettings();
 
-        const currentYear=String(appSettings.academic_year || "").trim();
+        const currentYear=String(
+            appSettings.academic_year ||
+            "2026-27"
+        ).trim();
 
         // Read years from the same Students table used by Marks Entry.
         const {data,error}=await db
@@ -1354,26 +1559,12 @@ async function loadBulkAcademicYears(){
 
 
 async function filterPublishedStudents(){
-    const exam=String($("bulkExam")?.value || "HALF_YEARLY").trim();
-    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
-
-    const allStudents=bulkStudents.slice();
-    if(!allStudents.length) return;
-
-    const ids=allStudents.map(s=>s.id).filter(Boolean);
-    if(!ids.length) return;
-
-    const {data,error}=await db
-        .from("exam_results")
-        .select("student_id,published,exam_type")
-        .in("student_id",ids)
-        .eq("exam_type",exam)
-        .eq("published",true);
-
-    if(error) throw error;
-
-    const publishedIds=new Set((data||[]).map(r=>String(r.student_id)));
-    bulkStudents=allStudents.filter(s=>publishedIds.has(String(s.id)));
+    /*
+     * Keep the student list based on Students Database only.
+     * WhatsApp sending must not depend on published=true.
+     * The selected student's saved exam marks are loaded when Send is clicked.
+     */
+    return;
 }
 
 function populateBulkClasses(){
@@ -1425,31 +1616,10 @@ async function loadBulkStudents(){
 }
 
 function dedupeSubjectsForBulk(subjects){
-    const normalize = name => String(name || "").trim().replace(/\\s+/g," ").toLowerCase();
-    const groups = new Map();
-    (subjects || []).forEach(subject=>{
-        const key=normalize(subject.subject_name);
-        if(!key) return;
-        if(!groups.has(key)) groups.set(key,[]);
-        groups.get(key).push(subject);
-    });
-    const unique=[];
-    groups.forEach(group=>{
-        group.sort((a,b)=>{
-            const ai=Number(a.id), bi=Number(b.id);
-            if(Number.isFinite(ai)&&Number.isFinite(bi)&&ai!==bi) return bi-ai;
-            return Number(a.display_order||999)-Number(b.display_order||999);
-        });
-        const chosen={...group[0]};
-        chosen._allSubjectIds=group.map(x=>x.id).filter(x=>x!==null&&x!==undefined);
-        unique.push(chosen);
-    });
-    unique.sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999));
-    return unique.slice(0,6);
+    return uniqueCurrentSubjects(subjects || []);
 }
 
 async function loadResultDataForStudent(student){
-    const className=student.class_name;
     const resultAcademicYear=String(
         student.academic_year ||
         $("bulkAcademicYear")?.value ||
@@ -1457,21 +1627,43 @@ async function loadResultDataForStudent(student){
         ""
     ).trim();
 
-    const {data:subjects,error:subjectError}=await db
-        .from("subjects").select("*")
-        .eq("class_name",className)
-        .eq("academic_year",resultAcademicYear)
+    const resultClass=classNumber(
+        student.class_name ??
+        student.class ??
+        ""
+    );
+
+    const {data:subjectRows,error:subjectError}=await db
+        .from("subjects")
+        .select("*")
         .eq("is_active",true)
-        .order("display_order",{ascending:true});
+        .eq("academic_year",resultAcademicYear);
+
     if(subjectError) throw subjectError;
 
-    const subjectsForResult=dedupeSubjectsForBulk(subjects || []);
+    const classSubjectRows=(subjectRows||[]).filter(subject=>{
+        const cls=classNumber(
+            subject.class_name ??
+            subject.class ??
+            subject.standard ??
+            subject.className ??
+            ""
+        );
+        return cls===resultClass;
+    });
+
+    const subjectsForResult=uniqueCurrentSubjects(classSubjectRows);
+
+    if(!subjectsForResult.length){
+        throw new Error(
+            `${student.class_name || resultClass}ನೇ ತರಗತಿಗೆ Subject Masterನಲ್ಲಿ active subjects ಸಿಗಲಿಲ್ಲ.`
+        );
+    }
     const {data:results,error:resultError}=await db
         .from("exam_results")
         .select("id,student_id,exam_type,published")
         .eq("student_id",student.id)
         .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
-        .eq("published",true)
         .order("id",{ascending:true});
     if(resultError) throw resultError;
 
@@ -1499,14 +1691,14 @@ async function openBulkWhatsAppForStudent(student,waWindow){
     const data=await loadResultDataForStudent(student);
 
     if(!data.results.length)
-        return {ok:false,reason:"Published result ಇಲ್ಲ"};
+        return {ok:false,reason:"ಆಯ್ಕೆ ಮಾಡಿದ ಪರೀಕ್ಷೆಯ result/marks ಸಿಗಲಿಲ್ಲ"};
 
     const message=buildWhatsAppMessageFromData(data);
 
     const url=
-        "https://api.whatsapp.com/send?phone="+
+        "https://wa.me/"+
         encodeURIComponent(mobile)+
-        "&text="+
+        "?text="+
         encodeURIComponent(message);
 
     if(!waWindow || waWindow.closed)
@@ -1579,6 +1771,11 @@ async function sendSelectedResultsToWhatsApp(){
             console.error("Bulk WhatsApp Error:",student,error);
             skipped++;
             if(windows[i] && !windows[i].closed) windows[i].close();
+            console.error(
+                "WhatsApp skip reason:",
+                student?.student_name || student?.name || student?.id,
+                error?.message || String(error)
+            );
         }
 
         setBulkStatus(
