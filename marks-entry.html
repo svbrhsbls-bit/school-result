@@ -1110,7 +1110,9 @@ async function loadSavedMarks(){
                 student.marks[
                     mark.subject_id
                 ] =
-                    mark.marks;
+                    Number(mark.marks) === -1
+                    ? "AB"
+                    : mark.marks;
             }
         }
     }
@@ -1254,9 +1256,14 @@ function renderMarksTable(){
             const max =
                 maximumMarks(subject);
 
-            const oldMark =
+            const storedMark =
                 student.marks[subject.id] ??
                 "";
+
+            const oldMark =
+                Number(storedMark) === -1
+                ? "AB"
+                : storedMark;
 
 
             html +=
@@ -1740,7 +1747,7 @@ async function saveMarks(){
                     rawMark === ""
                     ? null
                     : (rawMark.toUpperCase() === "AB" || rawMark.toUpperCase() === "ABSENT")
-                        ? null
+                        ? -1
                         : Number(rawMark);
 
                 const max =
