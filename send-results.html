@@ -336,35 +336,6 @@ td.subject{text-align:left;font-weight:700}
    SUPABASE CONNECTION
    Same working connection as Students Database / Marks Entry
 ========================================================= */
-
-/* =========================================================
-   SUBJECT MASTER DISPLAY NAMES
-   Subject Code is the stable key.
-   ========================================================= */
-const KANNADA_SUBJECT_NAMES = {
-    "01K":"ಕನ್ನಡ",
-    "31E":"ಇಂಗ್ಲೀಷ್",
-    "61H":"ಹಿಂದಿ",
-    "81K":"ಗಣಿತ",
-    "83K":"ವಿಜ್ಞಾನ",
-    "85K":"ಸಮಾಜ ವಿಜ್ಞಾನ"
-};
-
-function displaySubjectName(subject){
-    const code = String(
-        subject?.subject_code ??
-        subject?.code ??
-        subject?.subjectCode ??
-        ""
-    ).trim().toUpperCase();
-
-    return KANNADA_SUBJECT_NAMES[code] ||
-           subject?.subject_name ||
-           subject?.name ||
-           subject?.subject ||
-           "ವಿಷಯ";
-}
-
 const SUPABASE_URL =
     "https://sozlvjvqrgpaabnvjvxe.supabase.co";
 
@@ -477,6 +448,28 @@ function getDivision(student){
    WhatsApp must NEVER display old codes such as
    KAN / ENG / HIN / MAT / SCI / SOC.
 ========================================================= */
+const KANNADA_SUBJECT_NAMES = {
+    "01K":"ಕನ್ನಡ",
+    "31E":"ಇಂಗ್ಲೀಷ್",
+    "61H":"ಹಿಂದಿ",
+    "81K":"ಗಣಿತ",
+    "83K":"ವಿಜ್ಞಾನ",
+    "85K":"ಸಮಾಜ ವಿಜ್ಞಾನ"
+};
+
+function displaySubjectName(subject){
+    const code = String(
+        subject?.subject_code ??
+        subject?.code ??
+        subject?.subjectCode ??
+        ""
+    ).trim().toUpperCase();
+
+    return KANNADA_SUBJECT_NAMES[code] ||
+           String(subject?.subject_name || "").trim() ||
+           "ವಿಷಯ";
+}
+
 const SUBJECT_MASTER_CODES = {
     "ಕನ್ನಡ":"01K",
     "english":"31E",
@@ -752,57 +745,55 @@ async function viewResult(){
         let subjectQuery = db
             .from("subjects")
             .select("*")
-            .eq("class_name",className)
             .eq("is_active",true);
 
-        // Subject Master is year-wise. Therefore WhatsApp must load
-        // subjects from the student's selected Academic Year.
+        // Load Subject Master for the student's academic year.
         if(academicYear){
             subjectQuery = subjectQuery.eq("academic_year",academicYear);
         }
 
         const {data:subjects,error:subjectError}=await subjectQuery
-            .order("display_order",{ascending:true});
+            .order("display_order",{ascending:true})
+            .order("subject_code",{ascending:true});
 
         if(subjectError)
             throw subjectError;
 
-        if(!subjects || !subjects.length)
+        const studentClass = normalizeClass(className);
+        const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
+
+        const subjectsForResult = (subjects || [])
+            .filter(s => {
+                if(!s || s.is_active === false) return false;
+
+                const rowClass = normalizeClass(
+                    s.class_name ?? s.class ?? s.standard ?? ""
+                );
+
+                const code = String(
+                    s.subject_code ?? s.code ?? ""
+                ).trim().toUpperCase();
+
+                return rowClass === studentClass &&
+                       VALID_SUBJECT_CODES.includes(code);
+            })
+            .sort((a,b) => {
+                const ao = Number(a.display_order);
+                const bo = Number(b.display_order);
+
+                if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo)
+                    return ao-bo;
+
+                return String(a.subject_code || "").localeCompare(
+                    String(b.subject_code || "")
+                );
+            });
+
+        if(!subjectsForResult.length){
             throw new Error(
-                `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
+                `${className}ನೇ ತರಗತಿಗೆ Subject Masterನಲ್ಲಿ subjects ಸಿಗಲಿಲ್ಲ.`
             );
-
-        /* =========================================================
-   SUBJECT MASTER — USE THE ACTUAL ACTIVE ROWS
-   IMPORTANT:
-   Do NOT merge subjects by subject_name.
-   result_marks is linked by subject_id, so changing the row/code
-   can make the displayed subject code and marks mismatch.
-========================================================= */
-const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
-
-/*
-   IMPORTANT:
-   Supabase contains old/legacy subject rows also.
-   Only the six Subject Master codes currently used by
-   subjects.html are allowed into the result.
-   This prevents duplicate subjects such as:
-   ಕನ್ನಡ [01K] + ಕನ್ನಡ [old code]
-   English [31E] + English [ENG]
-*/
-const subjectsForResult = (subjects || [])
-    .filter(s => {
-        if(!s || s.is_active === false) return false;
-        const code = String(s.subject_code || "").trim().toUpperCase();
-        return VALID_SUBJECT_CODES.includes(code);
-    })
-    .sort((a,b) => {
-        const ao = Number(a.display_order);
-        const bo = Number(b.display_order);
-        if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo) return ao-bo;
-        return Number(a.id || 0) - Number(b.id || 0);
-    })
-    .slice(0, 6);
+        }
 
         /* ---------------------------------------------
            3. Load only published results
@@ -955,7 +946,7 @@ function buildWhatsAppMessage(){
                 entered++;
             }
 
-            const name = displaySubjectName(subject) || "";
+            const name = displaySubjectName(subject);
             const code = exactSubjectMasterCode(subject);
             const maxText = (max === null || max === undefined || max === "") ? "-" : Number(max).toString();
             const markText = isAbsent
@@ -1148,8 +1139,17 @@ function renderExam(student,subjects,result,marksMap){
             value!==undefined &&
             value!=="";
 
+        const isAbsent =
+            hasMark &&
+            String(value).trim().toUpperCase() === "AB";
+
         if(hasMark){
-            total+=Number(value);
+            if(!isAbsent){
+                const numericValue = Number(value);
+                if(Number.isFinite(numericValue)){
+                    total += numericValue;
+                }
+            }
             entered++;
         }
 
@@ -1170,7 +1170,7 @@ function renderExam(student,subjects,result,marksMap){
             <td>${max === null || max === undefined ? "-" : max}</td>
 
             <td>
-                ${hasMark ? grade(value,max) : "-"}
+                ${hasMark ? (isAbsent ? "AB" : grade(value,max)) : "-"}
             </td>
         </tr>
         `;
