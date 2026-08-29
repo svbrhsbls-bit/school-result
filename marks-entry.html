@@ -1264,10 +1264,8 @@ function renderMarksTable(){
 
                 "<input " +
                 "class='mark-input' " +
-                "type='number' " +
-                "min='0' " +
-                "max='" + max + "' " +
-                "step='0.01' " +
+                "type='text' " +
+                "inputmode='decimal' " +
                 "value='" +
                 escapeHtml(oldMark) +
                 "' " +
@@ -1285,6 +1283,7 @@ function renderMarksTable(){
                 "' " +
 
                 "oninput='markChanged(this)' " +
+                "onblur='validateMarkInput(this)' " +
 
                 ">" +
 
@@ -1379,76 +1378,101 @@ function renderMarksTable(){
 
 function markChanged(input){
 
-    const value =
-        input.value === ""
-        ?
-        ""
-        :
-        Number(input.value);
+    const raw = String(input.value ?? "").trim();
+    const upper = raw.toUpperCase();
+    const max = Number(input.dataset.max);
 
-    const max =
-        Number(input.dataset.max);
+    const subject = subjects.find(
+        s => String(s.id) === String(input.dataset.subject)
+    );
 
+    const gradeElement = document.getElementById(
+        "grade-" + input.dataset.student + "-" + input.dataset.subject
+    );
 
-    if(
-        value !== "" &&
-        (
-            value < 0 ||
-            value > max
-        )
-    ){
-
-        alert(
-            "ಗರಿಷ್ಠ " +
-            max +
-            " marks ಮಾತ್ರ."
-        );
-
-        input.value = "";
-
+    /* Empty */
+    if(raw === ""){
+        if(gradeElement) gradeElement.textContent = "";
+        calculateStudent(input.dataset.student);
+        updateSummary();
         return;
     }
 
-
-    const subject =
-        subjects.find(
-            s =>
-            String(s.id) ===
-            String(input.dataset.subject)
-        );
-
-
-    const gradeElement =
-        document.getElementById(
-            "grade-" +
-            input.dataset.student +
-            "-" +
-            input.dataset.subject
-        );
-
-
-    if(value === ""){
-
-        gradeElement.textContent = "";
-
-    }
-    else{
-
-        gradeElement.textContent =
-            subjectGrade(
-                value,
-                max,
-                subject
-            );
+    /* Absent: AB or ABSENT */
+    if(upper === "AB" || upper === "ABSENT"){
+        input.value = "AB";
+        if(gradeElement) gradeElement.textContent = "AB";
+        calculateStudent(input.dataset.student);
+        updateSummary();
+        return;
     }
 
+    /* While typing AB, don't show an error for A */
+    if(upper === "A"){
+        if(gradeElement) gradeElement.textContent = "";
+        calculateStudent(input.dataset.student);
+        updateSummary();
+        return;
+    }
 
-    calculateStudent(
-        input.dataset.student
-    );
+    const value = Number(raw);
 
+    /* Invalid values are checked on blur, not on every keystroke. */
+    if(!Number.isFinite(value) || value < 0 || value > max){
+        if(gradeElement) gradeElement.textContent = "";
+        calculateStudent(input.dataset.student);
+        updateSummary();
+        return;
+    }
+
+    input.value = String(value);
+
+    if(gradeElement){
+        gradeElement.textContent = subjectGrade(value, max, subject);
+    }
+
+    calculateStudent(input.dataset.student);
     updateSummary();
 }
+
+
+function validateMarkInput(input){
+
+    const raw = String(input.value ?? "").trim();
+    const upper = raw.toUpperCase();
+    const max = Number(input.dataset.max);
+
+    if(raw === "") return;
+
+    if(upper === "AB" || upper === "ABSENT"){
+        input.value = "AB";
+        const gradeElement = document.getElementById(
+            "grade-" + input.dataset.student + "-" + input.dataset.subject
+        );
+        if(gradeElement) gradeElement.textContent = "AB";
+        return;
+    }
+
+    if(upper === "A") return;
+
+    const value = Number(raw);
+    if(!Number.isFinite(value) || value < 0 || value > max){
+        input.value = "";
+        alert("ಗರಿಷ್ಠ " + max + " marks ಅಥವಾ AB ಮಾತ್ರ ನಮೂದಿಸಿ.");
+        return;
+    }
+
+    input.value = String(value);
+
+    const subject = subjects.find(
+        s => String(s.id) === String(input.dataset.subject)
+    );
+    const gradeElement = document.getElementById(
+        "grade-" + input.dataset.student + "-" + input.dataset.subject
+    );
+    if(gradeElement) gradeElement.textContent = subjectGrade(value, max, subject);
+}
+
 
 
 /* =====================================================
@@ -1482,10 +1506,14 @@ function calculateStudent(studentId){
             input.value !== ""
         ){
 
-            total +=
-                Number(input.value);
-
-            entered++;
+            if(String(input.value).trim().toUpperCase() === "AB"){
+                // Absent counts as an entered subject, but contributes 0 marks.
+                entered++;
+            }else{
+                const numericMark = Number(input.value);
+                if(Number.isFinite(numericMark)) total += numericMark;
+                entered++;
+            }
         }
     });
 
@@ -1707,10 +1735,13 @@ async function saveMarks(){
                     continue;
                 }
 
+                const rawMark = String(input.value ?? "").trim();
                 const marks =
-                    input.value === ""
+                    rawMark === ""
                     ? null
-                    : Number(input.value);
+                    : (rawMark.toUpperCase() === "AB" || rawMark.toUpperCase() === "ABSENT")
+                        ? null
+                        : Number(rawMark);
 
                 const max =
                     maximumMarks(subject);
