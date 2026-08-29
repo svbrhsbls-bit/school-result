@@ -1411,44 +1411,27 @@ async function loadSettingsAndStudents(){
            3. First available year
         --------------------------------------------- */
 
-        const savedYear =
-            String(
-                localStorage.getItem(
-                    "dashboard_selected_academic_year"
-                ) ||
-                ""
-            ).trim();
+       let selectedYear = "";
 
+/*
+   SETTINGS CURRENT YEAR IS THE MASTER YEAR.
 
-        let selectedYear = "";
+   Settingsನಲ್ಲಿ ಯಾವ Academic Year
+   Current Year ಆಗಿ ಆಯ್ಕೆ ಮಾಡಲಾಗಿದೆಯೋ
+   Dashboardನಲ್ಲಿ ಅದೇ year automatically select ಆಗುತ್ತದೆ.
+*/
 
-
-        if(
-            savedYear &&
-            years.includes(savedYear)
-        ){
-
-            selectedYear =
-                savedYear;
-
-        }
-        else if(
-            settingsYear &&
-            years.includes(settingsYear)
-        ){
-
-            selectedYear =
-                settingsYear;
-
-        }
-        else if(
-            years.length
-        ){
-
-            selectedYear =
-                years[0];
-
-        }
+if(
+    settingsYear &&
+    years.includes(settingsYear)
+){
+    selectedYear = settingsYear;
+}
+else if(
+    years.length
+){
+    selectedYear = years[0];
+}
 
 
         select.value =
