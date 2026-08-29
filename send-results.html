@@ -482,9 +482,9 @@ function getMaxMarks(student, examType, subject){
         "10":["10ನೇ ತರಗತಿ","10"]
     };
 
-    const variants = classVariants[cls] || [cls];
+    const variants = [...new Set([...(classVariants[cls] || [cls]), cls])];
 
-    /* 1. Exact value saved by subjects.html */
+    /* Exact values saved by subjects.html. */
     for(const c of variants){
         const key = `subject_marks_${c}_${exam}_${code}`;
         const raw = localStorage.getItem(key);
@@ -493,6 +493,12 @@ function getMaxMarks(student, examType, subject){
             if(Number.isFinite(n) && n > 0) return n;
         }
     }
+
+    /* Safe fallback to Subject Master row max_marks. This is NOT used
+       to choose the subject or code; it only prevents a blank maximum
+       if the exam-wise localStorage value is unavailable. */
+    const rowMax = Number(subject?.max_marks);
+    if(Number.isFinite(rowMax) && rowMax > 0) return rowMax;
 
     /* Subject Master maximum marks are read only from the
        same localStorage values written by subjects.html. */
@@ -718,45 +724,64 @@ async function viewResult(){
             student.academic_year || appSettings.academic_year || ""
         ).trim();
 
+        /* =========================================================
+           SUBJECT MASTER IS THE DISPLAY SOURCE
+           -----------------------------------
+           The six subjects/codes below are the exact Subject Master
+           subjects used by subjects.html. Supabase is NOT used as the
+           source for subject_code or subject_name.
+
+           Supabase is used only to get the existing subject row/id
+           (by display_order) because result_marks stores subject_id.
+        ========================================================= */
+        const SUBJECT_MASTER_ORDER = [
+            {code:"01K", name:"ಕನ್ನಡ", order:1},
+            {code:"31E", name:"English", order:2},
+            {code:"61H", name:"Hindi", order:3},
+            {code:"81K", name:"Mathematics", order:4},
+            {code:"83K", name:"Science", order:5},
+            {code:"85K", name:"Social Science", order:6}
+        ];
+
         let subjectQuery = db
             .from("subjects")
-            .select("*")
+            .select("id, class_name, academic_year, max_marks, display_order, is_active")
             .eq("class_name",className)
             .eq("is_active",true);
 
-        // Subject Master is year-wise. Therefore WhatsApp must load
-        // subjects from the student's selected Academic Year.
         if(academicYear){
             subjectQuery = subjectQuery.eq("academic_year",academicYear);
         }
 
-        const {data:subjects,error:subjectError}=await subjectQuery
+        const {data:subjectRows,error:subjectError}=await subjectQuery
             .order("display_order",{ascending:true});
 
-        if(subjectError)
-            throw subjectError;
+        if(subjectError) throw subjectError;
 
-        if(!subjects || !subjects.length)
-            throw new Error(
-                `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
-            );
+        const rowByOrder = new Map();
+        (subjectRows || []).forEach(row=>{
+            const order = Number(row.display_order);
+            if(Number.isFinite(order) && !rowByOrder.has(order)){
+                rowByOrder.set(order,row);
+            }
+        });
 
-        /* =========================================================
-   SUBJECT MASTER — USE THE ACTUAL ACTIVE ROWS
-   IMPORTANT:
-   Do NOT merge subjects by subject_name.
-   result_marks is linked by subject_id, so changing the row/code
-   can make the displayed subject code and marks mismatch.
-========================================================= */
-const subjectsForResult = (subjects || [])
-    .filter(s => s && s.is_active !== false)
-    .sort((a,b) => {
-        const ao = Number(a.display_order);
-        const bo = Number(b.display_order);
-        if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo) return ao-bo;
-        return Number(a.id || 0) - Number(b.id || 0);
-    })
-    .slice(0, 6);
+        const subjectsForResult = SUBJECT_MASTER_ORDER
+            .map(master=>{
+                const row = rowByOrder.get(master.order);
+                if(!row) return null;
+                return {
+                    ...row,
+                    subject_code: master.code,
+                    subject_name: master.name,
+                    display_order: master.order
+                };
+            })
+            .filter(Boolean);
+
+        if(!subjectsForResult.length){
+            throw new Error(`${className}ನೇ ತರಗತಿಗೆ Subject Master subjects ಸಿಗಲಿಲ್ಲ.`);
+        }
 
         /* ---------------------------------------------
            3. Load only published results
@@ -1414,17 +1439,25 @@ async function loadBulkStudents(){
 }
 
 function dedupeSubjectsForBulk(subjects){
-    // Supabase subjects has already been cleaned so that the active
-    // rows are exactly the Subject Master rows. Do not filter by a
-    // second hard-coded code list here.
-    return (subjects || [])
-        .filter(s => s && s.is_active !== false)
-        .sort((a,b) => {
-            const ao=Number(a.display_order), bo=Number(b.display_order);
-            if(Number.isFinite(ao)&&Number.isFinite(bo)&&ao!==bo) return ao-bo;
-            return Number(a.id||0)-Number(b.id||0);
-        })
-        .slice(0,6);
+    const master=[
+        {code:"01K",name:"ಕನ್ನಡ",order:1},
+        {code:"31E",name:"English",order:2},
+        {code:"61H",name:"Hindi",order:3},
+        {code:"81K",name:"Mathematics",order:4},
+        {code:"83K",name:"Science",order:5},
+        {code:"85K",name:"Social Science",order:6}
+    ];
+    const byOrder=new Map();
+    (subjects||[]).forEach(row=>{
+        const order=Number(row.display_order);
+        if(Number.isFinite(order) && !byOrder.has(order) && row.is_active!==false){
+            byOrder.set(order,row);
+        }
+    });
+    return master.map(m=>{
+        const row=byOrder.get(m.order);
+        return row ? {...row,subject_code:m.code,subject_name:m.name,display_order:m.order} : null;
+    }).filter(Boolean);
 }
 
 async function loadResultDataForStudent(student){
