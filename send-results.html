@@ -462,7 +462,7 @@ function exactSubjectMasterCode(subject){
     const key = name.toLowerCase().replace(/\s+/g," ");
     return SUBJECT_MASTER_CODES[name] ||
            SUBJECT_MASTER_CODES[key] ||
-           String(subject?.subject_code || subject?.code || "").trim().toUpperCase();
+           "";
 }
 
 /* Current Marks Entry rules */
@@ -494,10 +494,8 @@ function getMaxMarks(student, examType, subject){
         }
     }
 
-    /* 2. Current Subject Master row */
-    const dbMax = Number(subject?.max_marks);
-    if(Number.isFinite(dbMax) && dbMax > 0) return dbMax;
-
+    /* Subject Master maximum marks are read only from the
+       same localStorage values written by subjects.html. */
     return null;
 }
 
@@ -750,23 +748,8 @@ async function viewResult(){
    result_marks is linked by subject_id, so changing the row/code
    can make the displayed subject code and marks mismatch.
 ========================================================= */
-const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
-
-/*
-   IMPORTANT:
-   Supabase contains old/legacy subject rows also.
-   Only the six Subject Master codes currently used by
-   subjects.html are allowed into the result.
-   This prevents duplicate subjects such as:
-   ಕನ್ನಡ [01K] + ಕನ್ನಡ [old code]
-   English [31E] + English [ENG]
-*/
 const subjectsForResult = (subjects || [])
-    .filter(s => {
-        if(!s || s.is_active === false) return false;
-        const code = String(s.subject_code || "").trim().toUpperCase();
-        return VALID_SUBJECT_CODES.includes(code);
-    })
+    .filter(s => s && s.is_active !== false)
     .sort((a,b) => {
         const ao = Number(a.display_order);
         const bo = Number(b.display_order);
@@ -1120,7 +1103,12 @@ function renderExam(student,subjects,result,marksMap){
             value!=="";
 
         if(hasMark){
-            total+=Number(value);
+            const isAbsent = String(value).trim().toUpperCase() === "AB" ||
+                             String(value).trim().toUpperCase() === "ABSENT";
+            if(!isAbsent){
+                const n = Number(value);
+                if(Number.isFinite(n)) total += n;
+            }
             entered++;
         }
 
@@ -1426,16 +1414,11 @@ async function loadBulkStudents(){
 }
 
 function dedupeSubjectsForBulk(subjects){
-    const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
-
-    // Do not merge by subject name and do not include legacy codes.
-    // result_marks is linked to the real Subject Master subject_id.
+    // Supabase subjects has already been cleaned so that the active
+    // rows are exactly the Subject Master rows. Do not filter by a
+    // second hard-coded code list here.
     return (subjects || [])
-        .filter(s => {
-            if(!s || s.is_active === false) return false;
-            const code = String(s.subject_code || "").trim().toUpperCase();
-            return VALID_SUBJECT_CODES.includes(code);
-        })
+        .filter(s => s && s.is_active !== false)
         .sort((a,b) => {
             const ao=Number(a.display_order), bo=Number(b.display_order);
             if(Number.isFinite(ao)&&Number.isFinite(bo)&&ao!==bo) return ao-bo;
