@@ -568,9 +568,54 @@ function maximumMarks(subject){
     ) + "_" + exam + "_" + code);
 
     for(const key of keys){
-        const saved=localStorage.getItem(key);
-        if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
-            return Number(saved);
+       /* =====================================================
+   SETTINGS CURRENT YEAR = MASTER YEAR
+   Settingsನಲ್ಲಿ ಆಯ್ಕೆ ಮಾಡಿದ Academic Year
+   Marks Entryಯಲ್ಲಿ ಯಾವಾಗಲೂ ಅದೇ select ಆಗಬೇಕು.
+   ===================================================== */
+
+const settingsYear =
+    String(currentAcademicYear || "").trim();
+
+/*
+   Settingsನಲ್ಲಿ 2027-28 ಇದ್ದರೆ
+   ಅದನ್ನೇ select ಮಾಡಬೇಕು.
+*/
+if (
+    settingsYear &&
+    list.includes(settingsYear)
+) {
+    currentAcademicYear = settingsYear;
+}
+else if (list.length > 0) {
+    currentAcademicYear = list[0];
+}
+
+select.value = currentAcademicYear;
+
+/*
+   LocalStorage ಅನ್ನು ಕೂಡ
+   Settings Current Yearಗೆ update ಮಾಡುತ್ತೇವೆ.
+*/
+if (currentAcademicYear) {
+    localStorage.setItem(
+        "marks_entry_academic_year",
+        currentAcademicYear
+    );
+}
+
+/*
+   Header update
+*/
+const academicYearHeader =
+    document.getElementById("academicYearHeader");
+
+if (academicYearHeader) {
+    academicYearHeader.textContent =
+        currentAcademicYear
+            ? "ಶೈಕ್ಷಣಿಕ ವರ್ಷ - " + currentAcademicYear
+            : "";
+}
         }
     }
 
