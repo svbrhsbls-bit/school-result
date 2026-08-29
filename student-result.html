@@ -2,7 +2,7 @@
 <html lang="kn">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=1200, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Student Result</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -231,6 +231,11 @@ td.subject{text-align:left;font-weight:700}
     .teacher-footer{margin-top:35px}
 }
 
+@media(max-width:700px){
+    .search-grid,.student-info{grid-template-columns:1fr}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    .header h1{font-size:22px}
+}
 @media print{
     body{background:#fff}
     .no-print{display:none!important}
@@ -248,16 +253,56 @@ td.subject{text-align:left;font-weight:700}
 .dob-calendar-btn{width:44px;height:42px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:19px}
 .dob-picker-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
-/* Desktop-style result on mobile phones */
-html, body{
-    min-width:1200px;
+/* Mobile result fit */
+@media (max-width: 600px){
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+    .container,.card{width:100%;max-width:100%;box-sizing:border-box}
+    .result-table-wrap,.table-wrap,.result-table-container{
+        width:100%!important;
+        max-width:100%!important;
+        overflow-x:hidden!important;
+    }
+    table{
+        width:100%!important;
+        max-width:100%!important;
+        table-layout:fixed!important;
+    }
+    th,td{
+        padding:5px 3px!important;
+        font-size:11px!important;
+        white-space:normal!important;
+        word-break:break-word!important;
+    }
 }
-.container{
-    width:1200px;
-    max-width:1200px;
-    margin-left:auto;
-    margin-right:auto;
+/* MOBILE SSL C-STYLE RESULT VIEW */
+@media (max-width:700px){
+  html,body{min-width:0!important;width:100%!important;overflow-x:hidden!important;background:#f3f6fa;}
+  body{font-size:14px!important;padding:0!important;}
+  .container{width:100%!important;max-width:100%!important;margin:0!important;padding:10px!important;box-sizing:border-box!important;}
+  .card{width:100%!important;max-width:100%!important;box-sizing:border-box!important;border-radius:10px!important;overflow:hidden!important;}
+  .header{padding:14px 8px!important;text-align:center!important;}
+  .header h1{font-size:18px!important;line-height:1.35!important;margin:0 0 5px!important;}
+  .header p{font-size:12px!important;margin:2px 0!important;}
+  .search-grid,.student-info{grid-template-columns:1fr!important;gap:8px!important;}
+  .student-info{padding:10px!important;}
+  .student-info .label{font-size:11px!important;}
+  .student-info .value{font-size:14px!important;font-weight:700!important;}
+  .summary{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;padding:8px!important;}
+  .summary .box{min-width:0!important;padding:9px 4px!important;}
+  .summary .value{font-size:17px!important;}
+  .summary .label{font-size:10px!important;}
+  .result-table-wrap,.table-wrap,.result-table-container{width:100%!important;max-width:100%!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;}
+  table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important;}
+  th,td{padding:7px 3px!important;font-size:10.5px!important;line-height:1.25!important;white-space:normal!important;word-break:break-word!important;text-align:center!important;vertical-align:middle!important;}
+  th:first-child,td:first-child{text-align:left!important;width:36%!important;}
+  th{font-size:10px!important;font-weight:700!important;}
+  td:first-child{font-weight:600!important;}
+  .section-title{font-size:14px!important;padding:8px 10px!important;}
+  .result-status,.final-result{font-size:15px!important;font-weight:800!important;text-align:center!important;padding:10px!important;}
+  button{min-height:42px!important;font-size:13px!important;}
+  .footer{padding:10px!important;font-size:11px!important;text-align:center!important;}
 }
+
 </style>
 </head>
 
