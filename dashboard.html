@@ -456,9 +456,6 @@ td:first-child{
 
 <body>
 
-
-
-
 <!-- =====================================================
      TOP BAR
 ===================================================== -->
@@ -846,28 +843,6 @@ const supabaseClient =
         SUPABASE_URL,
         SUPABASE_ANON_KEY
     );
-<style id="auth-guard-style">html{visibility:hidden}</style>
-<script>
-(async function(){
-  try{
-    if(typeof supabaseClient === "undefined"){
-      window.location.replace("./login.html");
-      return;
-    }
-    const {data,error}=await supabaseClient.auth.getSession();
-    if(error || !data || !data.session){
-      window.location.replace("./login.html");
-      return;
-    }
-    document.documentElement.style.visibility="visible";
-  }catch(e){
-    window.location.replace("./login.html");
-  }
-})();
-</script>
-
-
-
 
 
 /* =====================================================
