@@ -436,18 +436,9 @@ function getDivision(student){
 
 
 /* =========================================================
-   SUBJECT MASTER EXACT CODE MAP
-   Taken from subjects.html:
-   01K = ಕನ್ನಡ
-   31E = English
-   61H = Hindi
-   81K = Mathematics
-   83K = Science
-   85K = Social Science
-
-   WhatsApp must NEVER display old codes such as
-   KAN / ENG / HIN / MAT / SCI / SOC.
+   SUBJECT MASTER — SAME SOURCE AS marks-entry.html
 ========================================================= */
+
 const KANNADA_SUBJECT_NAMES = {
     "01K":"ಕನ್ನಡ",
     "31E":"ಇಂಗ್ಲೀಷ್",
@@ -457,7 +448,7 @@ const KANNADA_SUBJECT_NAMES = {
     "85K":"ಸಮಾಜ ವಿಜ್ಞಾನ"
 };
 
-function displaySubjectName(subject){
+function subjectName(subject){
     const code = String(
         subject?.subject_code ??
         subject?.code ??
@@ -466,61 +457,93 @@ function displaySubjectName(subject){
     ).trim().toUpperCase();
 
     return KANNADA_SUBJECT_NAMES[code] ||
-           String(subject?.subject_name || "").trim() ||
+           String(subject?.subject_name ?? subject?.name ?? "").trim() ||
            "ವಿಷಯ";
 }
 
-const SUBJECT_MASTER_CODES = {
-    "ಕನ್ನಡ":"01K",
-    "english":"31E",
-    "hindi":"61H",
-    "mathematics":"81K",
-    "science":"83K",
-    "social science":"85K"
-};
+function subjectCode(subject){
+    return String(
+        subject?.subject_code ??
+        subject?.code ??
+        subject?.subjectCode ??
+        ""
+    ).trim().toUpperCase();
+}
 
-function exactSubjectMasterCode(subject){
-    const name = String(subject?.subject_name || "").trim();
-    const key = name.toLowerCase().replace(/\s+/g," ");
-    return SUBJECT_MASTER_CODES[name] ||
-           SUBJECT_MASTER_CODES[key] ||
-           String(subject?.subject_code || subject?.code || "").trim().toUpperCase();
+function classNumber(value){
+    const match = String(value ?? "").match(/10|9|8/);
+    return match ? match[0] : "";
+}
+
+function normalizeSubjectKey(name){
+    const n = String(name || "").trim().toLowerCase().replace(/\s+/g," ");
+    const map = {
+        "ಕನ್ನಡ":"kannada","kannada":"kannada",
+        "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
+        "ಹಿಂದಿ":"hindi","hindi":"hindi",
+        "ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics",
+        "ವಿಜ್ಞಾನ":"science","science":"science",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
+        "social science":"social science","socialscience":"social science"
+    };
+    return map[n] || n;
+}
+
+function chooseLatestSubject(group){
+    return [...group].sort((a,b)=>{
+        const aid=Number(a.id), bid=Number(b.id);
+        if(Number.isFinite(aid) && Number.isFinite(bid) && aid!==bid) return bid-aid;
+        const at=new Date(a.updated_at||a.created_at||0).getTime();
+        const bt=new Date(b.updated_at||b.created_at||0).getTime();
+        if(Number.isFinite(at) && Number.isFinite(bt) && at!==bt) return bt-at;
+        return Number(a.display_order||999)-Number(b.display_order||999);
+    })[0];
+}
+
+function uniqueCurrentSubjects(rows){
+    const groups=new Map();
+    (rows||[]).filter(r=>r && r.is_active!==false).forEach(row=>{
+        const key=normalizeSubjectKey(
+            row.subject_name ?? row.subject ?? row.name ?? ""
+        );
+        if(!key) return;
+        if(!groups.has(key)) groups.set(key,[]);
+        groups.get(key).push(row);
+    });
+
+    return Array.from(groups.values())
+        .map(chooseLatestSubject)
+        .sort((a,b)=>{
+            const ao=Number(a.display_order||999), bo=Number(b.display_order||999);
+            if(ao!==bo) return ao-bo;
+            return String(subjectCode(a)).localeCompare(String(subjectCode(b)));
+        });
 }
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
-    const cls = String(subject?.class_name || getClass(student) || "").trim();
-    const code = exactSubjectMasterCode(subject);
-    const exam = String(examType || "").trim();
-
-    if(!cls || !code || !exam) return null;
-
-    const classVariants = {
-        "8ನೇ ತರಗತಿ":["8ನೇ ತರಗತಿ","8"],
-        "9ನೇ ತರಗತಿ":["9ನೇ ತರಗತಿ","9"],
-        "10ನೇ ತರಗತಿ":["10ನೇ ತರಗತಿ","10"],
-        "8":["8ನೇ ತರಗತಿ","8"],
-        "9":["9ನೇ ತರಗತಿ","9"],
-        "10":["10ನೇ ತರಗತಿ","10"]
-    };
-
-    const variants = classVariants[cls] || [cls];
-
-    /* 1. Exact value saved by subjects.html */
-    for(const c of variants){
-        const key = `subject_marks_${c}_${exam}_${code}`;
-        const raw = localStorage.getItem(key);
-        if(raw !== null && String(raw).trim() !== ""){
-            const n = Number(raw);
-            if(Number.isFinite(n) && n > 0) return n;
-        }
-    }
-
-    /* 2. Current Subject Master row */
     const dbMax = Number(subject?.max_marks);
     if(Number.isFinite(dbMax) && dbMax > 0) return dbMax;
 
-    return null;
+    const cls = classNumber(student?.class_name ?? student?.class ?? "");
+    const code = subjectCode(subject);
+    const exam = String(examType || "").trim();
+    if(!cls || !code || !exam) return null;
+
+    const className = cls === "8" ? "8ನೇ ತರಗತಿ" : `${cls}ನೇ ತರಗತಿ`;
+    const keys = [
+        `subject_marks_${currentAcademicYear}_${className}_${exam}_${code}`,
+        `subject_marks_${className}_${exam}_${code}`
+    ];
+
+    for(const key of keys){
+        const raw=localStorage.getItem(key);
+        if(raw!==null && String(raw).trim()!==""){
+            const n=Number(raw);
+            if(Number.isFinite(n) && n>0) return n;
+        }
+    }
+    return 100;
 }
 
 function grade(mark,max){
@@ -742,56 +765,37 @@ async function viewResult(){
             student.academic_year || appSettings.academic_year || ""
         ).trim();
 
-        let subjectQuery = db
+        /*
+         * Load the SAME active Subject Master rows as marks-entry.html:
+         * academic year -> class -> duplicate-name cleanup -> display order.
+         */
+        const {data:allSubjectRows,error:subjectError}=await db
             .from("subjects")
             .select("*")
-            .eq("is_active",true);
+            .eq("is_active",true)
+            .eq("academic_year",academicYear)
+            .order("display_order",{ascending:true});
 
-        // Load Subject Master for the student's academic year.
-        if(academicYear){
-            subjectQuery = subjectQuery.eq("academic_year",academicYear);
-        }
+        if(subjectError) throw subjectError;
 
-        const {data:subjects,error:subjectError}=await subjectQuery
-            .order("display_order",{ascending:true})
-            .order("subject_code",{ascending:true});
+        const studentClass=classNumber(className);
 
-        if(subjectError)
-            throw subjectError;
+        const classSubjectRows=(allSubjectRows||[]).filter(subject=>{
+            const subjectClass=classNumber(
+                subject.class_name ??
+                subject.class ??
+                subject.standard ??
+                subject.className ??
+                ""
+            );
+            return subjectClass===studentClass;
+        });
 
-        const studentClass = normalizeClass(className);
-        const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
-
-        const subjectsForResult = (subjects || [])
-            .filter(s => {
-                if(!s || s.is_active === false) return false;
-
-                const rowClass = normalizeClass(
-                    s.class_name ?? s.class ?? s.standard ?? ""
-                );
-
-                const code = String(
-                    s.subject_code ?? s.code ?? ""
-                ).trim().toUpperCase();
-
-                return rowClass === studentClass &&
-                       VALID_SUBJECT_CODES.includes(code);
-            })
-            .sort((a,b) => {
-                const ao = Number(a.display_order);
-                const bo = Number(b.display_order);
-
-                if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo)
-                    return ao-bo;
-
-                return String(a.subject_code || "").localeCompare(
-                    String(b.subject_code || "")
-                );
-            });
+        const subjectsForResult=uniqueCurrentSubjects(classSubjectRows);
 
         if(!subjectsForResult.length){
             throw new Error(
-                `${className}ನೇ ತರಗತಿಗೆ Subject Masterನಲ್ಲಿ subjects ಸಿಗಲಿಲ್ಲ.`
+                `${className}ನೇ ತರಗತಿಗೆ Subject Masterನಲ್ಲಿ active subjects ಸಿಗಲಿಲ್ಲ.`
             );
         }
 
@@ -805,7 +809,7 @@ async function viewResult(){
             "ANNUAL"
         ];
 
-        const {data:results,error:resultError}=await db
+        const {data:resultRows,error:resultError}=await db
             .from("exam_results")
             .select("id,student_id,exam_type,published")
             .eq("student_id",student.id)
@@ -815,21 +819,15 @@ async function viewResult(){
         if(resultError)
             throw resultError;
 
-        /*
-         * IMPORTANT:
-         * Marks Entry uses the newest exam_results row for each
-         * student + exam. Send Results must use that SAME row.
-         * Only after selecting the newest row do we check published.
-         */
         const latestByExam = new Map();
 
-        (results || []).forEach(r=>{
+        (resultRows || []).forEach(r=>{
             if(!latestByExam.has(r.exam_type)){
                 latestByExam.set(r.exam_type,r);
             }
         });
 
-        results = Array.from(latestByExam.values())
+        const results = Array.from(latestByExam.values())
             .filter(r => r.published === true);
 
         /* ---------------------------------------------
@@ -946,7 +944,7 @@ function buildWhatsAppMessage(){
                 entered++;
             }
 
-            const name = displaySubjectName(subject);
+            const name = subjectName(subject);
             const code = exactSubjectMasterCode(subject);
             const maxText = (max === null || max === undefined || max === "") ? "-" : Number(max).toString();
             const markText = isAbsent
@@ -1145,9 +1143,9 @@ function renderExam(student,subjects,result,marksMap){
 
         if(hasMark){
             if(!isAbsent){
-                const numericValue = Number(value);
+                const numericValue=Number(value);
                 if(Number.isFinite(numericValue)){
-                    total += numericValue;
+                    total+=numericValue;
                 }
             }
             entered++;
@@ -1156,7 +1154,7 @@ function renderExam(student,subjects,result,marksMap){
         rows+=`
         <tr>
             <td class="subject">
-                ${esc(displaySubjectName(subject))}
+                ${esc(subjectName(subject))}
             </td>
 
             <td>
@@ -1475,15 +1473,36 @@ function dedupeSubjectsForBulk(subjects){
 
 async function loadResultDataForStudent(student){
     const className=student.class_name;
-    const {data:subjects,error:subjectError}=await db
-        .from("subjects").select("*")
-        .eq("class_name",className)
-        .eq("academic_year",String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim())
+    const year=String(
+        $("bulkAcademicYear")?.value ||
+        appSettings.academic_year ||
+        ""
+    ).trim();
+
+    const {data:subjectRows,error:subjectError}=await db
+        .from("subjects")
+        .select("*")
+        .eq("academic_year",year)
         .eq("is_active",true)
         .order("display_order",{ascending:true});
+
     if(subjectError) throw subjectError;
 
-    const subjectsForResult=dedupeSubjectsForBulk(subjects || []);
+    const cls=classNumber(className);
+
+    const classSubjectRows=(subjectRows||[]).filter(subject=>{
+        const subjectClass=classNumber(
+            subject.class_name ??
+            subject.class ??
+            subject.standard ??
+            subject.className ??
+            ""
+        );
+        return subjectClass===cls;
+    });
+
+    const subjectsForResult=uniqueCurrentSubjects(classSubjectRows);
+
     const {data:allResults,error:resultError}=await db
         .from("exam_results")
         .select("id,student_id,exam_type,published")
