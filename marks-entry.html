@@ -483,6 +483,21 @@ function rollNumber(student,index){
 
 function subjectName(subject){
 
+    const code = String(subjectCode(subject) || "").trim().toUpperCase();
+
+    const KANNADA_SUBJECT_NAMES = {
+        "01K":"ಕನ್ನಡ",
+        "31E":"ಇಂಗ್ಲೀಷ್",
+        "61H":"ಹಿಂದಿ",
+        "81K":"ಗಣಿತ",
+        "83K":"ವಿಜ್ಞಾನ",
+        "85K":"ಸಮಾಜ ವಿಜ್ಞಾನ"
+    };
+
+    if(KANNADA_SUBJECT_NAMES[code]){
+        return KANNADA_SUBJECT_NAMES[code];
+    }
+
     return getValue(
         subject,
         [
@@ -494,7 +509,6 @@ function subjectName(subject){
         ]
     ) || "Subject";
 }
-
 
 function subjectCode(subject){
 
