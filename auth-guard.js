@@ -193,6 +193,29 @@ student-result.html public page ಆಗಿರುವುದರಿಂದ
 
             }
 
+ // =====================================================
+// ALLOWED SCHOOL LOGIN EMAIL
+// =====================================================
+
+const ALLOWED_EMAIL = "svbrhsbls@gmail.com";
+
+const loggedInEmail =
+    String(session.user?.email || "").trim().toLowerCase();
+
+if (loggedInEmail !== ALLOWED_EMAIL.toLowerCase()) {
+
+    console.log(
+        "AUTH GUARD: Unauthorized email:",
+        loggedInEmail
+    );
+
+    // ಬೇರೆ emailಗೆ access ಇಲ್ಲ
+    await client.auth.signOut();
+
+    goToLogin();
+
+    return false;
+}
 
             /* =============================================
                SESSION EXISTS
