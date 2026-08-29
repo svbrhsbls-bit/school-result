@@ -1750,11 +1750,35 @@ async function saveMarks(){
                         ? -1
                         : Number(rawMark);
 
+                /*
+                 * Use the exact maximum already rendered in this Marks Entry
+                 * input. This keeps Save consistent with what the user sees
+                 * and with the Subject Master value loaded for this row.
+                 *
+                 * AB is a valid non-numeric value and is saved as AB.
+                 */
                 const max =
-                    maximumMarks(subject);
+                    Number(input.dataset.max);
+
+                const rawMarks =
+                    String(input.value ?? "").trim();
+
+                const isAB =
+                    rawMarks.toUpperCase() === "AB" ||
+                    rawMarks.toUpperCase() === "ABSENT";
+
+                const marks =
+                    rawMarks === ""
+                    ? null
+                    : (
+                        isAB
+                        ? "AB"
+                        : Number(rawMarks)
+                    );
 
                 if(
                     marks !== null &&
+                    !isAB &&
                     (
                         !Number.isFinite(marks) ||
                         marks < 0 ||
