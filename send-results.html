@@ -892,6 +892,24 @@ let currentResultData = {
     marksMap: {}
 };
 
+function getStudentMobile(student){
+    if(!student) return "";
+
+    const value =
+        student.mobile ??
+        student.mobile_number ??
+        student.mobile_no ??
+        student.phone ??
+        student.phone_number ??
+        student.contact_number ??
+        student.contact_mobile ??
+        student.parent_mobile ??
+        student.parent_mobile_number ??
+        "";
+
+    return String(value).trim();
+}
+
 function cleanIndianMobile(value){
     let digits = String(value || "").replace(/\D/g, "");
     if(digits.length === 10) return "91" + digits;
@@ -971,15 +989,45 @@ function buildWhatsAppMessage(){
 }
 
 function sendResultToWhatsApp(){
-    const mobile = cleanIndianMobile(currentResultData.student?.mobile);
-    if(!mobile || (mobile.length !== 12)) {
-        showMessage("ವಿದ್ಯಾರ್ಥಿಯ Mobile Number ಸರಿಯಾಗಿ ನಮೂದಿಸಿಲ್ಲ. Students Databaseನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.", "error");
-        return;
-    }
+    try{
+        if(!currentResultData || !currentResultData.student){
+            showMessage("ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶವನ್ನು Load ಮಾಡಿ.","error");
+            return;
+        }
 
-    const message = buildWhatsAppMessage();
-    const url = `https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+        const rawMobile=getStudentMobile(currentResultData.student);
+        const mobile=cleanIndianMobile(rawMobile);
+
+        if(!mobile || mobile.length!==12){
+            showMessage(
+                "ವಿದ್ಯಾರ್ಥಿಯ Mobile Number ಸಿಗಲಿಲ್ಲ/ತಪ್ಪಾಗಿದೆ. Students Databaseನಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.",
+                "error"
+            );
+            return;
+        }
+
+        const message=buildWhatsAppMessage();
+
+        /*
+         * Use WhatsApp's official send endpoint.  This works from a
+         * normal GitHub Pages site and does not depend on popup permission.
+         */
+        const url =
+            "https://api.whatsapp.com/send?phone=" +
+            encodeURIComponent(mobile) +
+            "&text=" +
+            encodeURIComponent(message);
+
+        window.location.assign(url);
+
+    }catch(error){
+        console.error("WhatsApp Send Error:",error);
+        showMessage(
+            "WhatsApp ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ: " +
+            (error.message || String(error)),
+            "error"
+        );
+    }
 }
 
 /* =========================================================
@@ -1533,13 +1581,19 @@ async function loadResultDataForStudent(student){
 }
 
 async function openBulkWhatsAppForStudent(student){
-    const mobile=cleanIndianMobile(student.mobile);
-    if(!mobile || mobile.length!==12) return {ok:false,reason:"Mobile Number ಇಲ್ಲ/ತಪ್ಪಾಗಿದೆ"};
+    const mobile=cleanIndianMobile(getStudentMobile(student));
+    if(!mobile || mobile.length!==12)
+        return {ok:false,reason:"Mobile Number ಇಲ್ಲ/ತಪ್ಪಾಗಿದೆ"};
+
     const data=await loadResultDataForStudent(student);
-    if(!data.results.length) return {ok:false,reason:"Published result ಇಲ್ಲ"};
+    if(!data.results.length)
+        return {ok:false,reason:"Published result ಇಲ್ಲ"};
+
     const message=buildWhatsAppMessageFromData(data);
     const url=`https://wa.me/${mobile}?text=${encodeURIComponent(message)}`;
-    window.open(url,"_blank","noopener,noreferrer");
+
+    // Use the current tab so the browser does not block the navigation.
+    window.location.href=url;
     return {ok:true};
 }
 
