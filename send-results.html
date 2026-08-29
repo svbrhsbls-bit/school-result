@@ -436,35 +436,80 @@ function getDivision(student){
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
-    const cls=String(getClass(student)||"").trim();
-    const code=String(subject?.subject_code || subject?.code || "").trim();
-    const year=String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim();
 
-    // Subject Master stores the exact exam-wise maximum marks in localStorage.
-    // Try the exact class label used by Subject Master first.
-    const className =
-        cls==="8"  ? "8ನೇ ತರಗತಿ" :
-        cls==="9"  ? "9ನೇ ತರಗತಿ" :
-        cls==="10" ? "10ನೇ ತರಗತಿ" :
-        cls;
+    /*
+     * SUBJECT MASTER IS THE AUTHORITATIVE SOURCE.
+     *
+     * Subject Master saves exam-wise Maximum Marks in:
+     * subject_marks_[class label]_[exam]_[subject code]
+     *
+     * Example:
+     * subject_marks_9ನೇ ತರಗತಿ_HALF_YEARLY_01K
+     *
+     * Read this exact value FIRST. Do not allow the old
+     * subjects.max_marks value to override it.
+     */
 
-    const exactKeys = [
-        "subject_marks_"+className+"_"+examType+"_"+code,
-        "subject_marks_"+className+"_"+examType+"_"+code.toUpperCase()
+    const cls = String(getClass(student) || "").trim();
+    const code = String(
+        subject?.subject_code ??
+        subject?.code ??
+        ""
+    ).trim().toUpperCase();
+
+    const year = String(
+        student?.academic_year ||
+        $("bulkAcademicYear")?.value ||
+        appSettings.academic_year ||
+        ""
+    ).trim();
+
+    const classLabel =
+        cls === "8"  ? "8ನೇ ತರಗತಿ" :
+        cls === "9"  ? "9ನೇ ತರಗತಿ" :
+        cls === "10" ? "10ನೇ ತರಗತಿ" :
+        String(subject?.class_name || cls).trim();
+
+    const keys = [
+        "subject_marks_" + classLabel + "_" + examType + "_" + code
     ];
 
-    for(const key of exactKeys){
-        const raw=localStorage.getItem(key);
-        if(raw!==null && String(raw).trim()!==""){
-            const n=Number(raw);
-            if(Number.isFinite(n) && n>0) return n;
+    /*
+     * Older Subject Master versions may have stored the academic year
+     * in the key. Keep this only as backward compatibility.
+     */
+    if(year){
+        keys.push(
+            "subject_marks_" +
+            year + "_" +
+            classLabel + "_" +
+            examType + "_" +
+            code
+        );
+    }
+
+    for(const key of keys){
+        const raw = localStorage.getItem(key);
+
+        if(
+            raw !== null &&
+            String(raw).trim() !== "" &&
+            Number.isFinite(Number(raw)) &&
+            Number(raw) > 0
+        ){
+            return Number(raw);
         }
     }
 
-    // Also read the Subject Master record directly from Supabase for the
-    // selected Academic Year, class and subject code.
-    const dbMax=Number(subject?.max_marks);
-    if(Number.isFinite(dbMax) && dbMax>0) return dbMax;
+    /*
+     * Fallback only when the Subject Master exam-specific value
+     * is not present in this browser.
+     */
+    const dbMax = Number(subject?.max_marks);
+
+    if(Number.isFinite(dbMax) && dbMax > 0){
+        return dbMax;
+    }
 
     return "";
 }
@@ -684,17 +729,11 @@ async function viewResult(){
            2. Load subjects for student's class
         --------------------------------------------- */
         const className=student.class_name;
-        const resultAcademicYear=String(
-            student.academic_year ||
-            appSettings.academic_year ||
-            ""
-        ).trim();
 
         const {data:subjects,error:subjectError}=await db
             .from("subjects")
             .select("*")
             .eq("class_name",className)
-            .eq("academic_year",resultAcademicYear)
             .eq("is_active",true)
             .order("display_order",{ascending:true});
 
