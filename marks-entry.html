@@ -1049,87 +1049,88 @@ async function loadStudents(){
 
 async function loadSavedMarks(){
 
-    for(const student of students){
-
+    students.forEach(student => {
         student.resultId = null;
         student.marks = {};
+    });
 
+    const studentIds = students
+        .map(s => getValue(s,["id","student_id"]))
+        .filter(Boolean);
 
+    if(!studentIds.length) return;
+
+    /* Load ALL exam results in one request */
+    const resultResponse =
+        await supabaseClient
+            .from("exam_results")
+            .select("id,student_id")
+            .in("student_id",studentIds)
+            .eq("exam_type",currentExam);
+
+    if(resultResponse.error){
+        throw resultResponse.error;
+    }
+
+    const resultByStudent = new Map();
+
+    (resultResponse.data || []).forEach(row => {
+        const key = String(row.student_id);
+
+        if(!resultByStudent.has(key)){
+            resultByStudent.set(key,row.id);
+        }
+    });
+
+    students.forEach(student => {
         const studentId =
-            getValue(
-                student,
-                [
-                    "id",
-                    "student_id"
-                ]
-            );
-
-
-        if(!studentId){
-            continue;
-        }
-
-
-        const resultResponse =
-            await supabaseClient
-                .from("exam_results")
-                .select("id")
-                .eq(
-                    "student_id",
-                    studentId
-                )
-                .eq(
-                    "exam_type",
-                    currentExam
-                )
-                .order(
-                    "id",
-                    {ascending:false}
-                )
-                .limit(1)
-                .maybeSingle();
-
-
-        if(
-            resultResponse.error ||
-            !resultResponse.data
-        ){
-            continue;
-        }
-
+            getValue(student,["id","student_id"]);
 
         student.resultId =
-            resultResponse.data.id;
+            resultByStudent.get(String(studentId)) || null;
+    });
 
+    const resultIds =
+        [...resultByStudent.values()];
 
-        const marksResponse =
-            await supabaseClient
-                .from("result_marks")
-                .select(
-                    "subject_id,marks"
-                )
-                .eq(
-                    "exam_result_id",
-                    student.resultId
-                );
+    if(!resultIds.length) return;
 
+    /* Load ALL marks in one request */
+    const marksResponse =
+        await supabaseClient
+            .from("result_marks")
+            .select("exam_result_id,subject_id,marks")
+            .in("exam_result_id",resultIds);
 
-        if(!marksResponse.error){
-
-            for(
-                const mark of
-                (marksResponse.data || [])
-            ){
-
-                student.marks[
-                    mark.subject_id
-                ] =
-                    mark.marks;
-            }
-        }
+    if(marksResponse.error){
+        throw marksResponse.error;
     }
-}
 
+    const studentByResult = new Map();
+
+    students.forEach(student => {
+        if(student.resultId){
+            studentByResult.set(
+                String(student.resultId),
+                student
+            );
+        }
+    });
+
+    (marksResponse.data || []).forEach(mark => {
+        const student =
+            studentByResult.get(
+                String(mark.exam_result_id)
+            );
+
+        if(!student) return;
+
+        student.marks[mark.subject_id] =
+            String(mark.marks).toUpperCase() === "AB"
+            ? "AB"
+            : mark.marks;
+    });
+}
 
 /* =====================================================
    INPUT ID
@@ -1527,8 +1528,11 @@ function calculateStudent(studentId){
             input.value !== ""
         ){
 
-            total +=
-                Number(input.value);
+            const inputValue = String(input.value).trim().toUpperCase();
+
+            if(inputValue !== "AB"){
+                total += Number(input.value);
+            }
 
             entered++;
         }
@@ -1690,32 +1694,25 @@ async function saveMarks(){
 
         if(missingStudents.length){
 
-            const createResults = await Promise.all(
-                missingStudents.map(async student => {
+            const newResultRows =
+                missingStudents.map(student => ({
+                    student_id:
+                        getValue(student,["id","student_id"]),
+                    exam_type: currentExam,
+                    published: false
+                }));
 
-                    const studentId =
-                        getValue(student,["id","student_id"]);
+            const inserted =
+                await supabaseClient
+                    .from("exam_results")
+                    .insert(newResultRows)
+                    .select("id,student_id");
 
-                    const inserted =
-                        await supabaseClient
-                            .from("exam_results")
-                            .insert({
-                                student_id: studentId,
-                                exam_type: currentExam,
-                                published: false
-                            })
-                            .select("id,student_id")
-                            .single();
+            if(inserted.error){
+                throw inserted.error;
+            }
 
-                    if(inserted.error){
-                        throw inserted.error;
-                    }
-
-                    return inserted.data;
-                })
-            );
-
-            createResults.forEach(row => {
+            (inserted.data || []).forEach(row => {
                 resultByStudent.set(
                     String(row.student_id),
                     row.id
@@ -1876,7 +1873,7 @@ async function saveMarks(){
             }
         }
 
-        const BATCH_SIZE = 20;
+        const BATCH_SIZE = 50;
 
         for(
             let i = 0;
@@ -1917,13 +1914,34 @@ async function saveMarks(){
         }
 
         /* ---------------------------------------------
-           Refresh screen
+           Refresh screen locally
         --------------------------------------------- */
 
-        await loadSavedMarks();
+        students.forEach(student => {
+            student.marks = student.marks || {};
+
+            subjects.forEach(subject => {
+                const input =
+                    getInput(
+                        getValue(student,["id","student_id"]),
+                        subject.id
+                    );
+
+                if(input){
+                    const value =
+                        String(input.value || "").trim();
+
+                    student.marks[subject.id] =
+                        value === ""
+                        ? ""
+                        : (value.toUpperCase() === "AB"
+                           ? "AB"
+                           : value);
+                }
+            });
+        });
 
         renderMarksTable();
-
         updateSummary();
 
         showMessage(
@@ -1989,8 +2007,11 @@ function updateSummary(){
                 input.value !== ""
             ){
 
-                total +=
-                    Number(input.value);
+                const inputValue = String(input.value).trim().toUpperCase();
+
+                if(inputValue !== "AB"){
+                    total += Number(input.value);
+                }
 
                 entered++;
             }
