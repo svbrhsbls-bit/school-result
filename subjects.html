@@ -198,24 +198,235 @@ document.addEventListener("DOMContentLoaded", async ()=>{
 });
 
 async function initAcademicYears(){
-    const years = new Set();
+
+    const sel = document.getElementById("academicYear");
+
+    if(!sel){
+        console.error("Academic Year dropdown ಸಿಗಲಿಲ್ಲ.");
+        return;
+    }
+
+    sel.innerHTML = `<option value="">Loading...</option>`;
+
     try{
-        const raw = localStorage.getItem(YEAR_STORAGE_KEY);
-        if(raw){ JSON.parse(raw).forEach(y=>{ if(/^\d{4}-\d{2}$/.test(String(y))) years.add(String(y)); }); }
-    }catch(e){}
-    try{
-        const {data,error}=await db.from("settings").select("academic_year").limit(1);
-        if(!error && data && data[0] && /^\d{4}-\d{2}$/.test(String(data[0].academic_year||""))) years.add(String(data[0].academic_year));
-    }catch(e){}
-    if(!years.size) years.add("2026-27");
-    const list=[...years].sort((a,b)=>parseInt(b)-parseInt(a));
-    try{ localStorage.setItem(YEAR_STORAGE_KEY,JSON.stringify(list)); }catch(e){}
-    const sel=document.getElementById("academicYear");
-    sel.innerHTML=list.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("");
-    const saved=localStorage.getItem("subject_master_selected_year");
-    selectedAcademicYear=(saved && list.includes(saved))?saved:list[0];
-    sel.value=selectedAcademicYear;
-    await loadSubjects();
+
+        /* =====================================================
+           1. LOAD ALL ACADEMIC YEARS
+           ===================================================== */
+
+        const {
+            data: yearRows,
+            error: yearError
+        } = await db
+            .from("academic_years")
+            .select("academic_year,is_active")
+            .order("academic_year",{ascending:false});
+
+        if(yearError){
+            throw yearError;
+        }
+
+
+        /* =====================================================
+           2. LOAD CURRENT YEAR FROM SETTINGS
+           settings id = 1
+           ===================================================== */
+
+        const {
+            data: settingsRow,
+            error: settingsError
+        } = await db
+            .from("settings")
+            .select("academic_year")
+            .eq("id",1)
+            .maybeSingle();
+
+        if(settingsError){
+            throw settingsError;
+        }
+
+
+        /* =====================================================
+           3. FIND CURRENT ACADEMIC YEAR
+
+           Priority:
+           1. Settings id=1 academic_year
+           2. academic_years.is_active = true
+           3. First available year
+           ===================================================== */
+
+        let currentYear = "";
+
+        if(
+            settingsRow &&
+            settingsRow.academic_year
+        ){
+            currentYear =
+                String(
+                    settingsRow.academic_year
+                ).trim();
+        }
+
+
+        if(!currentYear){
+
+            const activeYear =
+                (yearRows || []).find(
+                    y => y.is_active === true
+                );
+
+            if(activeYear){
+                currentYear =
+                    String(
+                        activeYear.academic_year
+                    ).trim();
+            }
+        }
+
+
+        /* =====================================================
+           4. BUILD YEAR LIST
+           ===================================================== */
+
+        const yearSet = new Set();
+
+        (yearRows || []).forEach(row => {
+
+            const year =
+                String(
+                    row.academic_year || ""
+                ).trim();
+
+            if(
+                /^\d{4}-\d{2}$/.test(year)
+            ){
+                yearSet.add(year);
+            }
+
+        });
+
+
+        /* Settings current year ಕೂಡ list ನಲ್ಲಿ ಇರಬೇಕು */
+
+        if(
+            currentYear &&
+            /^\d{4}-\d{2}$/.test(currentYear)
+        ){
+            yearSet.add(currentYear);
+        }
+
+
+        /* =====================================================
+           5. DEFAULT YEAR
+           ===================================================== */
+
+        if(yearSet.size === 0){
+            yearSet.add("2026-27");
+        }
+
+
+        const list =
+            Array.from(yearSet).sort(
+                (a,b) => {
+
+                    const ay =
+                        parseInt(
+                            a.substring(0,4),
+                            10
+                        );
+
+                    const by =
+                        parseInt(
+                            b.substring(0,4),
+                            10
+                        );
+
+                    return by - ay;
+                }
+            );
+
+
+        /* =====================================================
+           6. FILL DROPDOWN
+           ===================================================== */
+
+        sel.innerHTML = "";
+
+        list.forEach(year => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = year;
+            option.textContent = year;
+
+            sel.appendChild(option);
+
+        });
+
+
+        /* =====================================================
+           7. SELECT SETTINGS CURRENT YEAR
+
+           IMPORTANT:
+           Old localStorage year is NOT given priority.
+           Settings current year is always selected.
+           ===================================================== */
+
+        if(
+            currentYear &&
+            list.includes(currentYear)
+        ){
+
+            selectedAcademicYear =
+                currentYear;
+
+        }else{
+
+            selectedAcademicYear =
+                list[0];
+
+        }
+
+
+        sel.value =
+            selectedAcademicYear;
+
+
+        /* Save current selection for this page */
+
+        try{
+            localStorage.setItem(
+                "subject_master_selected_year",
+                selectedAcademicYear
+            );
+        }catch(e){}
+
+
+        /* =====================================================
+           8. LOAD SUBJECTS FOR SELECTED YEAR
+           ===================================================== */
+
+        await loadSubjects();
+
+
+    }catch(error){
+
+        console.error(
+            "Academic Year Load Error:",
+            error
+        );
+
+        sel.innerHTML =
+            `<option value="">Load Error</option>`;
+
+        showMessage(
+            "Academic Year Load Error: " +
+            (error.message || String(error)),
+            "error"
+        );
+
+    }
 }
 
 async function onAcademicYearChange(){
