@@ -877,8 +877,7 @@ const subjectsForResult = uniqueSubjects.slice(0, 6);
             .select("id,student_id,exam_type,published")
             .eq("student_id",student.id)
             .in("exam_type",examTypes)
-            .eq("published",true)
-            .order("id",{ascending:true});
+            .order("id",{ascending:false});
 
         if(resultError)
             throw resultError;
@@ -886,6 +885,15 @@ const subjectsForResult = uniqueSubjects.slice(0, 6);
         /* ---------------------------------------------
            4. Load marks for published results
         --------------------------------------------- */
+        /* Marks Entry uses the newest exam_results row for a student/exam.
+           Do the same here so WhatsApp reads exactly the marks currently
+           shown in Marks Entry, not an older published result. */
+        const latestByExam = new Map();
+        (results || []).forEach(r=>{
+            if(!latestByExam.has(r.exam_type)) latestByExam.set(r.exam_type,r);
+        });
+        results = Array.from(latestByExam.values());
+
         const resultIds=(results || []).map(r=>r.id);
 
         let marks=[];
@@ -1548,8 +1556,8 @@ async function loadResultDataForStudent(student){
         .select("id,student_id,exam_type,published")
         .eq("student_id",student.id)
         .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
-        .eq("published",true)
-        .order("id",{ascending:true});
+        .order("id",{ascending:false})
+        .limit(1);
     if(resultError) throw resultError;
 
     const resultIds=(results||[]).map(r=>r.id);
