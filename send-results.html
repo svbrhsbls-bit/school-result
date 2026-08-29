@@ -435,6 +435,67 @@ function getDivision(student){
 }
 
 /* =========================================================
+   MARKS ENTRY SUBJECT MATCHING
+   Use the same current Subject Master row as Marks Entry.
+   This is important because result_marks.subject_id points
+   to the exact subject row used when marks were saved.
+========================================================= */
+function normalizeSubjectKeyForMarks(name){
+    const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
+    const map={
+        "ಕನ್ನಡ":"kannada","kannada":"kannada",
+        "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
+        "ಹಿಂದಿ":"hindi","hindi":"hindi",
+        "ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics",
+        "ವಿಜ್ಞಾನ":"science","science":"science",
+        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
+        "social science":"social science","socialscience":"social science"
+    };
+    return map[n]||n;
+}
+
+function chooseCurrentSubjectForMarks(group){
+    return [...group].sort((a,b)=>{
+        const aid=Number(a.id), bid=Number(b.id);
+        if(Number.isFinite(aid)&&Number.isFinite(bid)&&aid!==bid) return bid-aid;
+
+        const at=new Date(a.updated_at||a.created_at||0).getTime();
+        const bt=new Date(b.updated_at||b.created_at||0).getTime();
+        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt) return bt-at;
+
+        return Number(a.display_order||999)-Number(b.display_order||999);
+    })[0];
+}
+
+function uniqueCurrentSubjectsForMarks(rows){
+    const groups=new Map();
+
+    (rows||[])
+        .filter(r=>r.is_active!==false)
+        .forEach(row=>{
+            const key=normalizeSubjectKeyForMarks(row.subject_name);
+            if(!key) return;
+            if(!groups.has(key)) groups.set(key,[]);
+            groups.get(key).push(row);
+        });
+
+    return Array.from(groups.values())
+        .map(group=>{
+            const chosen={...chooseCurrentSubjectForMarks(group)};
+            chosen._allSubjectIds=group.map(x=>x.id);
+            return chosen;
+        })
+        .sort((a,b)=>{
+            const ao=Number(a.display_order||999);
+            const bo=Number(b.display_order||999);
+            if(ao!==bo) return ao-bo;
+            return Number(a.id||999999)-Number(b.id||999999);
+        })
+        .slice(0,6);
+}
+
+
+/* =========================================================
    SUBJECT MASTER — CURRENT SUBJECT CODE
    =========================================================
    These are the codes currently defined in Subject Master.
@@ -759,6 +820,8 @@ async function viewResult(){
         if(subjectError)
             throw subjectError;
 
+        subjects = uniqueCurrentSubjectsForMarks(subjects);
+
         if(!subjects || !subjects.length)
             throw new Error(
                 `${className}ನೇ ತರಗತಿಗೆ subjects ಸಿಗಲಿಲ್ಲ.`
@@ -914,14 +977,24 @@ function buildWhatsAppMessage(){
         let total = 0, maximum = 0, entered = 0;
 
         subjects.forEach(subject => {
-            const ids = Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds : [subject.id];
-            let value;
-            for(const id of ids){
-                const candidate = marksMap[`${result.id}_${id}`];
-                if(candidate !== null && candidate !== undefined && candidate !== ""){
-                    value = candidate;
-                    break;
+            let value = marksMap[`${result.id}_${subject.id}`];
+
+            /*
+             * Marks Entry saves using the current Subject Master row id.
+             * Only if that exact id has no mark, look at an older duplicate
+             * row as a backward-compatibility fallback.
+             */
+            if(value === null || value === undefined || value === ""){
+                const oldIds = Array.isArray(subject._allSubjectIds)
+                    ? subject._allSubjectIds.filter(id => String(id)!==String(subject.id))
+                    : [];
+
+                for(const id of oldIds){
+                    const candidate = marksMap[`${result.id}_${id}`];
+                    if(candidate !== null && candidate !== undefined && candidate !== ""){
+                        value = candidate;
+                        break;
+                    }
                 }
             }
             const max = getMaxMarks(student, result.exam_type, subject);
