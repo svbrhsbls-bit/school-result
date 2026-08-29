@@ -434,159 +434,71 @@ function getDivision(student){
     ).trim().toUpperCase();
 }
 
-/* =========================================================
-   MARKS ENTRY SUBJECT MATCHING
-   Use the same current Subject Master row as Marks Entry.
-   This is important because result_marks.subject_id points
-   to the exact subject row used when marks were saved.
-========================================================= */
-function normalizeSubjectKeyForMarks(name){
-    const n=String(name||"").trim().toLowerCase().replace(/\s+/g," ");
-    const map={
-        "ಕನ್ನಡ":"kannada","kannada":"kannada",
-        "ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english",
-        "ಹಿಂದಿ":"hindi","hindi":"hindi",
-        "ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics",
-        "ವಿಜ್ಞಾನ":"science","science":"science",
-        "ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science",
-        "social science":"social science","socialscience":"social science"
-    };
-    return map[n]||n;
-}
-
-function chooseCurrentSubjectForMarks(group){
-    return [...group].sort((a,b)=>{
-        const aid=Number(a.id), bid=Number(b.id);
-        if(Number.isFinite(aid)&&Number.isFinite(bid)&&aid!==bid) return bid-aid;
-
-        const at=new Date(a.updated_at||a.created_at||0).getTime();
-        const bt=new Date(b.updated_at||b.created_at||0).getTime();
-        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt) return bt-at;
-
-        return Number(a.display_order||999)-Number(b.display_order||999);
-    })[0];
-}
-
-function uniqueCurrentSubjectsForMarks(rows){
-    const groups=new Map();
-
-    (rows||[])
-        .filter(r=>r.is_active!==false)
-        .forEach(row=>{
-            const key=normalizeSubjectKeyForMarks(row.subject_name);
-            if(!key) return;
-            if(!groups.has(key)) groups.set(key,[]);
-            groups.get(key).push(row);
-        });
-
-    return Array.from(groups.values())
-        .map(group=>{
-            const chosen={...chooseCurrentSubjectForMarks(group)};
-            chosen._allSubjectIds=group.map(x=>x.id);
-            return chosen;
-        })
-        .sort((a,b)=>{
-            const ao=Number(a.display_order||999);
-            const bo=Number(b.display_order||999);
-            if(ao!==bo) return ao-bo;
-            return Number(a.id||999999)-Number(b.id||999999);
-        })
-        .slice(0,6);
-}
-
 
 /* =========================================================
-   SUBJECT MASTER — CURRENT SUBJECT CODE
-   =========================================================
-   These are the codes currently defined in Subject Master.
-   WhatsApp must never display an old/historical code from
-   an older subjects row.
+   SUBJECT MASTER EXACT CODE MAP
+   Taken from subjects.html:
+   01K = ಕನ್ನಡ
+   31E = English
+   61H = Hindi
+   81K = Mathematics
+   83K = Science
+   85K = Social Science
+
+   WhatsApp must NEVER display old codes such as
+   KAN / ENG / HIN / MAT / SCI / SOC.
 ========================================================= */
 const SUBJECT_MASTER_CODES = {
-    "ಕನ್ನಡ": "01K",
-    "ಇಂಗ್ಲಿಷ್": "31E",
-    "ಇಂಗ್ಲೀಷ್": "31E",
-    "ಹಿಂದಿ": "61H",
-    "ಗಣಿತ": "81K",
-    "ಗಣಿತಶಾಸ್ತ್ರ": "81K",
-    "ವಿಜ್ಞಾನ": "83K",
-    "ಸಮಾಜ ವಿಜ್ಞಾನ": "85K",
-    "ಸಮಾಜವಿಜ್ಞಾನ": "85K"
+    "ಕನ್ನಡ":"01K",
+    "english":"31E",
+    "hindi":"61H",
+    "mathematics":"81K",
+    "science":"83K",
+    "social science":"85K"
 };
 
-function normalizeSubjectText(value){
-    return String(value || "")
-        .trim()
-        .replace(/\s+/g," ")
-        .toLowerCase();
-}
-
-function getSubjectMasterCode(subject){
-    const name=normalizeSubjectText(subject?.subject_name);
-
-    if(SUBJECT_MASTER_CODES[name]){
-        return SUBJECT_MASTER_CODES[name];
-    }
-
-    /*
-     * If the Subject Master code is already present and is one of
-     * the current codes, keep it.
-     */
-    const code=String(subject?.subject_code || "").trim().toUpperCase();
-    const validCodes=Object.values(SUBJECT_MASTER_CODES);
-
-    if(validCodes.includes(code)){
-        return code;
-    }
-
-    return code;
+function exactSubjectMasterCode(subject){
+    const name = String(subject?.subject_name || "").trim();
+    const key = name.toLowerCase().replace(/\s+/g," ");
+    return SUBJECT_MASTER_CODES[name] ||
+           SUBJECT_MASTER_CODES[key] ||
+           String(subject?.subject_code || subject?.code || "").trim().toUpperCase();
 }
 
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
+    const cls = String(subject?.class_name || getClass(student) || "").trim();
+    const code = exactSubjectMasterCode(subject);
+    const exam = String(examType || "").trim();
 
-    /*
-     * Subject Master saves:
-     * subject_marks_[class]_[exam]_[CURRENT SUBJECT CODE]
-     *
-     * Example:
-     * subject_marks_9ನೇ ತರಗತಿ_HALF_YEARLY_01K
-     *
-     * Always read this first.
-     */
-    const cls=String(getClass(student) || "").trim();
+    if(!cls || !code || !exam) return null;
 
-    const classLabel =
-        cls==="8"  ? "8ನೇ ತರಗತಿ" :
-        cls==="9"  ? "9ನೇ ತರಗತಿ" :
-        cls==="10" ? "10ನೇ ತರಗತಿ" :
-        String(subject?.class_name || cls).trim();
+    const classVariants = {
+        "8ನೇ ತರಗತಿ":["8ನೇ ತರಗತಿ","8"],
+        "9ನೇ ತರಗತಿ":["9ನೇ ತರಗತಿ","9"],
+        "10ನೇ ತರಗತಿ":["10ನೇ ತರಗತಿ","10"],
+        "8":["8ನೇ ತರಗತಿ","8"],
+        "9":["9ನೇ ತರಗತಿ","9"],
+        "10":["10ನೇ ತರಗತಿ","10"]
+    };
 
-    const code=getSubjectMasterCode(subject);
+    const variants = classVariants[cls] || [cls];
 
-    if(!classLabel || !examType || !code){
-        return Number(subject?.max_marks) || 0;
+    /* 1. Exact value saved by subjects.html */
+    for(const c of variants){
+        const key = `subject_marks_${c}_${exam}_${code}`;
+        const raw = localStorage.getItem(key);
+        if(raw !== null && String(raw).trim() !== ""){
+            const n = Number(raw);
+            if(Number.isFinite(n) && n > 0) return n;
+        }
     }
 
-    const key="subject_marks_"+classLabel+"_"+examType+"_"+code;
-    const raw=localStorage.getItem(key);
+    /* 2. Current Subject Master row */
+    const dbMax = Number(subject?.max_marks);
+    if(Number.isFinite(dbMax) && dbMax > 0) return dbMax;
 
-    if(
-        raw!==null &&
-        String(raw).trim()!=="" &&
-        Number.isFinite(Number(raw)) &&
-        Number(raw)>0
-    ){
-        return Number(raw);
-    }
-
-    /*
-     * If the exam-wise value has not been saved in this browser,
-     * fall back to the Subject Master database maximum.
-     */
-    const dbMax=Number(subject?.max_marks);
-
-    return Number.isFinite(dbMax) && dbMax>0 ? dbMax : 0;
+    return null;
 }
 
 function grade(mark,max){
@@ -804,23 +716,27 @@ async function viewResult(){
            2. Load subjects for student's class
         --------------------------------------------- */
         const className=student.class_name;
+        const academicYear=String(
+            student.academic_year || appSettings.academic_year || ""
+        ).trim();
 
-        const {data:subjects,error:subjectError}=await db
+        let subjectQuery = db
             .from("subjects")
             .select("*")
             .eq("class_name",className)
-            .eq("academic_year",String(
-                student.academic_year ||
-                appSettings.academic_year ||
-                ""
-            ).trim())
-            .eq("is_active",true)
+            .eq("is_active",true);
+
+        // Subject Master is year-wise. Therefore WhatsApp must load
+        // subjects from the student's selected Academic Year.
+        if(academicYear){
+            subjectQuery = subjectQuery.eq("academic_year",academicYear);
+        }
+
+        const {data:subjects,error:subjectError}=await subjectQuery
             .order("display_order",{ascending:true});
 
         if(subjectError)
             throw subjectError;
-
-        subjects = uniqueCurrentSubjectsForMarks(subjects);
 
         if(!subjects || !subjects.length)
             throw new Error(
@@ -828,39 +744,36 @@ async function viewResult(){
             );
 
         /* =========================================================
-   SUBJECT MASTER — CURRENT ACTIVE CODE ONLY
+   SUBJECT MASTER — USE THE ACTUAL ACTIVE ROWS
+   IMPORTANT:
+   Do NOT merge subjects by subject_name.
+   result_marks is linked by subject_id, so changing the row/code
+   can make the displayed subject code and marks mismatch.
 ========================================================= */
-const normalizeSubjectName = (name) =>
-    String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
 
-const subjectGroups = new Map();
-(subjects || []).forEach(subject => {
-    const key = normalizeSubjectName(subject.subject_name);
-    if(!key) return;
-    if(!subjectGroups.has(key)) subjectGroups.set(key, []);
-    subjectGroups.get(key).push(subject);
-});
-
-const uniqueSubjects = [];
-subjectGroups.forEach(group => {
-    /* If duplicate historical rows exist, highest ID is the newest
-       Subject Master record and therefore its current code is used. */
-    group.sort((a,b) => {
-        const aId = Number(a.id), bId = Number(b.id);
-        if(Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) return bId-aId;
-        return Number(a.display_order || 999) - Number(b.display_order || 999);
-    });
-    const chosen = {...group[0]};
-    /* Only for finding old marks; display/WhatsApp always uses chosen.subject_code. */
-    chosen._allSubjectIds = group.map(x => x.id);
-    uniqueSubjects.push(chosen);
-});
-
-uniqueSubjects.sort((a,b) =>
-    Number(a.display_order || 999) - Number(b.display_order || 999)
-);
-
-const subjectsForResult = uniqueSubjects.slice(0, 6);
+/*
+   IMPORTANT:
+   Supabase contains old/legacy subject rows also.
+   Only the six Subject Master codes currently used by
+   subjects.html are allowed into the result.
+   This prevents duplicate subjects such as:
+   ಕನ್ನಡ [01K] + ಕನ್ನಡ [old code]
+   English [31E] + English [ENG]
+*/
+const subjectsForResult = (subjects || [])
+    .filter(s => {
+        if(!s || s.is_active === false) return false;
+        const code = String(s.subject_code || "").trim().toUpperCase();
+        return VALID_SUBJECT_CODES.includes(code);
+    })
+    .sort((a,b) => {
+        const ao = Number(a.display_order);
+        const bo = Number(b.display_order);
+        if(Number.isFinite(ao) && Number.isFinite(bo) && ao !== bo) return ao-bo;
+        return Number(a.id || 0) - Number(b.id || 0);
+    })
+    .slice(0, 6);
 
         /* ---------------------------------------------
            3. Load only published results
@@ -882,18 +795,26 @@ const subjectsForResult = uniqueSubjects.slice(0, 6);
         if(resultError)
             throw resultError;
 
-        /* ---------------------------------------------
-           4. Load marks for published results
-        --------------------------------------------- */
-        /* Marks Entry uses the newest exam_results row for a student/exam.
-           Do the same here so WhatsApp reads exactly the marks currently
-           shown in Marks Entry, not an older published result. */
+        /*
+         * IMPORTANT:
+         * Marks Entry uses the newest exam_results row for each
+         * student + exam. Send Results must use that SAME row.
+         * Only after selecting the newest row do we check published.
+         */
         const latestByExam = new Map();
-        (results || []).forEach(r=>{
-            if(!latestByExam.has(r.exam_type)) latestByExam.set(r.exam_type,r);
-        });
-        results = Array.from(latestByExam.values());
 
+        (results || []).forEach(r=>{
+            if(!latestByExam.has(r.exam_type)){
+                latestByExam.set(r.exam_type,r);
+            }
+        });
+
+        results = Array.from(latestByExam.values())
+            .filter(r => r.published === true);
+
+        /* ---------------------------------------------
+           4. Load marks for the EXACT same result IDs
+        --------------------------------------------- */
         const resultIds=(results || []).map(r=>r.id);
 
         let marks=[];
@@ -967,11 +888,7 @@ function buildWhatsAppMessage(){
     const lines = [];
     lines.push(`*${appSettings.school_name || "ಶಾಲೆಯ ಹೆಸರು"}*`);
     if(appSettings.school_address) lines.push(appSettings.school_address);
-    lines.push(`ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${
-        student.academic_year ||
-        appSettings.academic_year ||
-        "2026-27"
-    }`);
+    lines.push(`ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${appSettings.academic_year || "2026-27"}`);
     lines.push("");
     lines.push(`*ವಿದ್ಯಾರ್ಥಿಯ ಫಲಿತಾಂಶ*`);
     lines.push(`ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು: ${getStudentName(student) || "-"}`);
@@ -985,36 +902,28 @@ function buildWhatsAppMessage(){
         let total = 0, maximum = 0, entered = 0;
 
         subjects.forEach(subject => {
-            let value = marksMap[`${result.id}_${subject.id}`];
-
-            /*
-             * Marks Entry saves using the current Subject Master row id.
-             * Only if that exact id has no mark, look at an older duplicate
-             * row as a backward-compatibility fallback.
-             */
-            if(value === null || value === undefined || value === ""){
-                const oldIds = Array.isArray(subject._allSubjectIds)
-                    ? subject._allSubjectIds.filter(id => String(id)!==String(subject.id))
-                    : [];
-
-                for(const id of oldIds){
-                    const candidate = marksMap[`${result.id}_${id}`];
-                    if(candidate !== null && candidate !== undefined && candidate !== ""){
-                        value = candidate;
-                        break;
-                    }
+            const ids = [subject.id];
+            let value;
+            for(const id of ids){
+                const candidate = marksMap[`${result.id}_${id}`];
+                if(candidate !== null && candidate !== undefined && candidate !== ""){
+                    value = candidate;
+                    break;
                 }
             }
             const max = getMaxMarks(student, result.exam_type, subject);
-            maximum += max;
+            if(Number.isFinite(Number(max)) && Number(max) > 0) maximum += Number(max);
             const hasMark = value !== null && value !== undefined && value !== "";
             if(hasMark){
                 total += Number(value);
                 entered++;
             }
             const name = subject.subject_name || "";
-            const code = getSubjectMasterCode(subject);
-            const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
+            const code = exactSubjectMasterCode(subject);
+            const maxText = (max === null || max === undefined || max === "") ? "-" : Number(max).toString();
+            const markText = hasMark
+                ? `${value}/${maxText} (${grade(value,max)})`
+                : `-/${maxText}`;
             lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
         });
 
@@ -1175,10 +1084,7 @@ function renderExam(student,subjects,result,marksMap){
            to the same subject name. This keeps the display at one
            subject while preserving marks already entered earlier.
         */
-        const subjectIds =
-            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
-                ? subject._allSubjectIds
-                : [subject.id];
+        const subjectIds = [subject.id];
 
         let value;
         for(const subjectId of subjectIds){
@@ -1196,7 +1102,7 @@ function renderExam(student,subjects,result,marksMap){
                 subject
             );
 
-        maximum+=max;
+        if(Number.isFinite(Number(max)) && Number(max) > 0) maximum+=Number(max);
 
         const hasMark=
             value!==null &&
@@ -1215,14 +1121,14 @@ function renderExam(student,subjects,result,marksMap){
             </td>
 
             <td>
-                ${esc(getSubjectMasterCode(subject))}
+                ${esc(exactSubjectMasterCode(subject))}
             </td>
 
             <td>
                 ${hasMark ? esc(value) : "-"}
             </td>
 
-            <td>${max}</td>
+            <td>${max === null || max === undefined ? "-" : max}</td>
 
             <td>
                 ${hasMark ? grade(value,max) : "-"}
@@ -1510,55 +1416,48 @@ async function loadBulkStudents(){
 }
 
 function dedupeSubjectsForBulk(subjects){
-    const normalize = name => String(name || "").trim().replace(/\\s+/g," ").toLowerCase();
-    const groups = new Map();
-    (subjects || []).forEach(subject=>{
-        const key=normalize(subject.subject_name);
-        if(!key) return;
-        if(!groups.has(key)) groups.set(key,[]);
-        groups.get(key).push(subject);
-    });
-    const unique=[];
-    groups.forEach(group=>{
-        group.sort((a,b)=>{
-            const ai=Number(a.id), bi=Number(b.id);
-            if(Number.isFinite(ai)&&Number.isFinite(bi)&&ai!==bi) return bi-ai;
-            return Number(a.display_order||999)-Number(b.display_order||999);
-        });
-        const chosen={...group[0]};
-        chosen._allSubjectIds=group.map(x=>x.id).filter(x=>x!==null&&x!==undefined);
-        unique.push(chosen);
-    });
-    unique.sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999));
-    return unique.slice(0,6);
+    const VALID_SUBJECT_CODES = ["01K","31E","61H","81K","83K","85K"];
+
+    // Do not merge by subject name and do not include legacy codes.
+    // result_marks is linked to the real Subject Master subject_id.
+    return (subjects || [])
+        .filter(s => {
+            if(!s || s.is_active === false) return false;
+            const code = String(s.subject_code || "").trim().toUpperCase();
+            return VALID_SUBJECT_CODES.includes(code);
+        })
+        .sort((a,b) => {
+            const ao=Number(a.display_order), bo=Number(b.display_order);
+            if(Number.isFinite(ao)&&Number.isFinite(bo)&&ao!==bo) return ao-bo;
+            return Number(a.id||0)-Number(b.id||0);
+        })
+        .slice(0,6);
 }
 
 async function loadResultDataForStudent(student){
     const className=student.class_name;
-    const resultAcademicYear=String(
-        student.academic_year ||
-        $("bulkAcademicYear")?.value ||
-        appSettings.academic_year ||
-        ""
-    ).trim();
-
     const {data:subjects,error:subjectError}=await db
         .from("subjects").select("*")
         .eq("class_name",className)
-        .eq("academic_year",resultAcademicYear)
+        .eq("academic_year",String($("bulkAcademicYear")?.value || appSettings.academic_year || "").trim())
         .eq("is_active",true)
         .order("display_order",{ascending:true});
     if(subjectError) throw subjectError;
 
     const subjectsForResult=dedupeSubjectsForBulk(subjects || []);
-    const {data:results,error:resultError}=await db
+    const {data:allResults,error:resultError}=await db
         .from("exam_results")
         .select("id,student_id,exam_type,published")
         .eq("student_id",student.id)
         .eq("exam_type",String($("bulkExam")?.value || "HALF_YEARLY"))
         .order("id",{ascending:false})
         .limit(1);
+
     if(resultError) throw resultError;
+
+    /* Same newest-result rule as Marks Entry. */
+    const results=(allResults || [])
+        .filter(r => r.published === true);
 
     const resultIds=(results||[]).map(r=>r.id);
     let marks=[];
