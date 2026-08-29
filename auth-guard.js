@@ -79,72 +79,85 @@ student-result.html public page ಆಗಿರುವುದರಿಂದ
 
     redirecting = true;
 
-    console.log(
-        "AUTH GUARD: Login required."
-    );
+    console.log("AUTH GUARD: Login required.");
 
-    // Show 404 page instead of opening login
-    document.documentElement.style.visibility = "visible";
+    document.open();
 
-    document.title = "404 - File not found";
+    document.write(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-    document.body.innerHTML = `
-        <div style="
-            min-height:100vh;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:#f6f6f6;
-            font-family:Arial,sans-serif;
-            text-align:center;
-            padding:20px;
-        ">
+    <title>404 - File not found</title>
 
-            <div>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-                <div style="
-                    font-size:90px;
-                    font-weight:700;
-                    color:#333;
-                    line-height:1;
-                ">
-                    404
-                </div>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            font-family: Arial, sans-serif;
+            color: #333;
+            text-align: center;
+        }
 
-                <h2 style="
-                    margin:20px 0 10px;
-                    color:#333;
-                    font-size:28px;
-                ">
-                    File not found
-                </h2>
+        .error-box {
+            padding: 30px;
+        }
 
-                <p style="
-                    color:#666;
-                    font-size:16px;
-                    margin:0;
-                ">
-                    The requested page could not be found.
-                </p>
+        .error-code {
+            font-size: 96px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 20px;
+        }
 
-            </div>
+        h2 {
+            font-size: 28px;
+            margin: 0 0 12px;
+        }
 
+        p {
+            font-size: 16px;
+            color: #666;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="error-box">
+
+        <div class="error-code">
+            404
         </div>
-    `;
 
-    // Prevent the protected page from being restored
-    // using browser history
-    try {
-        window.history.replaceState(
-            null,
-            "",
-            window.location.href
-        );
-    } catch (e) {
-        console.log("History protection:", e);
-    }
+        <h2>
+            File not found
+        </h2>
+
+        <p>
+            The requested page could not be found.
+        </p>
+
+    </div>
+
+</body>
+</html>
+    `);
+
+    document.close();
 }
-
 
     /* =====================================================
        LOAD SUPABASE
