@@ -434,84 +434,98 @@ function getDivision(student){
     ).trim().toUpperCase();
 }
 
+/* =========================================================
+   SUBJECT MASTER — CURRENT SUBJECT CODE
+   =========================================================
+   These are the codes currently defined in Subject Master.
+   WhatsApp must never display an old/historical code from
+   an older subjects row.
+========================================================= */
+const SUBJECT_MASTER_CODES = {
+    "ಕನ್ನಡ": "01K",
+    "ಇಂಗ್ಲಿಷ್": "31E",
+    "ಇಂಗ್ಲೀಷ್": "31E",
+    "ಹಿಂದಿ": "61H",
+    "ಗಣಿತ": "81K",
+    "ಗಣಿತಶಾಸ್ತ್ರ": "81K",
+    "ವಿಜ್ಞಾನ": "83K",
+    "ಸಮಾಜ ವಿಜ್ಞಾನ": "85K",
+    "ಸಮಾಜವಿಜ್ಞಾನ": "85K"
+};
+
+function normalizeSubjectText(value){
+    return String(value || "")
+        .trim()
+        .replace(/\s+/g," ")
+        .toLowerCase();
+}
+
+function getSubjectMasterCode(subject){
+    const name=normalizeSubjectText(subject?.subject_name);
+
+    if(SUBJECT_MASTER_CODES[name]){
+        return SUBJECT_MASTER_CODES[name];
+    }
+
+    /*
+     * If the Subject Master code is already present and is one of
+     * the current codes, keep it.
+     */
+    const code=String(subject?.subject_code || "").trim().toUpperCase();
+    const validCodes=Object.values(SUBJECT_MASTER_CODES);
+
+    if(validCodes.includes(code)){
+        return code;
+    }
+
+    return code;
+}
+
 /* Current Marks Entry rules */
 function getMaxMarks(student, examType, subject){
 
     /*
-     * SUBJECT MASTER IS THE AUTHORITATIVE SOURCE.
-     *
-     * Subject Master saves exam-wise Maximum Marks in:
-     * subject_marks_[class label]_[exam]_[subject code]
+     * Subject Master saves:
+     * subject_marks_[class]_[exam]_[CURRENT SUBJECT CODE]
      *
      * Example:
      * subject_marks_9ನೇ ತರಗತಿ_HALF_YEARLY_01K
      *
-     * Read this exact value FIRST. Do not allow the old
-     * subjects.max_marks value to override it.
+     * Always read this first.
      */
-
-    const cls = String(getClass(student) || "").trim();
-    const code = String(
-        subject?.subject_code ??
-        subject?.code ??
-        ""
-    ).trim().toUpperCase();
-
-    const year = String(
-        student?.academic_year ||
-        $("bulkAcademicYear")?.value ||
-        appSettings.academic_year ||
-        ""
-    ).trim();
+    const cls=String(getClass(student) || "").trim();
 
     const classLabel =
-        cls === "8"  ? "8ನೇ ತರಗತಿ" :
-        cls === "9"  ? "9ನೇ ತರಗತಿ" :
-        cls === "10" ? "10ನೇ ತರಗತಿ" :
+        cls==="8"  ? "8ನೇ ತರಗತಿ" :
+        cls==="9"  ? "9ನೇ ತರಗತಿ" :
+        cls==="10" ? "10ನೇ ತರಗತಿ" :
         String(subject?.class_name || cls).trim();
 
-    const keys = [
-        "subject_marks_" + classLabel + "_" + examType + "_" + code
-    ];
+    const code=getSubjectMasterCode(subject);
 
-    /*
-     * Older Subject Master versions may have stored the academic year
-     * in the key. Keep this only as backward compatibility.
-     */
-    if(year){
-        keys.push(
-            "subject_marks_" +
-            year + "_" +
-            classLabel + "_" +
-            examType + "_" +
-            code
-        );
+    if(!classLabel || !examType || !code){
+        return Number(subject?.max_marks) || 0;
     }
 
-    for(const key of keys){
-        const raw = localStorage.getItem(key);
+    const key="subject_marks_"+classLabel+"_"+examType+"_"+code;
+    const raw=localStorage.getItem(key);
 
-        if(
-            raw !== null &&
-            String(raw).trim() !== "" &&
-            Number.isFinite(Number(raw)) &&
-            Number(raw) > 0
-        ){
-            return Number(raw);
-        }
+    if(
+        raw!==null &&
+        String(raw).trim()!=="" &&
+        Number.isFinite(Number(raw)) &&
+        Number(raw)>0
+    ){
+        return Number(raw);
     }
 
     /*
-     * Fallback only when the Subject Master exam-specific value
-     * is not present in this browser.
+     * If the exam-wise value has not been saved in this browser,
+     * fall back to the Subject Master database maximum.
      */
-    const dbMax = Number(subject?.max_marks);
+    const dbMax=Number(subject?.max_marks);
 
-    if(Number.isFinite(dbMax) && dbMax > 0){
-        return dbMax;
-    }
-
-    return "";
+    return Number.isFinite(dbMax) && dbMax>0 ? dbMax : 0;
 }
 
 function grade(mark,max){
@@ -734,6 +748,11 @@ async function viewResult(){
             .from("subjects")
             .select("*")
             .eq("class_name",className)
+            .eq("academic_year",String(
+                student.academic_year ||
+                appSettings.academic_year ||
+                ""
+            ).trim())
             .eq("is_active",true)
             .order("display_order",{ascending:true});
 
@@ -913,7 +932,7 @@ function buildWhatsAppMessage(){
                 entered++;
             }
             const name = subject.subject_name || "";
-            const code = subject.subject_code || "";
+            const code = getSubjectMasterCode(subject);
             const markText = hasMark ? `${value}/${max} (${grade(value,max)})` : "-";
             lines.push(`${name}${code ? ` [${code}]` : ""}: ${markText}`);
         });
@@ -1115,7 +1134,7 @@ function renderExam(student,subjects,result,marksMap){
             </td>
 
             <td>
-                ${esc(subject.subject_code)}
+                ${esc(getSubjectMasterCode(subject))}
             </td>
 
             <td>
