@@ -303,9 +303,10 @@ tr:hover{
           <option value="10">10ನೇ ತರಗತಿ</option>
         </select>
         <button type="button" class="btn-new" onclick="downloadStudentExcelTemplate()">⬇️ Excel Template</button>
-        <button type="button" class="btn-load" onclick="document.getElementById('studentExcelInput').click()">📤 Excel Upload</button>
-        <input id="studentExcelInput" type="file" accept=".xlsx" style="display:none"
-               onchange="uploadStudentsFromExcel(event)">
+        <input id="studentExcelInput" type="file" accept=".xlsx" style="display:none">
+        <button type="button" class="btn-load" onclick="document.getElementById('studentExcelInput').click()">📁 Excel Select</button>
+        <button type="button" class="btn-load" onclick="uploadSelectedStudentsFromExcel()">📤 Upload</button>
+        <span id="studentExcelFileName" style="font-weight:600;color:#23456e;"></span>
       </div>
     </div>
 
@@ -620,6 +621,24 @@ async function downloadStudentExcelTemplate() {
   a.href = url;
   a.download = `Students_Template_Class_${cls}_A.xlsx`;
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+document.getElementById("studentExcelInput")?.addEventListener("change", function(){
+    const nameBox = document.getElementById("studentExcelFileName");
+    if(nameBox){
+        nameBox.textContent = this.files?.[0]
+            ? "📄 " + this.files[0].name
+            : "";
+    }
+});
+
+async function uploadSelectedStudentsFromExcel(){
+    const input = document.getElementById("studentExcelInput");
+    if(!input || !input.files || !input.files.length){
+        alert("ಮೊದಲು Excel file ಆಯ್ಕೆ ಮಾಡಿ.");
+        return;
+    }
+    await uploadStudentsFromExcel({target: input});
 }
 
 async function uploadStudentsFromExcel(event) {
