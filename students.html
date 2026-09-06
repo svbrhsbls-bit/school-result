@@ -398,6 +398,10 @@ tr:hover{
 
         <h2>ವಿದ್ಯಾರ್ಥಿಗಳ ಪಟ್ಟಿ</h2>
 
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+            <button type="button" class="btn-delete" onclick="deleteSelectedStudents()">🗑️ Selected Students Delete</button>
+        </div>
+
         <div id="loading" class="loading" style="display:none;">
             Loading...
         </div>
@@ -408,6 +412,7 @@ tr:hover{
 
                 <thead>
                     <tr>
+                        <th style="width:55px;text-align:center;"><input type="checkbox" id="selectAllStudents" title="All tick"></th>
                         <th>Roll No</th>
                         <th>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</th>
                         <th>ತಂದೆಯ ಹೆಸರು</th>
@@ -423,7 +428,7 @@ tr:hover{
 
                 <tbody id="studentTableBody">
                     <tr>
-                        <td colspan="10" class="empty">
+                        <td colspan="11" class="empty">
                             ತರಗತಿ ಮತ್ತು ವಿಭಾಗ ಆಯ್ಕೆ ಮಾಡಿ Load ಮಾಡಿ
                         </td>
                     </tr>
@@ -624,7 +629,7 @@ async function uploadStudentsFromExcel(event) {
   if (typeof ExcelJS === "undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
 
   const cls = document.getElementById("excelClassSelect").value;
-  const year = getSharedAcademicYear();
+  const year = getStudentSelectedYear();
 
   try {
     const wb = new ExcelJS.Workbook();
@@ -968,7 +973,7 @@ async function loadStudents(){
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="10" class="empty">
+                <td colspan="11" class="empty">
                     ವಿದ್ಯಾರ್ಥಿಗಳ ಮಾಹಿತಿಯನ್ನು Load ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.
                 </td>
             </tr>
@@ -1020,6 +1025,8 @@ function renderStudents(students){
             document.createElement("tr");
 
         tr.innerHTML = `
+
+            <td style="text-align:center;"><input type="checkbox" class="student-select" value="${safe(student.id)}" data-name="${safe(student.student_name)}"></td>
 
             <td>${safe(student.roll_no)}</td>
 
@@ -1276,6 +1283,55 @@ async function deleteStudent(){
             "error"
         );
 
+    }
+}
+
+
+/* =========================================================
+   SELECT ALL / BULK DELETE STUDENTS
+   ========================================================= */
+
+document.addEventListener("change", function(e){
+    if(e.target && e.target.id === "selectAllStudents"){
+        document.querySelectorAll(".student-select").forEach(function(cb){
+            cb.checked = e.target.checked;
+        });
+    }
+    if(e.target && e.target.classList.contains("student-select")){
+        const all = document.querySelectorAll(".student-select");
+        const checked = document.querySelectorAll(".student-select:checked");
+        const selectAll = document.getElementById("selectAllStudents");
+        if(selectAll){
+            selectAll.checked = all.length > 0 && checked.length === all.length;
+        }
+    }
+});
+
+async function deleteSelectedStudents(){
+    const selected = Array.from(document.querySelectorAll(".student-select:checked"));
+    if(!selected.length){
+        showMessage("ದಯವಿಟ್ಟು Delete ಮಾಡಬೇಕಾದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಿ.", "error");
+        return;
+    }
+    const names = selected.map(cb => cb.getAttribute("data-name") || "").filter(Boolean);
+    const ok = confirm(`${selected.length} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲು ಖಚಿತವೇ?` + (names.length ? "\n\n" + names.join("\n") : ""));
+    if(!ok) return;
+    try{
+        showMessage("ಆಯ್ಕೆ ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು Delete ಮಾಡಲಾಗುತ್ತಿದೆ...", "info");
+        const ids = selected.map(cb => cb.value).filter(Boolean);
+        if(!ids.length) throw new Error("ವಿದ್ಯಾರ್ಥಿಗಳ ID ಸಿಗಲಿಲ್ಲ.");
+        const { error } = await db.from("students").update({is_active:false}).in("id", ids);
+        if(error){
+            console.error("BULK DELETE ERROR:", error);
+            throw error;
+        }
+        showMessage(`✅ ${ids.length} ವಿದ್ಯಾರ್ಥಿಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ Delete ಮಾಡಲಾಗಿದೆ.`, "success");
+        const selectAll = document.getElementById("selectAllStudents");
+        if(selectAll) selectAll.checked = false;
+        await loadStudents();
+    }catch(error){
+        console.error(error);
+        showMessage("Selected students Delete ಮಾಡುವಾಗ ಸಮಸ್ಯೆ: " + getSupabaseError(error), "error");
     }
 }
 
