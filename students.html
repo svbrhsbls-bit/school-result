@@ -647,7 +647,7 @@ async function uploadStudentsFromExcel(event) {
   if (!file) return;
   if (typeof ExcelJS === "undefined") return alert("Excel library load ಆಗಿಲ್ಲ. Page refresh ಮಾಡಿ.");
 
-  const cls = document.getElementById("excelClassSelect").value;
+  const cls = String(document.getElementById("excelClassSelect").value || "").trim();
   const year = getStudentSelectedYear();
 
   try {
@@ -677,28 +677,114 @@ async function uploadStudentsFromExcel(event) {
       const get = k => cols[k] ? excelText(ws.getRow(r).getCell(cols[k])) : "";
       const name = get("name");
       if (!name) continue;
+
       rows.push({
-        roll_no:get("roll"), student_name:name, father_name:get("father"),
-        mother_name:get("mother"), gender:get("gender") || null,
-        dob:get("dob") || null, sats_no:get("sats"), caste:get("caste"),
-        mobile:get("mobile"), class_name:cls, division:"A",
-        academic_year:year, is_active:true
+        roll_no:get("roll"),
+        student_name:name,
+        father_name:get("father"),
+        mother_name:get("mother"),
+        gender:get("gender") || null,
+        dob:get("dob") || null,
+        sats_no:get("sats"),
+        caste:get("caste"),
+        mobile:get("mobile"),
+        class_name:cls,
+        division:"A",
+        academic_year:year,
+        is_active:true
       });
     }
+
     if (!rows.length) throw new Error("Excelನಲ್ಲಿ ವಿದ್ಯಾರ್ಥಿಗಳ data ಇಲ್ಲ.");
 
-    let added=0, errors=[];
-    for (let i=0; i<rows.length; i+=50) {
-      const batch=rows.slice(i,i+50);
-      const {error}=await db.from("students").insert(batch);
-      if (!error) { added += batch.length; continue; }
-      for (const row of batch) {
-        const {error:e}=await db.from("students").insert([row]);
-        if (e) errors.push(row.student_name+": "+e.message); else added++;
+    /*
+      Excel Upload:
+      Delete ಮಾಡಿದ ವಿದ್ಯಾರ್ಥಿಗಳು database ನಲ್ಲಿ is_active=false ಆಗಿ ಉಳಿಯುತ್ತಾರೆ.
+      ಆದ್ದರಿಂದ ಮತ್ತೆ ಅದೇ Excel upload ಮಾಡಿದಾಗ ಹೊಸ row insert ಮಾಡುವ ಬದಲು
+      ಅದೇ Roll No ಇರುವ record ಅನ್ನು update ಮಾಡಿ is_active=true ಮಾಡಲಾಗುತ್ತದೆ.
+      ಇದರಿಂದ 8ನೇ/9ನೇ ತರಗತಿ ಬದಲಾವಣೆ ಮತ್ತು Delete ನಂತರ Re-upload ಸರಿಯಾಗಿ ಕೆಲಸ ಮಾಡುತ್ತದೆ.
+    */
+    let added=0, updated=0, errors=[];
+
+    for (const row of rows) {
+      try {
+        let existing = null;
+
+        // ಮೊದಲು ಅದೇ ಶೈಕ್ಷಣಿಕ ವರ್ಷದ Roll No ಹುಡುಕಿ.
+        if (row.roll_no) {
+          const {data, error} = await db
+            .from("students")
+            .select("id")
+            .eq("roll_no", row.roll_no)
+            .eq("academic_year", year)
+            .limit(1)
+            .maybeSingle();
+
+          if (error) throw error;
+          existing = data || null;
+        }
+
+        // Roll No ಇಲ್ಲದಿದ್ದರೆ SATS No ಮೂಲಕ ಹುಡುಕಿ.
+        if (!existing && row.sats_no) {
+          const {data, error} = await db
+            .from("students")
+            .select("id")
+            .eq("sats_no", row.sats_no)
+            .eq("academic_year", year)
+            .limit(1)
+            .maybeSingle();
+
+          if (error) throw error;
+          existing = data || null;
+        }
+
+        // Roll/SATS ಎರಡೂ ಇಲ್ಲದಿದ್ದರೆ Mobile ಮೂಲಕ ಹುಡುಕಿ.
+        if (!existing && row.mobile) {
+          const {data, error} = await db
+            .from("students")
+            .select("id")
+            .eq("mobile", row.mobile)
+            .eq("academic_year", year)
+            .limit(1)
+            .maybeSingle();
+
+          if (error) throw error;
+          existing = data || null;
+        }
+
+        if (existing?.id) {
+          const {error} = await db
+            .from("students")
+            .update(row)
+            .eq("id", existing.id);
+
+          if (error) throw error;
+          updated++;
+        } else {
+          const {error} = await db
+            .from("students")
+            .insert([row]);
+
+          if (error) throw error;
+          added++;
+        }
+      } catch(e) {
+        console.error("Excel row upload error:", row, e);
+        errors.push(row.student_name + ": " + getSupabaseError(e));
       }
     }
+
     await loadStudents();
-    alert(`Excel Upload ಮುಗಿದಿದೆ.\n\nತರಗತಿ: ${cls}\nವಿಭಾಗ: A\nಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${year}\n\nAdded: ${added}\nFailed: ${errors.length}`);
+
+    alert(`Excel Upload ಮುಗಿದಿದೆ.
+
+ತರಗತಿ: ${cls}
+ವಿಭಾಗ: A
+ಶೈಕ್ಷಣಿಕ ವರ್ಷ: ${year}
+
+Added: ${added}
+Updated: ${updated}
+Failed: ${errors.length}${errors.length ? "\n\nಮೊದಲ Error:\n" + errors[0] : ""}`);
   } catch(e) {
     console.error(e);
     alert("Excel Upload Error: "+(e?.message || e));
