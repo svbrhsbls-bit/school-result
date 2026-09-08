@@ -1192,6 +1192,19 @@ async function loadStudents(){
                 );
             });
 
+        /* Keep students in Roll Number order: 807, 808, 809... */
+        students.sort((a,b)=>{
+            const ar=String(getValue(a,["roll_no","roll_number","reg_no","registration_no","registration_number"]) ?? "").trim();
+            const br=String(getValue(b,["roll_no","roll_number","reg_no","registration_no","registration_number"]) ?? "").trim();
+            const an=Number(ar), bn=Number(br);
+            const aNum=ar!=="" && Number.isFinite(an);
+            const bNum=br!=="" && Number.isFinite(bn);
+            if(aNum && bNum) return an-bn;
+            if(aNum) return -1;
+            if(bNum) return 1;
+            return ar.localeCompare(br,undefined,{numeric:true,sensitivity:"base"});
+        });
+
 
         if(!students.length){
 
