@@ -1744,6 +1744,40 @@ function markChanged(input){
    CALCULATE STUDENT
 ===================================================== */
 
+function special910Result(studentId){
+    if(currentClass!=="9" && currentClass!=="10") return null;
+    let total=0, maximum=0, entered=0, lowCount=0, below24=false;
+    subjects.forEach(subject=>{
+        const max=maximumMarks(subject); maximum+=max;
+        const input=getInput(studentId,subject.id);
+        if(input && input.value!==""){
+            const raw=String(input.value).trim().toUpperCase();
+            if(raw!=="AB"){
+                const mark=Number(input.value); total+=mark;
+                if(mark>=24 && mark<=27) lowCount++;
+                if(mark>=0 && mark<=23) below24=true;
+            }
+            entered++;
+        }
+    });
+    if(entered!==subjects.length || subjects.length===0) return null;
+    const percentage=maximum>0?(total/maximum)*100:0;
+    return {total,maximum,percentage,lowCount,below24,pass:percentage>=35 && !below24 && lowCount<=2};
+}
+function applySpecial910SubjectGrades(studentId,isPass){
+    if(currentClass!=="9" && currentClass!=="10") return;
+    subjects.forEach(subject=>{
+        const input=getInput(studentId,subject.id);
+        const gradeElement=document.getElementById("grade-"+studentId+"-"+subject.id);
+        if(!input || !gradeElement || input.value==="") return;
+        const raw=String(input.value).trim().toUpperCase();
+        if(raw==="AB") return;
+        const mark=Number(input.value);
+        if(mark>=24 && mark<=27){
+            gradeElement.textContent=isPass ? "C" : "NC";
+        }
+    });
+}
 function calculateStudent(studentId){
 
     let total = 0;
@@ -1829,12 +1863,14 @@ function calculateStudent(studentId){
             overallGrade(percentage);
 
 
-        const pass =
-            currentClass === "8"
-            ?
-            percentage >= 30
-            :
-            percentage >= 35;
+        let pass;
+        if(currentClass === "9" || currentClass === "10"){
+            const special=special910Result(studentId);
+            pass=special ? special.pass : percentage>=35;
+            applySpecial910SubjectGrades(studentId,pass);
+        }else{
+            pass=percentage>=30;
+        }
 
 
         result.textContent =
@@ -2282,12 +2318,13 @@ function updateSummary(){
             "-";
 
 
-        const pass =
-            currentClass === "8"
-            ?
-            percentage >= 30
-            :
-            percentage >= 35;
+        let pass=false;
+        if(currentClass === "9" || currentClass === "10"){
+            const special=complete ? special910Result(studentId) : null;
+            pass=special ? special.pass : (complete ? percentage>=35 : false);
+        }else{
+            pass=percentage>=30;
+        }
 
 
         const result =
@@ -2505,13 +2542,21 @@ function downloadExcel(){function downloadExcel(){
 
             if(value !== ""){
 
-                row.push(
-                    subjectGrade(
+                const special =
+                    (currentClass === "9" || currentClass === "10")
+                    ? special910Result(studentId)
+                    : null;
+
+                const exportGrade =
+                    special && value >= 24 && value <= 27
+                    ? (special.pass ? "C" : "NC")
+                    : subjectGrade(
                         value,
                         max,
                         subject
-                    )
-                );
+                    );
+
+                row.push(exportGrade);
 
                 total += value;
 
@@ -2551,12 +2596,13 @@ function downloadExcel(){function downloadExcel(){
             "-";
 
 
-        const pass =
-            marksSelectedClass === "8"
-            ?
-            percentage >= 30
-            :
-            percentage >= 35;
+        let pass;
+        if(currentClass === "9" || currentClass === "10"){
+            const special = complete ? special910Result(studentId) : null;
+            pass = special ? special.pass : (complete ? percentage >= 35 : false);
+        }else{
+            pass = percentage >= 30;
+        }
 
 
         const result =
@@ -3048,14 +3094,21 @@ function printMarks(){
             const max =
                 maximumMarks(subject);
 
+            const special =
+                (currentClass === "9" || currentClass === "10")
+                ? special910Result(studentId)
+                : null;
+
             const grade =
                 value === ""
                 ? ""
-                : subjectGrade(
-                    value,
-                    max,
-                    subject
-                );
+                : (special && value >= 24 && value <= 27
+                    ? (special.pass ? "C" : "NC")
+                    : subjectGrade(
+                        value,
+                        max,
+                        subject
+                    ));
 
             if(value !== ""){
                 total += value;
@@ -3091,10 +3144,13 @@ function printMarks(){
             ? overallGrade(percentage)
             : "-";
 
-        const pass =
-            currentClass === "8"
-            ? percentage >= 30
-            : percentage >= 35;
+        let pass;
+        if(currentClass === "9" || currentClass === "10"){
+            const special = complete ? special910Result(studentId) : null;
+            pass = special ? special.pass : (complete ? percentage >= 35 : false);
+        }else{
+            pass = percentage >= 30;
+        }
 
         const result =
             complete
