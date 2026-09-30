@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Result Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-guard.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans Kannada",sans-serif;background:#eef5f9;color:#17324d}
+header{background:#087db5;color:#fff;text-align:center;padding:16px}
+header h1{margin:0 0 5px;font-size:25px}
+.container{width:98%;max-width:1500px;margin:15px auto}
+.card{background:#fff;padding:16px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+label{display:block;font-weight:bold;margin-bottom:5px}
+select{width:100%;padding:9px;border:1px solid #bbb;border-radius:5px;background:#fff}
+button{border:0;padding:10px 16px;margin:10px 5px 0 0;border-radius:6px;color:#fff;font-weight:bold;cursor:pointer}
+.btn-blue{background:#087db5}.btn-green{background:#168a52}.btn-dark{background:#555}
+.message{display:none;margin-top:12px;padding:10px;border-radius:6px;font-weight:bold}.message.show{display:block}.success{background:#d9f4df;color:#12652d}.error{background:#ffe0e0;color:#a30000}.info{background:#dceeff;color:#07527c}
+.table-wrap{width:100%;overflow:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%;min-width:1100px}
+th,td{border:1px solid #333;padding:6px;text-align:center}
+th{background:#087db5;color:#fff;white-space:nowrap}
+tbody tr:last-child{font-weight:bold;background:#f1f5f8}
+.left{text-align:left}.center{text-align:center}.section-title{text-align:center;margin:4px 0 10px;font-size:19px;font-weight:bold}
+.school-code{font-size:16px;font-weight:bold}.muted{font-size:13px;color:#555}
+.summary-box{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{border:1px solid #ccd6dd;border-radius:8px;padding:10px;text-align:center;background:#fafcfd}.metric b{display:block;font-size:20px;margin-top:4px}
+.grade-Aplus{font-weight:bold}.quality{font-size:18px;font-weight:bold}
+@media(max-width:800px){.grid,.summary-box{grid-template-columns:1fr 1fr}}
+@media print{
+ @page{size:A4 landscape;margin:8mm}
+ body{background:#fff;color:#000}
+ header{background:#fff;color:#000;border-bottom:1px solid #000;padding:6px}
+ .no-print{display:none!important}
+ .card{box-shadow:none;padding:4px;margin:0 0 10px;border-radius:0}
+ .table-wrap{overflow:visible}
+ table{min-width:0;width:100%;font-size:9px}
+ th,td{padding:4px;border:1px solid #000}
+ th{background:#eee!important;color:#000!important}
+ .section-title{font-size:15px}
+ .page-break{page-break-before:always}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="schoolName">Exam Result Analysis</h1>
+  <div id="schoolAddress"></div>
+  <div id="yearHeader"></div>
+</header>
+<div class="container">
+  <div class="card no-print">
+    <div class="grid">
+      <div><label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label><select id="academicYear"><option>Loading...</option></select></div>
+      <div><label>ತರಗತಿ</label><select id="classSelect"><option value="8">8ನೇ ತರಗತಿ</option><option value="9">9ನೇ ತರಗತಿ</option><option value="10">10ನೇ ತರಗತಿ</option></select></div>
+      <div><label>ವಿಭಾಗ</label><select id="division"><option value="A">A</option></select></div>
+      <div><label>ಪರೀಕ್ಷೆ</label><select id="exam"><option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option><option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option></select></div>
+    </div>
+    <button class="btn-blue" id="loadBtn">Analysis ತೋರಿಸಿ</button>
+    <button class="btn-green" onclick="window.print()">Print / PDF</button>
+    <div id="message" class="message"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">ವಿಷಯವಾರು ಗ್ರೇಡ್ ವಿಶ್ಲೇಷಣೆ</div>
+    <div class="table-wrap"><table id="gradeTable"><thead><tr>
+      <th>ಕ್ರ.ಸಂ.</th><th>ವಿಷಯ</th><th>A+</th><th>A</th><th>B+</th><th>B</th><th>C+</th><th>C</th><th>NC</th><th>AB</th><th>ಫಲಿತಾಂಶ (ಉತ್ತೀರ್ಣ)</th><th>ಶೇ</th><th>QPI</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">ಶಾಲಾ ಫಲಿತಾಂಶ</div>
+    <div class="table-wrap"><table id="overallTable"><thead><tr>
+      <th>ಕ್ರ.ಸಂ.</th><th>ಶಾಲಾ ಫಲಿತಾಂಶ</th><th>A+</th><th>A</th><th>B+</th><th>B</th><th>C+</th><th>C</th><th>NC</th><th>ಗೈರು</th><th>ಫಲಿತಾಂಶ (ಉತ್ತೀರ್ಣ)</th><th>ಶೇ</th><th>QPI</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card page-break">
+    <div class="section-title">ವಿಷಯವಾರು ಫಲಿತಾಂಶ ವಿಶ್ಲೇಷಣೆ</div>
+    <div class="table-wrap"><table id="resultTable"><thead><tr>
+      <th>ಕ್ರ.ಸಂ.</th><th>ವಿಷಯ</th><th>ಉತ್ತೀರ್ಣ</th><th>ಅನುತ್ತೀರ್ಣ</th><th>ಗೈರು ಹಾಜರಿ</th><th>ಶೇಕಡಾ ಫಲಿತಾಂಶ</th><th>QPI</th><th>ಶೇಕಡಾವಾರು ಶಾಲಾ ಫಲಿತಾಂಶ</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="card page-break">
+    <div class="section-title">Quality Weightage Percentage</div>
+    <div class="table-wrap"><table id="qualityTable"><thead><tr>
+      <th>ಕ್ರ.ಸಂ.</th><th>ಶಾಲಾ ಕೋಡ್</th><th>ಉತ್ತೀರ್ಣ</th><th>ಅನುತ್ತೀರ್ಣ</th><th>ಗೈರು ಹಾಜರಿ</th><th>ಶೇಕಡಾ ಫಲಿತಾಂಶ</th><th>GRADE</th><th>QUALITY WEIGHTAGE PERCENTAGE</th>
+    </tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+<script>
+const SUPABASE_URL="https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const SCHOOL_CODE="II0090";
+let students=[],subjects=[],settings={},allSubjectRows=[];
+let currentYear="",currentClass="",currentDivision="",currentExam="";
+
+function msg(t,type="info"){const e=document.getElementById("message");e.textContent=t;e.className="message show "+type}
+function get(o,keys){for(const k of keys)if(o&&o[k]!==undefined&&o[k]!==null&&o[k]!=="")return o[k];return ""}
+function classNo(v){const m=String(v||"").match(/10|9|8/);return m?m[0]:""}
+function subjectName(s){return String(get(s,["subject_name","subject","name"])||"").trim()}
+function normalizeName(n){const x=String(n||"").trim().toLowerCase().replace(/\s+/g," ");const m={"ಕನ್ನಡ":"kannada","kannada":"kannada","ಇಂಗ್ಲಿಷ್":"english","ಇಂಗ್ಲೀಷ್":"english","english":"english","ಹಿಂದಿ":"hindi","hindi":"hindi","ಗಣಿತ":"mathematics","maths":"mathematics","math":"mathematics","mathematics":"mathematics","ವಿಜ್ಞಾನ":"science","science":"science","ಸಮಾಜ ವಿಜ್ಞಾನ":"social science","ಸಾಮಾಜಿಕ ವಿಜ್ಞಾನ":"social science","social science":"social science","socialscience":"social science"};return m[x]||x}
+function latestSubjects(rows){const map=new Map();rows.forEach(r=>{const k=normalizeName(subjectName(r));if(!k)return;if(!map.has(k))map.set(k,[]);map.get(k).push(r)});return [...map.values()].map(g=>g.sort((a,b)=>Number(b.id||0)-Number(a.id||0))[0]).sort((a,b)=>Number(a.display_order||999)-Number(b.display_order||999)||Number(a.id||0)-Number(b.id||0))}
+function maxMarks(s){const dbMax=Number(s?.max_marks);if(Number.isFinite(dbMax)&&dbMax>0)return dbMax;const code=get(s,["subject_code","code"]);const keys=["subject_marks_"+currentYear+"_"+(currentClass==="8"?"8ನೇ ತರಗತಿ":currentClass+"ನೇ ತರಗತಿ")+"_"+currentExam+"_"+code,"subject_marks_"+(currentClass==="8"?"8ನೇ ತರಗತಿ":currentClass+"ನೇ ತರಗತಿ")+"_"+currentExam+"_"+code];for(const k of keys){const v=localStorage.getItem(k);if(v!==null&&Number.isFinite(Number(v)))return Number(v)}return 100}
+function gradePct(mark,max,bands){const p=Number(mark)/Number(max)*100;if(!Number.isFinite(p))return "";for(const b of bands)if(p>=b.min)return b.grade;return ""}
+const G910=[{min:90,grade:"A+"},{min:80,grade:"A"},{min:70,grade:"B+"},{min:60,grade:"B"},{min:50,grade:"C+"},{min:35,grade:"C"},{min:0,grade:"NC"}];
+const G8=[{min:90,grade:"A+"},{min:70,grade:"A"},{min:50,grade:"B+"},{min:30,grade:"B"},{min:0,grade:"C"}];
+function grade8(mark,max){if(max===10)return gradePct(mark,max,[{min:90,grade:"A+"},{min:70,grade:"A"},{min:50,grade:"B+"},{min:30,grade:"B"},{min:0,grade:"C"}]);if(max===30)return gradePct(mark,max,[{min:90,grade:"A+"},{min:73.333333,grade:"A"},{min:53.333333,grade:"B+"},{min:33.333333,grade:"B"},{min:0,grade:"C"}]);if(max===50)return gradePct(mark,max,G8);return gradePct(mark,max,G8)}
+function baseGrade(mark,s){return currentClass==="8"?grade8(mark,maxMarks(s)):gradePct(mark,maxMarks(s),G910)}
+function overall910(st,marks){let total=0,max=0,low=0,below=false,ab=false;subjects.forEach(s=>{const v=String(marks[s.id]??"").trim().toUpperCase();max+=maxMarks(s);if(v==="AB"){ab=true;return}if(v!==""){const n=Number(v);total+=n;if(n<=23)below=true;if(n>=24&&n<=27)low++}});if(ab)return {status:"AB",total,max,pct:max?total/max*100:0,low,below};const complete=subjects.every(s=>String(marks[s.id]??"").trim()!=="");if(!complete)return {status:"PENDING",total,max,pct:max?total/max*100:0,low,below};return {status:(total/max*100>=35&&!below&&low<=2)?"PASS":"FAIL",total,max,pct:max?total/max*100:0,low,below}}
+function finalSubjectGrade(st,marks,s){const v=String(marks[s.id]??"").trim().toUpperCase();if(v==="AB")return "AB";if(v==="")return "";const n=Number(v);if(currentClass!=="9"&&currentClass!=="10")return baseGrade(n,s);const ov=overall910(st,marks);if(ov.status==="PASS"&&n>=24&&n<=27)return "C";if(ov.status==="FAIL"&&n>=24&&n<=27)return "NC";return baseGrade(n,s)}
+function gradeCounts(st,marks,s){const g=finalSubjectGrade(st,marks,s);const c={"A+":0,A:0,"B+":0,B:0,"C+":0,C:0,NC:0,AB:0};if(c[g]!==undefined)c[g]++;return c}
+function subjectPass(g){return ["A+","A","B+","B","C+","C"].includes(g)}
+function qpi(c,total){if(!total)return 0;return ((c["A+"]*6+c.A*5+c["B+"]*4+c.B*3+c["C+"]*2+c.C)/total)}
+function pct(n,d){return d?((n/d)*100):0}
+function overallStatus(st,marks){if(currentClass==="9"||currentClass==="10")return overall910(st,marks).status;let ab=subjects.some(s=>String(marks[s.id]??"").trim().toUpperCase()==="AB");if(ab)return "AB";if(!subjects.every(s=>String(marks[s.id]??"").trim()!==""))return "PENDING";let total=0,max=0;subjects.forEach(s=>{total+=Number(marks[s.id]);max+=maxMarks(s)});return total/max*100>=30?"PASS":"FAIL"}
+async function loadSettings(){const {data,error}=await db.from("settings").select("*").order("id",{ascending:true}).limit(1).maybeSingle();if(error)throw error;settings=data||{};document.getElementById("schoolName").textContent=get(settings,["school_name"])||"Exam Result Analysis";document.getElementById("schoolAddress").textContent=get(settings,["school_address"]);}
+async function loadYears(){const sel=document.getElementById("academicYear");const {data,error}=await db.from("academic_years").select("academic_year").order("academic_year",{ascending:false});if(error)throw error;const ys=[];(data||[]).forEach(r=>{const y=String(r.academic_year||"").trim();if(y&&!ys.includes(y))ys.push(y)});const sy=String(settings.academic_year||"").trim();if(sy&&!ys.includes(sy))ys.unshift(sy);sel.innerHTML=ys.map(y=>`<option value="${y}">${y}</option>`).join("");if(sy)sel.value=sy;currentYear=sel.value||"";}
+async function loadDivisions(){const sel=document.getElementById("division");const {data,error}=await db.from("students").select("division").eq("academic_year",currentYear);if(error)throw error;const ds=[...new Set((data||[]).map(x=>String(x.division||"").trim().toUpperCase()).filter(Boolean))].sort();sel.innerHTML=(ds.length?ds:["A"]).map(d=>`<option value="${d}">${d}</option>`).join("");}
+async function fetchData(){currentYear=document.getElementById("academicYear").value;currentClass=document.getElementById("classSelect").value;currentDivision=document.getElementById("division").value;currentExam=document.getElementById("exam").value;document.getElementById("yearHeader").textContent="ಶೈಕ್ಷಣಿಕ ವರ್ಷ - "+currentYear;
+const sr=await db.from("students").select("*").eq("academic_year",currentYear);if(sr.error)throw sr.error;students=(sr.data||[]).filter(s=>s.is_active!==false&&classNo(get(s,["class_name","class","standard","className"]))===currentClass&&String(get(s,["division","section","division_name","section_name"])).trim().toUpperCase()===currentDivision);const sub=await db.from("subjects").select("*").eq("is_active",true).eq("academic_year",currentYear);if(sub.error)throw sub.error;allSubjectRows=(sub.data||[]).filter(s=>classNo(get(s,["class_name","class","standard","className"]))===currentClass);subjects=latestSubjects(allSubjectRows);if(!subjects.length)throw new Error("ಈ ತರಗತಿಗೆ ವಿಷಯಗಳು ಸಿಗಲಿಲ್ಲ.");const currentIdByKey=new Map(subjects.map(s=>[normalizeName(subjectName(s)),String(s.id)]));const subjectKeyById=new Map(allSubjectRows.map(s=>[String(s.id),normalizeName(subjectName(s))]));const ids=students.map(s=>s.id).filter(Boolean);const marksBy=new Map();if(ids.length){const rr=await db.from("exam_results").select("id,student_id").in("student_id",ids).eq("exam_type",currentExam);if(rr.error)throw rr.error;const rids=(rr.data||[]).map(r=>r.id);const rmap=new Map((rr.data||[]).map(r=>[String(r.id),String(r.student_id)]));if(rids.length){const mr=await db.from("result_marks").select("exam_result_id,subject_id,marks").in("exam_result_id",rids);if(mr.error)throw mr.error;(mr.data||[]).forEach(m=>{const sid=rmap.get(String(m.exam_result_id));if(!sid)return;const key=subjectKeyById.get(String(m.subject_id));const currentSid=currentIdByKey.get(key)||String(m.subject_id);if(!marksBy.has(sid))marksBy.set(sid,{});marksBy.get(sid)[currentSid]=m.marks})}}
+students.forEach(s=>s._marks=marksBy.get(String(s.id))||{});render();}
+function render(){const gc={};subjects.forEach(s=>gc[s.id]={"A+":0,A:0,"B+":0,B:0,"C+":0,C:0,NC:0,AB:0,PASS:0});let overall={PASS:0,FAIL:0,AB:0};let valid=[];
+const overallGrade={"A+":0,A:0,"B+":0,B:0,"C+":0,C:0,NC:0,AB:0};
+students.forEach(st=>{const status=overallStatus(st,st._marks);if(status!=="PENDING")overall[status]=(overall[status]||0)+1;if(status!=="AB"&&status!=="PENDING")valid.push(st);if(status==="AB"){overallGrade.AB++;}else if(status!=="PENDING"){const ov=(currentClass==="9"||currentClass==="10")?overall910(st,st._marks):null;const pctOverall=ov?ov.pct:(()=>{let total=0,max=0;subjects.forEach(s=>{const v=String(st._marks[s.id]??"").trim().toUpperCase();if(v!=="AB"&&v!==""){total+=Number(v);max+=maxMarks(s)}});return max?total/max*100:0})();let og="NC";if(status==="PASS"){if(pctOverall>=90)og="A+";else if(pctOverall>=80)og="A";else if(pctOverall>=70)og="B+";else if(pctOverall>=60)og="B";else if(pctOverall>=50)og="C+";else if(pctOverall>=35)og="C";else og="NC";}if(overallGrade[og]!==undefined)overallGrade[og]++;}
+subjects.forEach(s=>{const c=gradeCounts(st,st._marks,s);Object.keys(c).forEach(k=>gc[s.id][k]+=c[k]);const g=finalSubjectGrade(st,st._marks,s);if(subjectPass(g))gc[s.id].PASS++})});
+const gt=document.querySelector("#gradeTable tbody");gt.innerHTML=subjects.map((s,i)=>{const c=gc[s.id],den=c["A+"]+c.A+c["B+"]+c.B+c["C+"]+c.C+c.NC;return `<tr><td>${i+1}</td><td class="left">${subjectName(s)}</td><td>${c["A+"]}</td><td>${c.A}</td><td>${c["B+"]}</td><td>${c.B}</td><td>${c["C+"]}</td><td>${c.C}</td><td>${c.NC}</td><td>${c.AB}</td><td>${c.PASS}</td><td>${pct(c.PASS,den).toFixed(2)}%</td><td>${qpi(c,den).toFixed(2)}</td></tr>`}).join("");
+const total={"A+":0,A:0,"B+":0,B:0,"C+":0,C:0,NC:0,AB:0,PASS:0};subjects.forEach(s=>{const c=gc[s.id];Object.keys(total).forEach(k=>total[k]+=c[k]);});const denTotal=total["A+"]+total.A+total["B+"]+total.B+total["C+"]+total.C+total.NC;const schoolSubjectPct=pct(overall.PASS,(overall.PASS||0)+(overall.FAIL||0));
+const passKnown=overallGrade["A+"]+overallGrade.A+overallGrade["B+"]+overallGrade.B+overallGrade.C;
+const calculatedCplus=Math.max(0,(overall.PASS||0)-passKnown);
+overallGrade["C+"]=calculatedCplus;
+const overallDen=overallGrade["A+"]+overallGrade.A+overallGrade["B+"]+overallGrade.B+overallGrade["C+"]+overallGrade.C+overallGrade.NC;
+const overallQpi=qpi(overallGrade,overallDen);
+document.querySelector("#overallTable tbody").innerHTML=`<tr><td>1</td><td>${SCHOOL_CODE}</td><td>${overallGrade["A+"]}</td><td>${overallGrade.A}</td><td>${overallGrade["B+"]}</td><td>${overallGrade.B}</td><td>${overallGrade["C+"]}</td><td>${overallGrade.C}</td><td>${overallGrade.NC}</td><td>${overallGrade.AB}</td><td>${overall.PASS||0}</td><td>${schoolSubjectPct.toFixed(2)}%</td><td>${overallQpi.toFixed(2)}</td></tr>`;
+const rt=document.querySelector("#resultTable tbody");rt.innerHTML=subjects.map((s,i)=>{const c=gc[s.id],fail=c.NC,abs=c.AB,pass=c.PASS,q=qpi(c,c["A+"]+c.A+c["B+"]+c.B+c["C+"]+c.C+c.NC);return `<tr><td>${i+1}</td><td class="left">${subjectName(s)}</td><td>${pass}</td><td>${fail}</td><td>${abs}</td><td>${pct(pass,pass+fail).toFixed(2)}%</td><td>${q.toFixed(2)}</td><td>${schoolSubjectPct.toFixed(2)}%</td></tr>`}).join("");
+const qData=qualityWeightage(overall,valid);document.querySelector("#qualityTable tbody").innerHTML=`<tr><td>1</td><td>${SCHOOL_CODE}</td><td>${overall.PASS||0}</td><td>${overall.FAIL||0}</td><td>${overall.AB||0}</td><td>${pct(overall.PASS,(overall.PASS||0)+(overall.FAIL||0)).toFixed(2)}%</td><td>${qData.grade}</td><td>${qData.total.toFixed(2)}%</td></tr>`;
+}
+function qualityWeightage(overall,valid){const eligible=valid.length;let sum=0,sixty=0;valid.forEach(st=>{let t=0;subjects.forEach(s=>{const v=String(st._marks[s.id]??"").trim().toUpperCase();if(v!=="AB"&&v!==""){const n=Number(v);if(Number.isFinite(n))t+=n}});sum+=t;if(t>=300)sixty++});const part40Marks=eligible?sum/(eligible*500)*40:0;const part40Pass=eligible?(overall.PASS/eligible)*40:0;const part20=eligible?(sixty/eligible)*20:0;const total=part40Marks+part40Pass+part20;const grade=total>=75?"A":total>=60?"B":"C";return{part40Marks,part40Pass,part20,total,grade}}
+
+document.getElementById("loadBtn").addEventListener("click",async()=>{try{msg("Analysis loading...","info");await fetchData();msg("✅ Analysis ಸಿದ್ಧವಾಗಿದೆ.","success")}catch(e){console.error(e);msg("❌ "+(e.message||e),"error")}});
+document.getElementById("academicYear").addEventListener("change",async()=>{try{currentYear=document.getElementById("academicYear").value;await loadDivisions()}catch(e){msg(e.message||e,"error")}});
+(async()=>{try{await loadSettings();await loadYears();await loadDivisions()}catch(e){console.error(e);msg("❌ "+(e.message||e),"error")}})();
+</script>
+</body>
+</html>
