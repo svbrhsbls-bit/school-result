@@ -547,30 +547,78 @@ function isKannada(subject){
 ===================================================== */
 
 function maximumMarks(subject){
-    /* Subject Master is the single source of truth for Maximum Marks. */
-    const dbMax = Number(subject && subject.max_marks);
-    if(Number.isFinite(dbMax) && dbMax > 0){
-        return dbMax;
-    }
 
-    /* Backward compatibility for old Subject Master exam-specific marks. */
-    const cls=currentClass;
-    const exam=currentExam;
-    const code=String(subjectCode(subject)||"");
-    const keys=[];
+    /*
+      DO NOT use subjects.max_marks first.
+      Subject Master keeps HALF_YEARLY and ANNUAL values
+      separately in localStorage because the subjects table
+      does not have an exam_type column.
+
+      Priority:
+      1. Selected CLASS + selected EXAM + SUBJECT CODE value
+         saved by Subject Master.
+      2. Old academic-year key, if present.
+      3. The correct exam default.
+
+      This prevents Annual marks from being used for Half-Yearly
+      and prevents Half-Yearly marks from being used for Annual.
+    */
+
+    const cls =
+        currentClass === "8"
+        ? "8ನೇ ತರಗತಿ"
+        : currentClass + "ನೇ ತರಗತಿ";
+
+    const exam = String(currentExam || "").trim();
+    const code = String(subjectCode(subject) || "").trim();
+
+    const keys = [
+        "subject_marks_" + cls + "_" + exam + "_" + code
+    ];
+
+    /* Support any older key that included academic year. */
     if(currentAcademicYear){
-        keys.push("subject_marks_" + currentAcademicYear + "_" + (
-            cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-        ) + "_" + exam + "_" + code);
+        keys.unshift(
+            "subject_marks_" +
+            currentAcademicYear + "_" +
+            cls + "_" +
+            exam + "_" +
+            code
+        );
     }
-    keys.push("subject_marks_" + (
-        cls === "8" ? "8ನೇ ತರಗತಿ" : cls + "ನೇ ತರಗತಿ"
-    ) + "_" + exam + "_" + code);
 
     for(const key of keys){
-        const saved=localStorage.getItem(key);
-        if(saved !== null && saved !== "" && Number.isFinite(Number(saved))){
+
+        const saved = localStorage.getItem(key);
+
+        if(
+            saved !== null &&
+            saved !== "" &&
+            Number.isFinite(Number(saved)) &&
+            Number(saved) > 0
+        ){
             return Number(saved);
+        }
+    }
+
+    /*
+      If no Subject Master value has been saved yet,
+      use the correct default for the selected exam.
+      We deliberately do NOT use subject.max_marks here,
+      because that field is shared by both examinations.
+    */
+    if(cls === "8ನೇ ತರಗತಿ"){
+        return exam === "HALF_YEARLY" ? 50 : 100;
+    }
+
+    if(cls === "9ನೇ ತರಗತಿ" || cls === "10ನೇ ತರಗತಿ"){
+
+        if(exam === "HALF_YEARLY"){
+            return code === "01K" ? 100 : 80;
+        }
+
+        if(exam === "ANNUAL"){
+            return code === "01K" ? 125 : 100;
         }
     }
 
