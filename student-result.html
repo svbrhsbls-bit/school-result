@@ -120,7 +120,7 @@ th{
     color:#fff;
 }
 td.subject{text-align:left;font-weight:700}
-.summary{
+ .summary{
     display:grid;
     grid-template-columns:repeat(2,1fr);
     gap:10px;
@@ -1235,30 +1235,6 @@ function renderExam(student,subjects,result,marksMap){
             <div class="summary-box">
                 ಶೇಕಡಾವಾರು
                 <b>${percentage.toFixed(2)}%</b>
-            </div>
-
-            <div class="summary-box">
-                ಫಲಿತಾಂಶ
-                <b class="${resultClass}">
-                    ${resultText}
-                </b>
-            </div>
-
-        </div>
-
-            <div class="summary-box">
-                ಗರಿಷ್ಠ ಅಂಕ
-                <b>${maximum}</b>
-            </div>
-
-            <div class="summary-box">
-                ಶೇಕಡಾವಾರು
-               <b>${percentage.toFixed(2)}%</b>
-            </div>
-
-            <div class="summary-box">
-                ಒಟ್ಟು ಶ್ರೇಣಿ
-                <b>${finalGrade}</b>
             </div>
 
             <div class="summary-box">
