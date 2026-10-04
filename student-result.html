@@ -1192,7 +1192,7 @@ function renderExam(student,subjects,result,marksMap){
 </td>
 
 <td>
-    ${hasMark ? grade(value,max,student) : "-"}
+    ${hasMark ? (specialGradeMap[subject.id] || grade(value,max,student)) : "-"}
 </td>
 
 </tr>
@@ -1213,7 +1213,78 @@ function renderExam(student,subjects,result,marksMap){
         : passMark(student,percentage)
             ? "PASS"
             : "FAIL";
+    let specialGradeMap = {};
 
+if(getClass(student)==="9" || getClass(student)==="10"){
+    const allMarks = [];
+
+    subjects.forEach(subject=>{
+        const subjectIds =
+            Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
+                ? subject._allSubjectIds
+                : [subject.id];
+
+        let markValue;
+
+        for(const subjectId of subjectIds){
+            const candidate = marksMap[`${result.id}_${subjectId}`];
+
+            if(candidate !== null &&
+               candidate !== undefined &&
+               candidate !== ""){
+                markValue = candidate;
+                break;
+            }
+        }
+
+        if(markValue !== undefined &&
+           markValue !== null &&
+           markValue !== ""){
+            allMarks.push(Number(markValue));
+        }
+    });
+
+    const lowCount = allMarks.filter(m => m >= 24 && m <= 27).length;
+    const below24 = allMarks.some(m => m >= 0 && m <= 23);
+
+    const specialPass =
+        percentage >= 35 &&
+        !below24 &&
+        lowCount <= 2;
+
+    if(resultText !== "PENDING"){
+        subjects.forEach(subject=>{
+            const subjectIds =
+                Array.isArray(subject._allSubjectIds) && subject._allSubjectIds.length
+                    ? subject._allSubjectIds
+                    : [subject.id];
+
+            let markValue;
+
+            for(const subjectId of subjectIds){
+                const candidate = marksMap[`${result.id}_${subjectId}`];
+
+                if(candidate !== null &&
+                   candidate !== undefined &&
+                   candidate !== ""){
+                    markValue = candidate;
+                    break;
+                }
+            }
+
+            if(markValue !== undefined &&
+               markValue !== null &&
+               markValue !== ""){
+                const mark = Number(markValue);
+
+                if(mark >= 24 && mark <= 27){
+                    specialGradeMap[subject.id] =
+                        specialPass ? "C" : "NC";
+                }
+            }
+        });
+    }
+}
     const resultClass=
         resultText==="PASS"
         ? "pass"
