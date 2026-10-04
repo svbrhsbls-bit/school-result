@@ -1100,7 +1100,7 @@ function renderExam(student,subjects,result,marksMap){
     let entered=0;
 
     let rows="";
-
+    let specialGradeMap = {};
     subjects.forEach(subject=>{
 
         /*
@@ -1213,7 +1213,6 @@ function renderExam(student,subjects,result,marksMap){
         : passMark(student,percentage)
             ? "PASS"
             : "FAIL";
-    let specialGradeMap = {};
 
 if(getClass(student)==="9" || getClass(student)==="10"){
     const allMarks = [];
