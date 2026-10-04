@@ -134,20 +134,6 @@ td.subject{text-align:left;font-weight:700}
     text-align:center;
 }
 .summary-box b{display:block;font-size:18px}
-.summary-total-row{
-    grid-column:1 / -1;
-    display:grid;
-    grid-template-columns:1.2fr 1fr 1fr 1fr;
-    gap:10px;
-    align-items:center;
-    padding:12px 14px;
-    border:1px solid #d5e3ea;
-    border-radius:8px;
-    background:#f3f8fb;
-    text-align:center;
-    font-size:18px;
-}
-.summary-total-row b:first-child{text-align:left}
 .pass{color:#118044;font-weight:800}
 .fail{color:#c02020;font-weight:800}
 .pending{color:#a16a00;font-weight:800}
@@ -1266,16 +1252,24 @@ function renderExam(student,subjects,result,marksMap){
 
         <div class="summary">
 
-            <div class="summary-total-row">
-                <b>Total:</b>
-                <span>${maximum}</span>
-                <span>${total}</span>
-                <b>${finalGrade}</b>
+            <div class="summary-box">
+                ಒಟ್ಟು ಅಂಕ
+                <b>${total}</b>
+            </div>
+
+            <div class="summary-box">
+                ಗರಿಷ್ಠ ಅಂಕ
+                <b>${maximum}</b>
             </div>
 
             <div class="summary-box">
                 ಶೇಕಡಾವಾರು
-                <b>${percentage.toFixed(2)}%</b>
+               <b>${percentage.toFixed(2)}%</b>
+            </div>
+
+            <div class="summary-box">
+                ಒಟ್ಟು ಶ್ರೇಣಿ
+                <b>${finalGrade}</b>
             </div>
 
             <div class="summary-box">
