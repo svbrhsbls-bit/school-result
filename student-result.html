@@ -1168,7 +1168,7 @@ function renderExam(student,subjects,result,marksMap){
     });
 
     const percentage=
-        maximum ? total/maximum*100 : 0;
+    maximum ? Number((total/maximum*100).toFixed(2)) : 0;
 
     const finalGrade=
         entered
