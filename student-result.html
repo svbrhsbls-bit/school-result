@@ -1154,13 +1154,11 @@ function renderExam(student,subjects,result,marksMap){
                 )}
             </td>
 
-            <td>
-                ${hasMark ? esc(value) : "-"}
-            </td>
-
             <td>${max}</td>
 
-            <td>
+<td>
+    ${hasMark ? esc(value) : "-"}
+</td>
                 ${hasMark ? grade(value,max) : "-"}
             </td>
         </tr>
