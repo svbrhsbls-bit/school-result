@@ -122,7 +122,7 @@ th{
 td.subject{text-align:left;font-weight:700}
 .summary{
     display:grid;
-    grid-template-columns:repeat(5,1fr);
+    grid-template-columns:repeat(2,1fr);
     gap:10px;
     margin-top:14px;
 }
@@ -134,6 +134,11 @@ td.subject{text-align:left;font-weight:700}
     text-align:center;
 }
 .summary-box b{display:block;font-size:18px}
+.total-row td{
+    background:#087fb5;
+    color:#fff;
+    font-weight:800;
+}
 .pass{color:#118044;font-weight:800}
 .fail{color:#c02020;font-weight:800}
 .pending{color:#a16a00;font-weight:800}
@@ -1215,6 +1220,12 @@ function renderExam(student,subjects,result,marksMap){
 
                 <tbody>
                     ${rows}
+                    <tr class="total-row">
+                        <td colspan="2">Total:</td>
+                        <td>${maximum}</td>
+                        <td>${total}</td>
+                        <td>${finalGrade}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -1222,9 +1233,18 @@ function renderExam(student,subjects,result,marksMap){
         <div class="summary">
 
             <div class="summary-box">
-                ಒಟ್ಟು ಅಂಕ
-                <b>${total}</b>
+                ಶೇಕಡಾವಾರು
+                <b>${percentage.toFixed(2)}%</b>
             </div>
+
+            <div class="summary-box">
+                ಫಲಿತಾಂಶ
+                <b class="${resultClass}">
+                    ${resultText}
+                </b>
+            </div>
+
+        </div>
 
             <div class="summary-box">
                 ಗರಿಷ್ಠ ಅಂಕ
