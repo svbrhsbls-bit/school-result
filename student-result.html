@@ -150,6 +150,14 @@ td.subject{text-align:left;font-weight:700}
     font-weight:800;
 }
 
+/* Keep TOTAL row columns exactly aligned with the subject table:
+   Subject | Subject Code | Maximum | Obtained | Grade */
+.result-total-table td:nth-child(1){width:41%;}
+.result-total-table td:nth-child(2){width:19%;}
+.result-total-table td:nth-child(3){width:16%;}
+.result-total-table td:nth-child(4){width:15%;}
+.result-total-table td:nth-child(5){width:9%;}
+
 /* Same blue as the table header */
 .total-blue-row td{
     background:#087fb5;
