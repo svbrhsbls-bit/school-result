@@ -134,12 +134,60 @@ td.subject{text-align:left;font-weight:700}
     text-align:center;
 }
 .summary-box b{display:block;font-size:18px}
-.result-total-table{width:100%;border-collapse:collapse;margin-top:0;table-layout:fixed}
-.result-total-table td{border:1px solid #ccd8df;padding:10px 8px;text-align:center;font-weight:800}
-.result-total-table .result-total-label{background:#087fb5;color:#fff;text-align:left;font-size:20px}
-.result-total-table .result-total-value{font-size:18px}
-.result-total-table .result-words{text-align:center;font-size:15px}
-.result-total-table .result-percent,.result-total-table .result-final{font-size:15px}
+
+/* Excel-style TOTAL section */
+.result-total-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:0;
+    table-layout:fixed;
+}
+
+.result-total-table td{
+    border:1px solid #ccd8df;
+    padding:10px 8px;
+    text-align:center;
+    font-weight:800;
+}
+
+/* Same blue as the table header */
+.total-blue-row td{
+    background:#087fb5;
+    color:#fff;
+}
+
+.total-label{
+    text-align:left !important;
+    font-size:20px;
+}
+
+.total-code{
+    background:#087fb5;
+}
+
+.total-value{
+    font-size:18px;
+}
+
+.words-cell{
+    font-size:15px;
+}
+
+.percentage-cell{
+    font-size:15px;
+}
+
+.result-cell{
+    font-size:15px;
+}
+
+.result-cell .pass,
+.result-cell .fail,
+.result-cell .pending{
+    color:#fff !important;
+    font-weight:800;
+}
+
 .pass{color:#118044;font-weight:800}
 .fail{color:#c02020;font-weight:800}
 .pending{color:#a16a00;font-weight:800}
@@ -233,6 +281,15 @@ td.subject{text-align:left;font-weight:700}
     th,td{
         padding:5px;
     }
+
+    .result-total-table td{
+        padding:7px 5px;
+        font-size:11px;
+    }
+
+    .total-label{
+        font-size:14px;
+    }
 }
     .teacher-footer{margin-top:35px}
 }
@@ -307,6 +364,15 @@ td.subject{text-align:left;font-weight:700}
   .result-status,.final-result{font-size:15px!important;font-weight:800!important;text-align:center!important;padding:10px!important;}
   button{min-height:42px!important;font-size:13px!important;}
   .footer{padding:10px!important;font-size:11px!important;text-align:center!important;}
+
+  .result-total-table td{
+      padding:6px 3px!important;
+      font-size:10px!important;
+  }
+
+  .total-label{
+      font-size:13px!important;
+  }
 }
 
 </style>
@@ -560,15 +626,57 @@ function passMark(student,percent){
         : percent>=35;
 }
 
+/* Total marks in English words */
 function numberToWordsIndian(num){
-    num=Math.floor(Number(num)||0);
-    const ones=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE","TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN","SEVENTEEN","EIGHTEEN","NINETEEN"];
-    const tens=["","","TWENTY","THIRTY","FORTY","FIFTY","SIXTY","SEVENTY","EIGHTY","NINETY"];
-    function under100(n){return n<20?ones[n]:tens[Math.floor(n/10)]+(n%10?" "+ones[n%10]:"");}
-    function under1000(n){return n<100?under100(n):ones[Math.floor(n/100)]+" HUNDRED"+(n%100?" "+under100(n%100):"");}
-    if(num<1000)return under1000(num);
-    if(num<100000){const a=Math.floor(num/1000),b=num%1000;return under1000(a)+" THOUSAND"+(b?" "+under1000(b):"");}
-    if(num<10000000){const a=Math.floor(num/100000),b=num%100000;return under100(a)+" LAKH"+(b?" "+numberToWordsIndian(b):"");}
+    num = Math.floor(Number(num) || 0);
+
+    const ones = [
+        "ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE",
+        "TEN","ELEVEN","TWELVE","THIRTEEN","FOURTEEN","FIFTEEN","SIXTEEN",
+        "SEVENTEEN","EIGHTEEN","NINETEEN"
+    ];
+
+    const tens = [
+        "","","TWENTY","THIRTY","FORTY","FIFTY",
+        "SIXTY","SEVENTY","EIGHTY","NINETY"
+    ];
+
+    function under100(n){
+        if(n < 20) return ones[n];
+
+        return tens[Math.floor(n/10)] +
+            (n % 10 ? " " + ones[n % 10] : "");
+    }
+
+    function under1000(n){
+        if(n < 100) return under100(n);
+
+        return ones[Math.floor(n/100)] +
+            " HUNDRED" +
+            (n % 100 ? " " + under100(n % 100) : "");
+    }
+
+    if(num < 1000)
+        return under1000(num);
+
+    if(num < 100000){
+        const thousands = Math.floor(num / 1000);
+        const rest = num % 1000;
+
+        return under1000(thousands) +
+            " THOUSAND" +
+            (rest ? " " + under1000(rest) : "");
+    }
+
+    if(num < 10000000){
+        const lakhs = Math.floor(num / 100000);
+        const rest = num % 100000;
+
+        return under100(lakhs) +
+            " LAKH" +
+            (rest ? " " + numberToWordsIndian(rest) : "");
+    }
+
     return String(num);
 }
 
@@ -1455,17 +1563,52 @@ if(getClass(student)==="9" || getClass(student)==="10"){
 
         <table class="result-total-table">
             <tbody>
-                <tr>
-                    <td colspan="2" class="result-total-label">TOTAL</td>
-                    <td class="result-total-value">${maximum}</td>
-                    <td class="result-total-value">${total}</td>
-                    <td class="result-total-value">${finalGrade}</td>
+
+                <!-- TOTAL ROW: Subject | blank Subject Code | Maximum | Obtained | Grade -->
+                <tr class="total-blue-row">
+
+                    <td class="total-label">
+                        TOTAL
+                    </td>
+
+                    <td class="total-code">
+                    </td>
+
+                    <td class="total-value">
+                        ${maximum}
+                    </td>
+
+                    <td class="total-value">
+                        ${total}
+                    </td>
+
+                    <td class="total-value">
+                        ${finalGrade}
+                    </td>
+
                 </tr>
-                <tr>
-                    <td colspan="2" class="result-words">${numberToWordsIndian(total)} ONLY</td>
-                    <td colspan="2" class="result-percent">ಶೇಕಡಾವಾರು: ${resultText==="FAIL" ? "-" : percentage.toFixed(2)+"%"}</td>
-                    <td class="result-final">ಫಲಿತಾಂಶ: <span class="${resultClass}">${resultText}</span></td>
+
+                <!-- SECOND ROW -->
+                <tr class="total-blue-row">
+
+                    <td colspan="2" class="words-cell">
+                        ${numberToWordsIndian(total)} ONLY
+                    </td>
+
+                    <td colspan="2" class="percentage-cell">
+                        ಶೇಕಡಾವಾರು:
+                        ${resultText==="FAIL" ? "-" : percentage.toFixed(2)+"%"}
+                    </td>
+
+                    <td class="result-cell">
+                        ಫಲಿತಾಂಶ:
+                        <span class="${resultClass}">
+                            ${resultText}
+                        </span>
+                    </td>
+
                 </tr>
+
             </tbody>
         </table>
     `;
