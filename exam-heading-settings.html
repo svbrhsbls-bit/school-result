@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exam Heading Settings</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-guard.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans Kannada","Nirmala UI",Arial,sans-serif;background:#eef5f9;color:#17324d}
+header{background:#087db5;color:#fff;text-align:center;padding:18px}header h1{margin:0;font-size:24px}
+main{max-width:900px;margin:20px auto;padding:0 14px}.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 10px #0001;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}label{display:block;font-weight:700;margin-bottom:6px}
+select,input{width:100%;padding:11px;border:1px solid #bbc8d2;border-radius:7px;font:inherit}
+button{border:0;border-radius:7px;padding:11px 18px;font-weight:700;cursor:pointer;margin:12px 8px 0 0}.save{background:#168a52;color:#fff}.load{background:#087db5;color:#fff}
+#message{display:none;padding:11px;border-radius:7px;margin-top:12px}#message.show{display:block}.ok{background:#d9f4df;color:#12652d}.err{background:#ffe0e0;color:#a30000}
+.note{font-size:13px;color:#59697b;line-height:1.6}
+@media(max-width:600px){.grid{grid-template-columns:1fr}header h1{font-size:19px}}
+</style>
+</head>
+<body>
+<header><h1>🏷️ Exam Heading Settings</h1><div>ತರಗತಿ ಮತ್ತು ಪರೀಕ್ಷೆಗೆ ಬೇಕಾದ Heading ಹೊಂದಿಸಿ</div></header>
+<main>
+<div class="card">
+ <div class="grid">
+  <div><label for="year">ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label><select id="year"><option value="">Loading...</option></select></div>
+  <div><label for="className">ತರಗತಿ</label><select id="className"><option value="8">8ನೇ ತರಗತಿ</option><option value="9">9ನೇ ತರಗತಿ</option><option value="10">10ನೇ ತರಗತಿ</option></select></div>
+  <div><label for="division">ವಿಭಾಗ</label><select id="division"><option value="A">A</option></select></div>
+  <div><label for="exam">ಪರೀಕ್ಷೆ</label><select id="exam">
+   <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option><option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+   <option value="PREPARATORY_1">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1</option><option value="PREPARATORY_2">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2</option><option value="PREPARATORY_3">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3</option>
+  </select></div>
+ </div>
+ <p class="note">ತರಗತಿ ಮತ್ತು ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿದ ನಂತರ ಆ ಪರೀಕ್ಷೆಗೆ ಬೇಕಾದ Heading ಬರೆಯಿರಿ. ಉದಾಹರಣೆ: “ಜಿಲ್ಲಾ ಹಂತದ ಪೂರ್ವಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ”. Save ಮಾಡಿದ Heading Marks Entry ಮತ್ತು Student Result ನಲ್ಲಿ ಕಾಣುತ್ತದೆ.</p>
+ <label for="heading">ನಿಮಗೆ ಬೇಕಾದ ಪರೀಕ್ಷೆಯ Heading</label><input id="heading" maxlength="200" placeholder="ಪರೀಕ್ಷೆಯ Heading ಇಲ್ಲಿ ಬರೆಯಿರಿ">
+ <button class="load" id="loadBtn" type="button">Heading Load</button><button class="save" id="saveBtn" type="button">Save Heading</button>
+ <div id="message"></div>
+</div>
+</main>
+<script>
+const SUPABASE_URL="https://sozlvjvqrgpaabnvjvxe.supabase.co";
+const SUPABASE_KEY="sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let schoolName="";
+const $=id=>document.getElementById(id);
+function msg(t,ok=true){$("message").textContent=t;$("message").className="show "+(ok?"ok":"err");}
+function examDefault(){return $("exam").selectedOptions[0]?.textContent.trim()||"";}
+async function init(){
+ try{
+  const {data:settings,error}=await db.from("settings").select("*").order("id",{ascending:true}).limit(1).maybeSingle();
+  if(error) throw error;
+  schoolName=String(settings?.school_name||"").trim();
+  const year=String(settings?.academic_year||settings?.school_year||"").trim();
+  const {data:rows,error:yearErr}=await db.from("academic_years").select("academic_year").order("academic_year",{ascending:false});
+  if(yearErr) throw yearErr;
+  const years=[...new Set([year,...(rows||[]).map(r=>String(r.academic_year||"").trim())].filter(Boolean))];
+  $("year").innerHTML=years.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join("");
+  if(year) $("year").value=year;
+  await loadHeading();
+ }catch(e){msg("Load ಆಗಲಿಲ್ಲ. ಮೊದಲು SQL Editor ನಲ್ಲಿ ನೀಡಿರುವ Exam Heading Settings SQL ಅನ್ನು Run ಮಾಡಿ. ವಿವರ: "+(e.message||e),false);}
+}
+function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+async function loadHeading(){
+ if(!$("year").value||!schoolName){$("heading").value="";return;}
+ const {data,error}=await db.from("exam_heading_settings").select("heading")
+ .eq("school_name",schoolName).eq("academic_year",$("year").value).eq("class_name",$("className").value)
+ .eq("division",$("division").value).eq("exam_type",$("exam").value).maybeSingle();
+ if(error) throw error;
+ $("heading").value=data?.heading||"";
+ msg(data?.heading?"ಈ ಆಯ್ಕೆಗೆ ಉಳಿಸಿರುವ Heading Load ಆಗಿದೆ.":"ಈ ಆಯ್ಕೆಗೆ Heading ಉಳಿಸಿಲ್ಲ. ಹೊಸ Heading ಬರೆಯಬಹುದು.",true);
+}
+["year","className","division","exam"].forEach(id=>$(id).addEventListener("change",()=>loadHeading().catch(e=>msg("Heading Load ಆಗಲಿಲ್ಲ: "+e.message,false))));
+$("loadBtn").addEventListener("click",()=>loadHeading().catch(e=>msg("Heading Load ಆಗಲಿಲ್ಲ: "+e.message,false)));
+$("saveBtn").addEventListener("click",async()=>{
+ try{
+  const heading=$("heading").value.trim();
+  if(!schoolName) throw new Error("Settings ನಲ್ಲಿ ಶಾಲೆಯ ಹೆಸರು ಸಿಗಲಿಲ್ಲ.");
+  if(!heading) throw new Error("ದಯವಿಟ್ಟು Heading ಬರೆಯಿರಿ.");
+  const row={school_name:schoolName,academic_year:$("year").value,class_name:$("className").value,division:$("division").value,exam_type:$("exam").value,heading};
+  const {error}=await db.from("exam_heading_settings").upsert(row,{onConflict:"school_name,academic_year,class_name,division,exam_type"});
+  if(error) throw error;
+  msg("Heading ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿದೆ.",true);
+ }catch(e){msg("Save ಆಗಲಿಲ್ಲ: "+(e.message||e),false);}
+});
+init();
+</script>
+</body></html>
