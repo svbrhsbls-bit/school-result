@@ -713,14 +713,26 @@ async function loadConfiguredGradeBands(){
     const cls = String(currentClass || "").trim();
     if(!schoolId || !year || !cls) return;
     try{
-        const {data,error} = await supabaseClient
-            .from("grade_settings")
-            .select("grades")
-            .eq("school_id", schoolId)
-            .eq("academic_year", year)
-            .eq("class_name", cls)
-            .maybeSingle();
-        if(error) throw error;
+        // Grade Settings saves class_name as "8", "9", or "10".
+        // Try the exact value first, then common display-name variants for older rows.
+        let data = null;
+        let lastError = null;
+        const classNames = [...new Set([cls, `${cls}ನೇ ತರಗತಿ`, `${cls} ನೇ ತರಗತಿ`])];
+        for (const className of classNames) {
+            const response = await supabaseClient
+                .from("grade_settings")
+                .select("grades")
+                .eq("school_id", schoolId)
+                .eq("academic_year", year)
+                .eq("class_name", className)
+                .maybeSingle();
+            if (response.error) { lastError = response.error; continue; }
+            if (response.data && Array.isArray(response.data.grades)) {
+                data = response.data;
+                break;
+            }
+        }
+        if(lastError && !data) throw lastError;
         if(data && Array.isArray(data.grades)){
             configuredGradeBands = data.grades
                 .map(r => ({
@@ -746,7 +758,10 @@ function gradeFromConfiguredSettings(mark){
     const value = Number(mark);
     if(!Number.isFinite(value) || !configuredGradeBands.length) return "";
     const band = configuredGradeBands.find(r => value >= r.min && value <= r.max);
-    return band ? band.grade : "";
+    if (band) return band.grade;
+    // If the saved bands have a gap, use the lowest configured grade for values below them.
+    const lowest = configuredGradeBands.reduce((a,b) => !a || b.min < a.min ? b : a, null);
+    return lowest && value < lowest.min ? lowest.grade : "";
 }
 
 /* =====================================================
