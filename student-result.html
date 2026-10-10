@@ -631,6 +631,101 @@ function getDivision(student){
     ).trim().toUpperCase();
 }
 
+
+/* Grade Settings: use the exact school ID used by Marks Entry, then
+   normalize year/class labels locally to avoid formatting mismatches. */
+let configuredGradeBands = [];
+async function loadConfiguredGradeBands(student){
+    configuredGradeBands = [];
+    const schoolId = "svbrhsbls-school"; // same ID used by the working Marks Entry page
+    const normalizeYear = value => {
+        const raw = String(value ?? "").trim().replace(/[–—−]/g, "-").replace(/\s+/g, "");
+        const m = raw.match(/^(\d{4})-(\d{2}|\d{4})$/);
+        if (!m) return raw;
+        const start = Number(m[1]);
+        const end = m[2].length === 2 ? Number(String(start + 1).slice(2)) : Number(m[2]);
+        return `${start}-${String(end).slice(-2).padStart(2,"0")}`;
+    };
+    const targetYear = normalizeYear(
+        student?.academic_year || student?.school_year || appSettings?.academic_year || "2026-27"
+    );
+    const targetClass = normalizeClass(
+        student?.class_name ?? student?.class ?? student?.grade ?? ""
+    );
+
+    if(!targetYear || !targetClass){
+        console.warn("Cannot determine Grade Settings year/class", {targetYear,targetClass});
+        showMessage("ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಅಥವಾ ತರಗತಿ ಮಾಹಿತಿ ಸಿಗಲಿಲ್ಲ.", "error");
+        return;
+    }
+
+    try{
+        // Fetch only this school's settings (same tenant as Marks Entry).
+        // Match year/class after retrieval so dash and Kannada class-label variants work.
+        const {data,error} = await db.from("grade_settings")
+            .select("school_id, academic_year, class_name, grades")
+            .eq("school_id", schoolId);
+        if(error) throw error;
+
+        const rows = Array.isArray(data) ? data : [];
+        console.info("Student Result Grade Settings lookup", {
+            schoolId,
+            targetYear,
+            targetClass,
+            rows: rows.map(row => ({
+                school_id: row.school_id,
+                academic_year: row.academic_year,
+                normalizedYear: normalizeYear(row.academic_year),
+                class_name: row.class_name,
+                normalizedClass: normalizeClass(row.class_name),
+                gradeCount: Array.isArray(row.grades) ? row.grades.length : -1
+            }))
+        });
+        const matching = rows.find(row =>
+            normalizeYear(row.academic_year) === targetYear &&
+            normalizeClass(row.class_name) === targetClass &&
+            Array.isArray(row.grades) && row.grades.length > 0
+        );
+
+        if(matching){
+            configuredGradeBands = matching.grades.map(r => ({
+                grade: String(r.grade ?? "").trim(),
+                min: Number(r.min),
+                max: Number(r.max)
+            })).filter(r => r.grade && Number.isFinite(r.min) && Number.isFinite(r.max) && r.min <= r.max)
+              .sort((a,b) => b.min - a.min);
+        }
+
+        if(configuredGradeBands.length){
+            console.info("Student Result Grade Settings loaded", {
+                schoolId,
+                year: matching.academic_year,
+                className: matching.class_name,
+                count: configuredGradeBands.length
+            });
+            return;
+        }
+
+        console.warn("No matching Grade Settings row found", {
+            schoolId, targetYear, targetClass,
+            availableRows: rows.map(row => ({academic_year:row.academic_year,class_name:row.class_name}))
+        });
+        showMessage("Grade Settings ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ. Consoleನಲ್ಲಿ school_id, academic_year ಮತ್ತು class_name ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.", "error");
+    }catch(error){
+        console.error("Grade Settings could not be loaded:", error);
+        showMessage("Grade Settings ಲೋಡ್ ಆಗಲಿಲ್ಲ: " + (error.message || "Supabase permissions ಪರಿಶೀಲಿಸಿ"), "error");
+    }
+}
+
+function gradeFromSettings(value){
+    const n=Number(value);
+    if(!Number.isFinite(n) || !configuredGradeBands.length) return "";
+    const band=configuredGradeBands.find(r=>n>=r.min && n<=r.max);
+    if(band) return band.grade;
+    const lowest=[...configuredGradeBands].sort((a,b)=>a.min-b.min)[0];
+    return lowest ? lowest.grade : "";
+}
+
 /* Current Marks Entry rules */
 function isKannadaSubject(subject){
     const name = String(
@@ -671,60 +766,14 @@ function getMaxMarks(student, examType, subject){
 }
 
 function grade(mark,max,student){
-    if(mark===null || mark===undefined || mark==="")
-        return "-";
-
-    const n=Number(mark);
-
-    if(!Number.isFinite(n) || !max)
-        return "-";
-
-    const p=n/max*100;
-    const cls=getClass(student);
-
-    if(cls==="8"){
-        if(p>=90) return "A+";
-        if(p>=70) return "A";
-        if(p>=50) return "B+";
-        if(p>=30) return "B";
-        return "C";
-    }
-
-    if(cls==="9" || cls==="10"){
-        if(p>=90) return "A+";
-        if(p>=80) return "A";
-        if(p>=70) return "B+";
-        if(p>=60) return "B";
-        if(p>=50) return "C+";
-        if(p>=35) return "C";
-        return "NC";
-    }
-
-    return "-";
+    if(mark===null || mark===undefined || mark==="") return "-";
+    const n=Number(mark), mx=Number(max);
+    if(!Number.isFinite(n) || !Number.isFinite(mx) || mx<=0) return "-";
+    const percent=n/mx*100;
+    return gradeFromSettings(percent) || "-";
 }
-
 function overallGrade(percent,student){
-    const cls=getClass(student);
-
-    if(cls==="8"){
-        if(percent>=90) return "A+";
-        if(percent>=70) return "A";
-        if(percent>=50) return "B+";
-        if(percent>=30) return "B";
-        return "C";
-    }
-
-    if(cls==="9" || cls==="10"){
-        if(percent>=90) return "A+";
-        if(percent>=80) return "A";
-        if(percent>=70) return "B+";
-        if(percent>=60) return "B";
-        if(percent>=50) return "C+";
-        if(percent>=35) return "C";
-        return "NC";
-    }
-
-    return "-";
+    return gradeFromSettings(percent) || "-";
 }
 
 function passMark(student,percent){
@@ -1007,6 +1056,8 @@ async function viewResult(){
         }
 
         const student=matches[0];
+
+        await loadConfiguredGradeBands(student);
 
         /* ---------------------------------------------
            2. Load subjects for student's class
