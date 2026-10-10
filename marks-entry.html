@@ -732,16 +732,20 @@ async function loadConfiguredGradeBands(){
                 .sort((a,b) => b.min - a.min);
         }
         console.info("Grade Settings loaded", {year, class:cls, count:configuredGradeBands.length});
+        if(!configuredGradeBands.length){
+            showMessage("⚠️ ಈ ಶೈಕ್ಷಣಿಕ ವರ್ಷ/ತರಗತಿಗೆ Grade Settings ಸಿಗಲಿಲ್ಲ. Grade Settings ನಲ್ಲಿ Save ಮಾಡಿ ಮತ್ತೆ Students Load ಮಾಡಿ.", "error");
+        }
     }catch(error){
-        console.warn("Grade Settings could not be loaded; using existing fallback grades:", error.message || error);
+        console.error("Grade Settings could not be loaded:", error.message || error);
         configuredGradeBands = [];
+        showMessage("❌ Grade Settings ಲೋಡ್ ಆಗಲಿಲ್ಲ: " + (error.message || "Supabase permissions ಪರಿಶೀಲಿಸಿ"), "error");
     }
 }
 
-function gradeFromConfiguredSettings(percentage){
-    const p = Number(percentage);
-    if(!Number.isFinite(p) || !configuredGradeBands.length) return "";
-    const band = configuredGradeBands.find(r => p >= r.min && p <= r.max);
+function gradeFromConfiguredSettings(mark){
+    const value = Number(mark);
+    if(!Number.isFinite(value) || !configuredGradeBands.length) return "";
+    const band = configuredGradeBands.find(r => value >= r.min && value <= r.max);
     return band ? band.grade : "";
 }
 
@@ -876,26 +880,20 @@ function grade8(mark,max){
 }
 
 function grade910(mark,subject){
-    /* Use this class's saved Grade Settings when available. */
-    const configured = gradeFromConfiguredSettings(percentageOf(mark, maximumMarks(subject)));
-    if(configured) return configured;
-    /* Fallback only when no Grade Settings have been saved. */
-    return gradeByPercentage(mark, maximumMarks(subject), GRADE_910);
+    // 9th/10th subject Grade comes directly from this class's Grade Settings
+    // using the actual marks, not the percentage or the old hard-coded bands.
+    return gradeFromConfiguredSettings(mark);
 }
 
 function overallGrade(percentage){
-    const configured = gradeFromConfiguredSettings(percentage);
-    if(configured) return configured;
-    if(currentClass === "8") return gradeByPercentage(percentage,100,GRADE_8_ANNUAL);
-    return gradeByPercentage(percentage,100,GRADE_910);
+    // Total Grade also uses the selected class's saved Grade Settings.
+    return gradeFromConfiguredSettings(percentage);
 }
 
 function subjectGrade(mark,max,subject){
-    const configured = gradeFromConfiguredSettings(percentageOf(mark,max));
-    if(configured) return configured;
-    if(currentClass === "8") return grade8(mark,max);
-    if(currentClass === "9" || currentClass === "10") return grade910(mark,subject);
-    return "";
+    // All classes use Grade Settings for the displayed subject Grade.
+    // For 9th/10th the special PASS rule may still override 24–27 to C.
+    return gradeFromConfiguredSettings(mark);
 }
 
 /* =====================================================
