@@ -908,18 +908,12 @@ function overallGrade(percentage){
 }
 
 function subjectGrade(mark,max,subject){
-    // Grade Settings stores grade bands on a 0–100 scale.
-    // For 8th class, convert subject marks to percentage first,
-    // otherwise a mark out of 10/30/50 is compared to percentage bands incorrectly.
-    // Keep the already-working 9th/10th behavior and their special PASS rule unchanged.
-    if(currentClass === "8"){
-        const percentage = percentageOf(mark,max);
-        return percentage === null ? "" : gradeFromConfiguredSettings(percentage);
-    }
-    if(currentClass === "9" || currentClass === "10"){
-        return gradeFromConfiguredSettings(mark);
-    }
-    return "";
+    // Grade Settings thresholds are percentages for every class.
+    // Always calculate the percentage from this subject's actual maximum
+    // marks (Subject Master), including 125, 100, 80, 50, 30, or 10.
+    const actualMax = subject ? maximumMarks(subject) : Number(max);
+    const percentage = percentageOf(mark, actualMax);
+    return percentage === null ? "" : gradeFromConfiguredSettings(percentage);
 }
 
 /* =====================================================
