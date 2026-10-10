@@ -3148,10 +3148,10 @@ function printMarks(){
         const max = maximumMarks(subject);
 
         html +=
-            "<th>" +
+            "<th colspan='2'>" +
             escapeHtml(name) +
             "<br>" +
-            "<small>" +
+            "<small>Max: " +
             max +
             "</small>" +
             "</th>";
@@ -3159,12 +3159,17 @@ function printMarks(){
     });
 
     html +=
-        "<th>Total</th>" +
-        "<th>Maximum</th>" +
-        "<th>%</th>" +
-        "<th>Grade</th>" +
-        "<th>Result</th>";
+        "<th rowspan='2'>Total</th>" +
+        "<th rowspan='2'>Maximum</th>" +
+        "<th rowspan='2'>%</th>" +
+        "<th rowspan='2'>Grade</th>" +
+        "<th rowspan='2'>Result</th>";
 
+    html += "</tr><tr>";
+    html += "<th>Roll</th><th>ವಿದ್ಯಾರ್ಥಿ</th>";
+    subjects.forEach(() => {
+        html += "<th>Marks</th><th>Grade</th>";
+    });
     html += "</tr></thead>";
     html += "<tbody>";
 
@@ -3237,15 +3242,13 @@ function printMarks(){
 
             html +=
                 "<td>" +
-                (
-                    value === ""
-                    ? ""
-                    : escapeHtml(String(value)) +
-                      "<br><b>" +
-                      escapeHtml(grade || "-") +
-                      "</b>"
-                ) +
+                (value === "" ? "" : escapeHtml(String(value))) +
                 "</td>";
+
+            html +=
+                "<td><b>" +
+                (value === "" ? "" : escapeHtml(grade || "-")) +
+                "</b></td>";
 
         });
 
