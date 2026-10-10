@@ -71,7 +71,7 @@ tr:nth-child(even){background:#f8fafc}
 
 <div>
 <label>ತರಗತಿ *</label>
-<select id="classSelect" onchange="loadSubjects()">
+<select id="classSelect" onchange="onClassChange()">
 <option value="">-- ಆಯ್ಕೆ ಮಾಡಿ --</option>
 <option value="8ನೇ ತರಗತಿ">8ನೇ ತರಗತಿ</option>
 <option value="9ನೇ ತರಗತಿ">9ನೇ ತರಗತಿ</option>
@@ -85,6 +85,9 @@ tr:nth-child(even){background:#f8fafc}
 <option value="">-- ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ --</option>
 <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
 <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="PREPARATORY_1" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1</option>
+<option value="PREPARATORY_2" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2</option>
+<option value="PREPARATORY_3" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3</option>
 </select>
 </div>
 
@@ -193,6 +196,7 @@ const SUBJECTS = {
 };
 
 document.addEventListener("DOMContentLoaded", async ()=>{
+    onClassChange();
     await testConnection();
     await initAcademicYears();
 });
@@ -482,9 +486,30 @@ function setSubjectName(){
 }
 
 function examName(exam){
-    return exam==="HALF_YEARLY"
-        ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-        : "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    const names={
+        "HALF_YEARLY":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+        "ANNUAL":"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+        "PREPARATORY_1":"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1",
+        "PREPARATORY_2":"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2",
+        "PREPARATORY_3":"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3"
+    };
+    return names[exam] || "ಪರೀಕ್ಷೆ ಆಯ್ಕೆ ಮಾಡಿ";
+}
+
+function onClassChange(){
+    const cls=document.getElementById("classSelect").value;
+    const examSelect=document.getElementById("examType");
+    Array.from(examSelect.options).forEach(option=>{
+        if(option.value.startsWith("PREPARATORY_")){
+            option.hidden = cls !== "10ನೇ ತರಗತಿ";
+            option.disabled = cls !== "10ನೇ ತರಗತಿ";
+        }
+    });
+    if(cls !== "10ನೇ ತರಗತಿ" && examSelect.value.startsWith("PREPARATORY_")){
+        examSelect.value="HALF_YEARLY";
+    }
+    applyExamMarks();
+    loadSubjects();
 }
 
 /* =========================================================
@@ -524,7 +549,7 @@ function defaultMarks(cls,exam,code){
             return code==="01K" ? 100 : 80;
         }
 
-        if(exam==="ANNUAL"){
+        if(exam==="ANNUAL" || exam.startsWith("PREPARATORY_")){
             return code==="01K" ? 125 : 100;
         }
     }
