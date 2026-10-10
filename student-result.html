@@ -87,6 +87,15 @@ button{
 }
 .info-item{font-size:14px;white-space:nowrap;min-width:0;}
 .info-item b{color:#075f89}
+/* Student details: exactly the requested three-line arrangement */
+.student-info-layout{grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;}
+.student-info-layout .info-roll{grid-column:1;grid-row:1}
+.student-info-layout .info-class{grid-column:2;grid-row:1}
+.student-info-layout .info-student-name{grid-column:3;grid-row:1}
+.student-info-layout .info-father-name{grid-column:1;grid-row:2}
+.student-info-layout .info-mother-name{grid-column:2;grid-row:2}
+.student-info-layout .info-dob{grid-column:1;grid-row:3}
+.student-info-layout .info-sats{grid-column:2;grid-row:3}
 
 .exam-title{
     background:#0b82b8;
@@ -332,8 +341,10 @@ td.subject{text-align:left;font-weight:700}
   .header{padding:14px 8px!important;text-align:center!important;}
   .header h1{font-size:18px!important;line-height:1.35!important;margin:0 0 5px!important;}
   .header p{font-size:12px!important;margin:2px 0!important;}
-  .search-grid,.student-info{grid-template-columns:1fr!important;gap:8px!important;}
-  .student-info{padding:10px!important;}
+  .search-grid{grid-template-columns:1fr!important;gap:8px!important;}
+  .student-info-layout{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px 5px!important;padding:10px!important;}
+  .student-info-layout .info-item{font-size:10px!important;white-space:normal!important;overflow-wrap:anywhere!important;}
+  .student-info-layout .info-item b{display:block!important;}
   .student-info .label{font-size:11px!important;}
   .student-info .value{font-size:14px!important;font-weight:700!important;}
   .summary{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;padding:8px!important;}
@@ -1161,39 +1172,39 @@ function renderResult(student,subjects,results,marksMap){
             </div>
         </div>
 
-        <div class="student-info">
+        <div class="student-info student-info-layout">
 
-            <div class="info-item">
+            <div class="info-item info-roll">
                 <b>Roll No:</b>
                 ${esc(student.roll_no)}
             </div>
 
-            <div class="info-item">
+            <div class="info-item info-class">
                 <b>ತರಗತಿ:</b>
                 ${esc(student.class_name)}
             </div>
 
-            <div class="info-item">
-                <b>DOB:</b>
-                ${esc(formatDate(student.dob))}
-            </div>
-
-            <div class="info-item">
+            <div class="info-item info-student-name">
                 <b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:</b>
                 ${esc(getStudentName(student))}
             </div>
 
-            <div class="info-item">
+            <div class="info-item info-father-name">
                 <b>ತಂದೆಯ ಹೆಸರು:</b>
                 ${esc(student.father_name ?? student.fatherName ?? student.father ?? "")}
             </div>
 
-            <div class="info-item">
+            <div class="info-item info-mother-name">
                 <b>ತಾಯಿಯ ಹೆಸರು:</b>
                 ${esc(student.mother_name ?? student.motherName ?? student.mother ?? "")}
             </div>
 
-            <div class="info-item">
+            <div class="info-item info-dob">
+                <b>DOB:</b>
+                ${esc(formatDate(student.dob))}
+            </div>
+
+            <div class="info-item info-sats">
                 <b>SATS No:</b>
                 ${esc(student.sats_no)}
             </div>
