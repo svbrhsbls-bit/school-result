@@ -3139,8 +3139,8 @@ function printMarks(){
     html += "<table>";
     html += "<thead><tr>";
 
-    html += "<th>Roll</th>";
-    html += "<th>ವಿದ್ಯಾರ್ಥಿ</th>";
+    html += "<th rowspan='2'>Roll</th>";
+    html += "<th rowspan='2'>ವಿದ್ಯಾರ್ಥಿ</th>";
 
     subjects.forEach(subject => {
 
@@ -3166,7 +3166,6 @@ function printMarks(){
         "<th rowspan='2'>Result</th>";
 
     html += "</tr><tr>";
-    html += "<th>Roll</th><th>ವಿದ್ಯಾರ್ಥಿ</th>";
     subjects.forEach(() => {
         html += "<th>Marks</th><th>Grade</th>";
     });
