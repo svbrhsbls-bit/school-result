@@ -35,7 +35,7 @@ button{border:0;padding:10px 15px;margin:12px 6px 0 0;border-radius:7px;color:#f
 <div class="grid">
 <div>
 <label>ತರಗತಿ</label>
-<select id="classSelect">
+<select id="classSelect" onchange="syncExamOptions()">
 <option value="8">8ನೇ ತರಗತಿ</option>
 <option value="9">9ನೇ ತರಗತಿ</option>
 <option value="10">10ನೇ ತರಗತಿ</option>
@@ -52,6 +52,9 @@ button{border:0;padding:10px 15px;margin:12px 6px 0 0;border-radius:7px;color:#f
 <select id="examSelect">
 <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
 <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="PREPARATORY_1" data-class="10" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1</option>
+<option value="PREPARATORY_2" data-class="10" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2</option>
+<option value="PREPARATORY_3" data-class="10" hidden>ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3</option>
 </select>
 </div>
 <div>
@@ -192,6 +195,20 @@ const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replac
 function classNo(v){
   const m=String(v??"").match(/10|9|8/);
   return m?m[0]:"";
+}
+
+function syncExamOptions(){
+  const cls=classNo($("classSelect").value);
+  const examSelect=$("examSelect");
+  const preparatory=["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"];
+  Array.from(examSelect.options).forEach(option=>{
+    if(preparatory.includes(option.value)){
+      option.hidden = cls!=="10";
+    }
+  });
+  if(cls!=="10" && preparatory.includes(examSelect.value)){
+    examSelect.value="HALF_YEARLY";
+  }
 }
 function studentName(s){
   return val(s,["student_name","name","studentName"])||"Student";
@@ -516,6 +533,7 @@ function clearList(){
 
 (async function(){
   try{
+    syncExamOptions();
     await loadAcademicYear();
   }catch(e){
     console.error(e);
