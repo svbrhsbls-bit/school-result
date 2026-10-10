@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="kn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grade Settings</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f2f6fb;color:#18324b;font-family:Arial,"Noto Sans Kannada",sans-serif}.head{background:#155b91;color:white;padding:22px max(16px,calc((100% - 940px)/2))}.head h1{margin:0 0 6px;font-size:28px}.head p{margin:0;font-size:14px}.wrap{max-width:940px;margin:22px auto;padding:0 14px}.card{background:#fff;border:1px solid #d6e1ed;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 3px 12px #173e5b0c}.title{font-size:18px;font-weight:bold;margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-weight:bold;font-size:14px;margin-bottom:7px}select,input{font:inherit;width:100%;padding:11px;border:1px solid #b9c9d8;border-radius:7px;min-height:42px;background:#fff;color:#18324b}.year{padding:12px;background:#edf6ff;border:1px solid #c9e0f6;border-radius:7px;font-weight:bold;min-height:42px}.muted{font-size:13px;color:#64748b;line-height:1.5}.warn{background:#fff7df;border:1px solid #f4d57d;color:#755500;border-radius:7px;padding:12px;margin-top:12px;font-size:13px;line-height:1.5}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:520px}th,td{border:1px solid #d6e1ed;padding:9px;text-align:left}th{background:#eaf2fa;font-size:14px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}button{border:0;border-radius:7px;padding:11px 15px;font-weight:bold;cursor:pointer}.primary{background:#1769aa;color:white}.secondary{background:#e8eef5;color:#20384f}.remove{background:#fde8e7;color:#b42318;padding:8px 10px}.empty{padding:20px;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;color:#64748b}.status{margin-top:12px;font-weight:bold;font-size:14px;min-height:18px}.ok{color:#168447}.err{color:#c62828}button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:600px){.grid{grid-template-columns:1fr}.card{padding:15px}.head h1{font-size:24px}}
+*{box-sizing:border-box}body{margin:0;background:#f2f6fb;color:#18324b;font-family:Arial,"Noto Sans Kannada",sans-serif}.head{background:#155b91;color:white;padding:22px max(16px,calc((100% - 940px)/2))}.head h1{margin:0 0 6px;font-size:28px}.head p{margin:0;font-size:14px}.wrap{max-width:940px;margin:22px auto;padding:0 14px}.card{background:#fff;border:1px solid #d6e1ed;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 3px 12px #173e5b0c}.title{font-size:18px;font-weight:bold;margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-weight:bold;font-size:14px;margin-bottom:7px}select,input{font:inherit;width:100%;padding:11px;border:1px solid #b9c9d8;border-radius:7px;min-height:42px;background:#fff;color:#18324b}.year{padding:12px;background:#edf6ff;border:1px solid #c9e0f6;border-radius:7px;font-weight:bold;min-height:42px}.muted{font-size:13px;color:#64748b;line-height:1.5}.warn{background:#fff7df;border:1px solid #f4d57d;color:#755500;border-radius:7px;padding:12px;margin-top:12px;font-size:13px;line-height:1.5}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:520px}th,td{border:1px solid #d6e1ed;padding:9px;text-align:left}th{background:#eaf2fa;font-size:14px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}button{border:0;border-radius:7px;padding:11px 15px;font-weight:bold;cursor:pointer}.primary{background:#1769aa;color:white}.editbtn{background:#168447;color:white}.secondary{background:#e8eef5;color:#20384f}.remove{background:#fde8e7;color:#b42318;padding:8px 10px}.empty{padding:20px;border:1px dashed #cbd5e1;border-radius:8px;text-align:center;color:#64748b}.status{margin-top:12px;font-weight:bold;font-size:14px;min-height:18px}.ok{color:#168447}.err{color:#c62828}button:disabled{opacity:.45;cursor:not-allowed}@media(max-width:600px){.grid{grid-template-columns:1fr}.card{padding:15px}.head h1{font-size:24px}}
 </style></head><body>
 <header class="head"><h1>Grade Settings</h1><p>ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಮತ್ತು ತರಗತಿಗೆ ಅನುಗುಣವಾಗಿ Grade ಅಂಕಗಳ ಮಿತಿಗಳನ್ನು ನಿರ್ವಹಿಸಿ</p></header>
 <main class="wrap">
@@ -10,28 +10,45 @@
 <div><label for="cls">ತರಗತಿ</label><select id="cls"><option value="">ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ</option><option value="8">8ನೇ ತರಗತಿ</option><option value="9">9ನೇ ತರಗತಿ</option><option value="10">10ನೇ ತರಗತಿ</option></select></div></div>
 <div id="warning" class="warn" hidden></div></section>
 <section class="card"><h2 class="title">Grade ವಿವರಗಳು</h2><div id="area" class="empty">ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಪತ್ತೆಯಾದ ನಂತರ ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.</div>
-<div class="actions"><button id="add" class="secondary" disabled>＋ Grade ಸಾಲು ಸೇರಿಸಿ</button><button id="save" class="primary" disabled>Save</button><button id="reset" class="secondary" disabled>ಬದಲಾವಣೆ ರದ್ದುಮಾಡಿ</button></div><div id="status" class="status" role="status"></div></section>
-<p class="muted">ಗಮನಿಸಿ: ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು settings(8).html ಬಳಸುವ Supabase project‌ನ settings (id=1) ಮತ್ತು academic_years ಪಟ್ಟಿಯಿಂದ ಪಡೆಯಲಾಗುತ್ತದೆ. Grade ವಿವರಗಳು ಇನ್ನೂ ಈ ಬ್ರೌಸರ್‌ನ local storage‌ನಲ್ಲೇ ಉಳಿಯುತ್ತವೆ; ಬೇರೆ ಸಾಧನಗಳಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಲು database save ವ್ಯವಸ್ಥೆ ಪ್ರತ್ಯೇಕವಾಗಿ ಮಾಡಬೇಕು. marks-entry.html ಅಥವಾ student-result.html ಅನ್ನು ಈ ಫೈಲ್ ಬದಲಾಯಿಸುವುದಿಲ್ಲ.</p>
+<div class="actions"><button id="add" class="secondary" disabled>＋ Grade ಸಾಲು ಸೇರಿಸಿ</button><button id="save" class="primary" disabled>Save</button><button id="edit" class="editbtn" disabled>✎ Edit</button><button id="reset" class="secondary" disabled>ಬದಲಾವಣೆ ರದ್ದುಮಾಡಿ</button></div><div id="status" class="status" role="status"></div></section>
+<p class="muted">ಗಮನಿಸಿ: ಶೈಕ್ಷಣಿಕ ವರ್ಷವನ್ನು settings(8).html ಬಳಸುವ Supabase project‌ನ settings (id=1) ಮತ್ತು academic_years ಪಟ್ಟಿಯಿಂದ ಪಡೆಯಲಾಗುತ್ತದೆ. Grade ವಿವರಗಳನ್ನು ಶಾಲೆಯ Login‌ನ DISE Code ಆಧರಿಸಿ Supabase‌ನ grade_settings ಪಟ್ಟಿಗೆ ಉಳಿಸಿ ಅಲ್ಲಿಂದ ಲೋಡ್ ಮಾಡಲು ಪ್ರಯತ್ನಿಸಲಾಗುತ್ತದೆ. marks-entry.html ಅಥವಾ student-result.html ಅನ್ನು ಈ ಫೈಲ್ ಬದಲಾಯಿಸುವುದಿಲ್ಲ.</p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id), cls=$('cls'),area=$('area'),status=$('status');
-let year='',school='default-school',rows=[{grade:'',min:'',max:''}],snapshot=[];
+let year='',school='default-school',rows=[{grade:'',min:'',max:''}],snapshot=[],isLocked=false;
 const keys=['academicYear','academic_year','currentAcademicYear','current_academic_year','selectedAcademicYear','selected_academic_year','activeAcademicYear','active_academic_year','schoolAcademicYear','school_academic_year'];
 function norm(v){if(typeof v!=='string')return '';let m=v.match(/\\b(20\\d{2})\\s*[-–/]\\s*(\\d{2}|20\\d{2})\\b/);return m?m[1]+'-'+(m[2].length===4?m[2].slice(2):m[2]):''}
 function deep(v,d=0){if(d>5||v==null)return '';if(typeof v==='string')return norm(v);if(Array.isArray(v)){for(const x of v){let z=deep(x,d+1);if(z)return z}return ''}if(typeof v==='object'){for(const k of Object.keys(v))if(/academic.?year|selected.?year|current.?year|active.?year/i.test(k)){let z=norm(v[k]);if(z)return z}for(const k of Object.keys(v)){let z=deep(v[k],d+1);if(z)return z}}return ''}
 function detectYear(){for(const k of keys){try{let v=localStorage.getItem(k);if(v){let z=norm(v);if(z)return z;try{z=deep(JSON.parse(v));if(z)return z}catch(e){}}}catch(e){}}try{for(let i=0;i<localStorage.length;i++){let v=localStorage.getItem(localStorage.key(i));try{let z=deep(JSON.parse(v));if(z)return z}catch(e){}}}catch(e){}return ''}
-function detectSchool(){for(const k of ['school_id','schoolId','currentSchoolId','current_school_id','selectedSchoolId','tenant_id'])try{let v=localStorage.getItem(k);if(v)return v}catch(e){}return 'default-school'}
+function detectSchool(){
+  // login.html stores these values after a successful DISE-code login.
+  for(const k of ['school_dise_code','school_id','schoolId','currentSchoolId','current_school_id','selectedSchoolId','tenant_id']){
+    try{const v=localStorage.getItem(k);if(v && String(v).trim()) return String(v).trim()}catch(e){}
+  }
+  return '';
+}
 function skey(){return 'gradeSettings:v1:'+encodeURIComponent(school)+':'+encodeURIComponent(year)+':'+cls.value}
 function msg(t,c='') {status.textContent=t;status.className='status '+c}
-function render(){if(!year||!cls.value){area.className='empty';area.textContent=!year?'Settings‌ನ ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಸಿಗುವವರೆಗೆ Grade ವಿವರಗಳನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.':'Grade ವಿವರಗಳನ್ನು ನೋಡಲು ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.';$('add').disabled=$('save').disabled=$('reset').disabled=true;return}
+function render(){if(!year||!cls.value){area.className='empty';area.textContent=!year?'Settings‌ನ ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಸಿಗುವವರೆಗೆ Grade ವಿವರಗಳನ್ನು ತೆರೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ.':'Grade ವಿವರಗಳನ್ನು ನೋಡಲು ತರಗತಿ ಆಯ್ಕೆಮಾಡಿ.';$('add').disabled=$('save').disabled=$('reset').disabled=$('edit').disabled=true;return}
 area.className='tablewrap';let table=document.createElement('table'),thead=document.createElement('thead');thead.innerHTML='<tr><th>Grade ಹೆಸರು</th><th>ಕನಿಷ್ಠ ಅಂಕ</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>ಕ್ರಿಯೆ</th></tr>';table.append(thead);let tb=document.createElement('tbody');
-rows.forEach((r,i)=>{let tr=document.createElement('tr');[['grade','text','Grade ಹೆಸರು'],['min','number','ಕನಿಷ್ಠ ಅಂಕ'],['max','number','ಗರಿಷ್ಠ ಅಂಕ']].forEach(([key,type,placeholder])=>{let td=document.createElement('td'),input=document.createElement('input');input.type=type;input.placeholder=placeholder;input.value=r[key];if(type==='number'){input.min='0';input.max='100';input.step='any'}input.addEventListener('input',e=>rows[i][key]=e.target.value);td.append(input);tr.append(td)});let td=document.createElement('td'),b=document.createElement('button');b.className='remove';b.textContent='ತೆಗೆದುಹಾಕಿ';b.onclick=()=>{rows.length===1?rows=[{grade:'',min:'',max:''}]:rows.splice(i,1);render();msg('ಸಾಲು ಬದಲಾಯಿಸಲಾಗಿದೆ. ಉಳಿಸಲು Save ಒತ್ತಿ.')};td.append(b);tr.append(td);tb.append(tr)});table.append(tb);area.replaceChildren(table);$('add').disabled=$('save').disabled=$('reset').disabled=false}
-function load(){msg('');try{let x=JSON.parse(localStorage.getItem(skey())||'null');rows=Array.isArray(x)&&x.length?x:[{grade:'',min:'',max:''}]}catch(e){rows=[{grade:'',min:'',max:''}]}snapshot=JSON.parse(JSON.stringify(rows));render()}
+rows.forEach((r,i)=>{let tr=document.createElement('tr');[['grade','text','Grade ಹೆಸರು'],['min','number','ಕನಿಷ್ಠ ಅಂಕ'],['max','number','ಗರಿಷ್ಠ ಅಂಕ']].forEach(([key,type,placeholder])=>{let td=document.createElement('td'),input=document.createElement('input');input.type=type;input.placeholder=placeholder;input.value=r[key];input.disabled=isLocked;if(type==='number'){input.min='0';input.max='100';input.step='any'}input.addEventListener('input',e=>rows[i][key]=e.target.value);td.append(input);tr.append(td)});let td=document.createElement('td'),b=document.createElement('button');b.className='remove';b.textContent='ತೆಗೆದುಹಾಕಿ';b.disabled=isLocked;b.onclick=()=>{rows.length===1?rows=[{grade:'',min:'',max:''}]:rows.splice(i,1);render();msg('ಸಾಲು ಬದಲಾಯಿಸಲಾಗಿದೆ. ಉಳಿಸಲು Save ಒತ್ತಿ.')};td.append(b);tr.append(td);tb.append(tr)});table.append(tb);area.replaceChildren(table);$('add').disabled=isLocked;$('save').disabled=isLocked;$('reset').disabled=isLocked;$('edit').disabled=!isLocked}
+async function load(){
+ msg('');
+ if(!school){rows=[{grade:'',min:'',max:''}];snapshot=JSON.parse(JSON.stringify(rows));render();msg('ಶಾಲೆಯ ಗುರುತು ಪತ್ತೆಯಾಗಿಲ್ಲ. ಮೊದಲು ಶಾಲೆಯ DISE Code ಬಳಸಿ Login ಮಾಡಿ; ನಂತರ ಈ ಪುಟವನ್ನು ಮತ್ತೆ ತೆರೆಯಿರಿ.','err');return}
+ try{
+  const {data,error}=await db.from('grade_settings').select('grades').eq('school_id',school).eq('academic_year',year).eq('class_name',cls.value).maybeSingle();
+  if(error) throw error;
+  if(data && Array.isArray(data.grades) && data.grades.length) rows=data.grades.map(r=>({grade:String(r.grade??''),min:String(r.min??''),max:String(r.max??'')}));
+  else {try{const old=JSON.parse(localStorage.getItem(skey())||'null');rows=Array.isArray(old)&&old.length?old:[{grade:'',min:'',max:''}]}catch(e){rows=[{grade:'',min:'',max:''}]}}
+  snapshot=JSON.parse(JSON.stringify(rows));isLocked=!!(data && Array.isArray(data.grades) && data.grades.length);render();msg(data?'Grade ವಿವರಗಳು ಲೋಡ್ ಆಗಿವೆ. ಬದಲಾವಣೆ ಮಾಡಲು Edit ಒತ್ತಿ.':'ಈ ತರಗತಿಗೆ ಇನ್ನೂ Grade Settings ಉಳಿಸಿಲ್ಲ. ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ Save ಒತ್ತಿ.');
+ }catch(e){console.error(e);isLocked=false;rows=[{grade:'',min:'',max:''}];snapshot=JSON.parse(JSON.stringify(rows));render();msg('Database‌ನಿಂದ ಲೋಡ್ ಆಗಲಿಲ್ಲ: '+(e.message||'RLS Policy ಪರಿಶೀಲಿಸಿ'),'err')}
+}
 const SUPABASE_URL='https://sozlvjvqrgpaabnvjvxe.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_Pr7CaX_U_a4wcVnhXol_gQ_BTZWDRbx';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+school=detectSchool();
 
 async function loadSettingsYear(){
   $('year').textContent='Settings‌ನಿಂದ ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಪಡೆಯಲಾಗುತ್ತಿದೆ…';
@@ -68,7 +85,6 @@ async function loadSettingsYear(){
       return;
     }
 
-    school='settings-id-1';
     $('year').textContent=year;
     $('warning').hidden=true;
     if(cls.value) load(); else render();
@@ -82,9 +98,22 @@ async function loadSettingsYear(){
 }
 cls.onchange=()=>year&&cls.value?load():render();
 loadSettingsYear();
-$('add').onclick=()=>{rows.push({grade:'',min:'',max:''});render();msg('ಹೊಸ ಸಾಲು ಸೇರಿಸಲಾಗಿದೆ.')};
-$('reset').onclick=()=>{rows=JSON.parse(JSON.stringify(snapshot));render();msg('ಉಳಿಸದ ಬದಲಾವಣೆ ರದ್ದುಮಾಡಲಾಗಿದೆ.')};
-$('save').onclick=()=>{if(!year||!cls.value){msg('ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಮತ್ತು ತರಗತಿ ಲಭ್ಯವಿರಬೇಕು.','err');return}let a=rows.map(r=>({grade:String(r.grade||'').trim(),min:String(r.min).trim(),max:String(r.max).trim()}));if(a.some(r=>!r.grade||r.min===''||r.max==='')){msg('ಪ್ರತಿ ಸಾಲಿನಲ್ಲೂ ಮೂರು ವಿವರಗಳನ್ನು ತುಂಬಿ.','err');return}for(let r of a){let n=Number(r.min),x=Number(r.max);if(!Number.isFinite(n)||!Number.isFinite(x)||n<0||x>100||n>x){msg('ಅಂಕಗಳು 0–100 ಒಳಗಿರಬೇಕು; ಕನಿಷ್ಠ ಅಂಕ ಗರಿಷ್ಠ ಅಂಕಕ್ಕಿಂತ ಹೆಚ್ಚಿರಬಾರದು.','err');return}}if(new Set(a.map(r=>r.grade.toLowerCase())).size!==a.length){msg('Grade ಹೆಸರುಗಳನ್ನು ಪುನರಾವರ್ತಿಸಬೇಡಿ.','err');return}let sorted=a.map(r=>({min:Number(r.min),max:Number(r.max)})).sort((x,y)=>x.min-y.min);for(let i=1;i<sorted.length;i++)if(sorted[i].min<=sorted[i-1].max){msg('ಅಂಕಗಳ ಶ್ರೇಣಿಗಳು ಒಂದಕ್ಕೊಂದು overlap ಆಗದಂತೆ ಪರಿಶೀಲಿಸಿ.','err');return}try{localStorage.setItem(skey(),JSON.stringify(a));rows=a;snapshot=JSON.parse(JSON.stringify(a));msg('Grade Settings ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಿದೆ.','ok');render()}catch(e){msg('ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.','err')}};
+$('add').onclick=()=>{if(isLocked)return;rows.push({grade:'',min:'',max:''});render();msg('ಹೊಸ ಸಾಲು ಸೇರಿಸಲಾಗಿದೆ.')};
+$('edit').onclick=()=>{isLocked=false;render();msg('Edit mode ಆರಂಭವಾಗಿದೆ. ಬದಲಾವಣೆ ಮಾಡಿ ಮತ್ತೆ Save ಒತ್ತಿ.','ok')};
+$('reset').onclick=()=>{rows=JSON.parse(JSON.stringify(snapshot));isLocked=true;render();msg('ಉಳಿಸದ ಬದಲಾವಣೆ ರದ್ದುಮಾಡಲಾಗಿದೆ. Grade ವಿವರಗಳು ಮತ್ತೆ Lock ಆಗಿವೆ.')};
+$('save').onclick=async()=>{
+ if(!year||!cls.value){msg('ಶೈಕ್ಷಣಿಕ ವರ್ಷ ಮತ್ತು ತರಗತಿ ಲಭ್ಯವಿರಬೇಕು.','err');return}
+ if(!school){msg('ಶಾಲೆಯ ಗುರುತು ಪತ್ತೆಯಾಗಿಲ್ಲ. ಮೊದಲು DISE Code ಬಳಸಿ Login ಮಾಡಿ.','err');return}
+ let a=rows.map(r=>({grade:String(r.grade||'').trim(),min:String(r.min).trim(),max:String(r.max).trim()}));
+ if(a.some(r=>!r.grade||r.min===''||r.max==='')){msg('ಪ್ರತಿ ಸಾಲಿನಲ್ಲೂ ಮೂರು ವಿವರಗಳನ್ನು ತುಂಬಿ.','err');return}
+ for(let r of a){let n=Number(r.min),x=Number(r.max);if(!Number.isFinite(n)||!Number.isFinite(x)||n<0||x>100||n>x){msg('ಅಂಕಗಳು 0–100 ಒಳಗಿರಬೇಕು; ಕನಿಷ್ಠ ಅಂಕ ಗರಿಷ್ಠ ಅಂಕಕ್ಕಿಂತ ಹೆಚ್ಚಿರಬಾರದು.','err');return}}
+ if(new Set(a.map(r=>r.grade.toLowerCase())).size!==a.length){msg('Grade ಹೆಸರುಗಳನ್ನು ಪುನರಾವರ್ತಿಸಬೇಡಿ.','err');return}
+ let sorted=a.map(r=>({min:Number(r.min),max:Number(r.max)})).sort((x,y)=>x.min-y.min);for(let i=1;i<sorted.length;i++)if(sorted[i].min<=sorted[i-1].max){msg('ಅಂಕಗಳ ಶ್ರೇಣಿಗಳು ಒಂದಕ್ಕೊಂದು overlap ಆಗದಂತೆ ಪರಿಶೀಲಿಸಿ.','err');return}
+ $('save').disabled=true;msg('Supabase‌ಗೆ ಉಳಿಸಲಾಗುತ್ತಿದೆ…');
+ try{const payload={school_id:school,academic_year:year,class_name:cls.value,grades:a,updated_at:new Date().toISOString()};const {error}=await db.from('grade_settings').upsert(payload,{onConflict:'school_id,academic_year,class_name'});if(error)throw error;try{localStorage.setItem(skey(),JSON.stringify(a))}catch(e){}rows=a;snapshot=JSON.parse(JSON.stringify(a));isLocked=true;msg('Grade ವಿವರಗಳು ಯಶಸ್ವಿಯಾಗಿ Save ಆಗಿವೆ ಮತ್ತು Lock ಆಗಿವೆ. ಬದಲಾವಣೆ ಮಾಡಲು Edit ಒತ್ತಿ.','ok');render()}
+ catch(e){console.error(e);msg('Supabase‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಲಿಲ್ಲ: '+(e.message||'RLS Policy / Table permissions ಪರಿಶೀಲಿಸಿ'),'err')}
+ finally{render()}
+};
 render();
 })();
 </script></body></html>
