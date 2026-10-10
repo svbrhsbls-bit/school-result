@@ -880,9 +880,11 @@ function grade8(mark,max){
 }
 
 function grade910(mark,subject){
-    // 9th/10th subject Grade comes directly from this class's Grade Settings
-    // using the actual marks, not the percentage or the old hard-coded bands.
-    return gradeFromConfiguredSettings(mark);
+    // Convert marks to percentage using the actual Subject Master maximum.
+    // Grade Settings thresholds are percentages (0–100), even when max marks
+    // are 125, 80, or another value. Example: 112/125 = 89.6%.
+    const percentage = percentageOf(mark, maximumMarks(subject));
+    return percentage === null ? "" : gradeFromConfiguredSettings(percentage);
 }
 
 function overallGrade(percentage){
