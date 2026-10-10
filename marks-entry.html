@@ -431,6 +431,7 @@ let currentDivision = "";
 let currentExam = "";
 let currentAcademicYear = "";
 let currentExamHeading = "";
+let configuredGradeBands = [];
 
 
 /* =====================================================
@@ -701,6 +702,50 @@ function maximumMarks(subject){
 }
 
 /* =====================================================
+   GRADE SETTINGS — read the saved grade bands for this
+   school, academic year and class. PASS/FAIL rules remain
+   separate and unchanged.
+===================================================== */
+async function loadConfiguredGradeBands(){
+    configuredGradeBands = [];
+    const schoolId = "svbrhsbls-school"; // same school_id used by Grade Settings
+    const year = String(currentAcademicYear || "").trim();
+    const cls = String(currentClass || "").trim();
+    if(!schoolId || !year || !cls) return;
+    try{
+        const {data,error} = await supabaseClient
+            .from("grade_settings")
+            .select("grades")
+            .eq("school_id", schoolId)
+            .eq("academic_year", year)
+            .eq("class_name", cls)
+            .maybeSingle();
+        if(error) throw error;
+        if(data && Array.isArray(data.grades)){
+            configuredGradeBands = data.grades
+                .map(r => ({
+                    grade: String(r.grade ?? "").trim(),
+                    min: Number(r.min),
+                    max: Number(r.max)
+                }))
+                .filter(r => r.grade && Number.isFinite(r.min) && Number.isFinite(r.max) && r.min <= r.max)
+                .sort((a,b) => b.min - a.min);
+        }
+        console.info("Grade Settings loaded", {year, class:cls, count:configuredGradeBands.length});
+    }catch(error){
+        console.warn("Grade Settings could not be loaded; using existing fallback grades:", error.message || error);
+        configuredGradeBands = [];
+    }
+}
+
+function gradeFromConfiguredSettings(percentage){
+    const p = Number(percentage);
+    if(!Number.isFinite(p) || !configuredGradeBands.length) return "";
+    const band = configuredGradeBands.find(r => p >= r.min && p <= r.max);
+    return band ? band.grade : "";
+}
+
+/* =====================================================
    PERCENTAGE BASED GRADING
 ===================================================== */
 function percentageOf(mark,max){
@@ -831,40 +876,25 @@ function grade8(mark,max){
 }
 
 function grade910(mark,subject){
-    /* 9th/10th grade is calculated from the actual
-       Subject Master maximum marks for the selected exam. */
-    return gradeByPercentage(
-        mark,
-        maximumMarks(subject),
-        GRADE_910
-    );
+    /* Use this class's saved Grade Settings when available. */
+    const configured = gradeFromConfiguredSettings(percentageOf(mark, maximumMarks(subject)));
+    if(configured) return configured;
+    /* Fallback only when no Grade Settings have been saved. */
+    return gradeByPercentage(mark, maximumMarks(subject), GRADE_910);
 }
 
 function overallGrade(percentage){
-    if(currentClass === "8"){
-        return gradeByPercentage(
-            percentage,
-            100,
-            GRADE_8_ANNUAL
-        );
-    }
-
-    return gradeByPercentage(
-        percentage,
-        100,
-        GRADE_910
-    );
+    const configured = gradeFromConfiguredSettings(percentage);
+    if(configured) return configured;
+    if(currentClass === "8") return gradeByPercentage(percentage,100,GRADE_8_ANNUAL);
+    return gradeByPercentage(percentage,100,GRADE_910);
 }
 
 function subjectGrade(mark,max,subject){
-    if(currentClass === "8"){
-        return grade8(mark,max);
-    }
-
-    if(currentClass === "9" || currentClass === "10"){
-        return grade910(mark,subject);
-    }
-
+    const configured = gradeFromConfiguredSettings(percentageOf(mark,max));
+    if(configured) return configured;
+    if(currentClass === "8") return grade8(mark,max);
+    if(currentClass === "9" || currentClass === "10") return grade910(mark,subject);
     return "";
 }
 
@@ -1252,6 +1282,8 @@ async function loadStudents(){
                 "examSelect"
             ).value;
 
+        currentAcademicYear = String(document.getElementById("academicYearSelect")?.value || currentAcademicYear || "").trim();
+        await loadConfiguredGradeBands();
         await loadConfiguredExamHeading();
 
         showMessage(
