@@ -297,6 +297,16 @@ th{
                 <option value="ANNUAL">
                     ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ
                 </option>
+
+                <option value="PREPARATORY_1" data-class="10" hidden>
+                    ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1
+                </option>
+                <option value="PREPARATORY_2" data-class="10" hidden>
+                    ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2
+                </option>
+                <option value="PREPARATORY_3" data-class="10" hidden>
+                    ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3
+                </option>
             </select>
         </div>
 
@@ -452,6 +462,33 @@ function classNumber(value){
     return match ? match[0] : "";
 }
 
+function examDisplayName(value){
+    const names = {
+        HALF_YEARLY: "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+        ANNUAL: "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",
+        PREPARATORY_1: "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1",
+        PREPARATORY_2: "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2",
+        PREPARATORY_3: "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3"
+    };
+    return names[String(value || "")] || String(value || "");
+}
+
+function updatePreparatoryExamOptions(){
+    const classValue = document.getElementById("classSelect")?.value || "";
+    const examSelect = document.getElementById("examSelect");
+    if(!examSelect) return;
+    const isClass10 = classNumber(classValue) === "10";
+    Array.from(examSelect.options).forEach(option => {
+        if(option.dataset.class === "10"){
+            option.hidden = !isClass10;
+            option.disabled = !isClass10;
+        }
+    });
+    if(!isClass10 && ["PREPARATORY_1", "PREPARATORY_2", "PREPARATORY_3"].includes(examSelect.value)){
+        examSelect.value = "HALF_YEARLY";
+    }
+}
+
 
 function studentName(student){
 
@@ -572,20 +609,24 @@ function maximumMarks(subject){
     const exam = String(currentExam || "").trim();
     const code = String(subjectCode(subject) || "").trim();
 
-    const keys = [
-        "subject_marks_" + cls + "_" + exam + "_" + code
-    ];
-
-    /* Support any older key that included academic year. */
-    if(currentAcademicYear){
-        keys.unshift(
-            "subject_marks_" +
-            currentAcademicYear + "_" +
-            cls + "_" +
-            exam + "_" +
-            code
-        );
+    /* Preparatory tests first use their own Subject Master value.
+       If no separate value exists, reuse the Annual Subject Master value. */
+    const examKeys = [exam];
+    if(["PREPARATORY_1", "PREPARATORY_2", "PREPARATORY_3"].includes(exam)){
+        examKeys.push("ANNUAL");
     }
+
+    const keys = [];
+    if(currentAcademicYear){
+        examKeys.forEach(examKey => {
+            keys.push(
+                "subject_marks_" + currentAcademicYear + "_" + cls + "_" + examKey + "_" + code
+            );
+        });
+    }
+    examKeys.forEach(examKey => {
+        keys.push("subject_marks_" + cls + "_" + examKey + "_" + code);
+    });
 
     for(const key of keys){
 
@@ -607,17 +648,21 @@ function maximumMarks(subject){
       We deliberately do NOT use subject.max_marks here,
       because that field is shared by both examinations.
     */
+    const defaultExam = ["PREPARATORY_1", "PREPARATORY_2", "PREPARATORY_3"].includes(exam)
+        ? "ANNUAL"
+        : exam;
+
     if(cls === "8ನೇ ತರಗತಿ"){
-        return exam === "HALF_YEARLY" ? 50 : 100;
+        return defaultExam === "HALF_YEARLY" ? 50 : 100;
     }
 
     if(cls === "9ನೇ ತರಗತಿ" || cls === "10ನೇ ತರಗತಿ"){
 
-        if(exam === "HALF_YEARLY"){
+        if(defaultExam === "HALF_YEARLY"){
             return code === "01K" ? 100 : 80;
         }
 
-        if(exam === "ANNUAL"){
+        if(defaultExam === "ANNUAL"){
             return code === "01K" ? 125 : 100;
         }
     }
@@ -2981,12 +3026,13 @@ function downloadExcel(){function downloadExcel(){
         document.createElement("a");
 
 
-    const examName =
-        currentExam === "HALF_YEARLY"
-        ?
-        "Half-Yearly"
-        :
-        "Annual";
+    const examName = {
+        HALF_YEARLY: "Half-Yearly",
+        ANNUAL: "Annual",
+        PREPARATORY_1: "Preparatory-1",
+        PREPARATORY_2: "Preparatory-2",
+        PREPARATORY_3: "Preparatory-3"
+    }[currentExam] || String(currentExam || "Exam");
 
 
     link.href = url;
@@ -3040,14 +3086,7 @@ function printMarks(){
        School name / Marks Entry / academic year
        are already present in the page header. */
 
-    const examText =
-        currentExam === "HALF_YEARLY"
-        ? "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-        : (
-            currentExam === "ANNUAL"
-            ? "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"
-            : currentExam
-        );
+    const examText = examDisplayName(currentExam);
 
     html +=
         "<h3 style='text-align:center;margin:8px 0 10px;font-size:16px;'>" +
@@ -3289,6 +3328,8 @@ function escapeHtml(value){
             "change",
             () => {
 
+                if(id === "classSelect") updatePreparatoryExamOptions();
+
                 students = [];
                 subjects = [];
 
@@ -3311,6 +3352,8 @@ function escapeHtml(value){
         );
 });
 
+
+updatePreparatoryExamOptions();
 
 /* =====================================================
    EXCEL MARKS UPLOAD - ADDED WITHOUT CHANGING EXISTING LOGIC
