@@ -539,7 +539,10 @@ function getMaxMarks(student, examType, subject){
             return kannada ? 100 : 80;
     }
 
-    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
+    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" ||
+       examType==="PREPARATORY_1" ||
+       examType==="PREPARATORY_2" ||
+       examType==="PREPARATORY_3"){
         if(cls==="8") return 100;
 
         if(cls==="9" || cls==="10")
@@ -782,6 +785,9 @@ function getHeadTeacherName(){
 function examDisplayName(examType){
     if(examType === "HALF_YEARLY") return "ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
     if(examType === "ANNUAL") return "ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ";
+    if(examType === "PREPARATORY_1") return "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 1";
+    if(examType === "PREPARATORY_2") return "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 2";
+    if(examType === "PREPARATORY_3") return "ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ 3";
     return examType || "";
 }
 
@@ -1035,7 +1041,10 @@ async function viewResult(){
         --------------------------------------------- */
         const examTypes=[
             "HALF_YEARLY",
-            "ANNUAL"
+            "ANNUAL",
+            "PREPARATORY_1",
+            "PREPARATORY_2",
+            "PREPARATORY_3"
         ];
 
         const {data:results,error:resultError}=await db
