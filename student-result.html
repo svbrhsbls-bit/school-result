@@ -133,6 +133,11 @@ th{
 .table-wrap.fail .total-code{
     background:#c62828;
 }
+/* Keep the subject rows in their original dark text color; only the header and total rows follow PASS/FAIL colors. */
+.table-wrap.pass tbody td,
+.table-wrap.fail tbody td{
+    color:#17324d;
+}
 td.subject{text-align:left;font-weight:700}
 .summary{
     display:grid;
@@ -191,6 +196,21 @@ td.subject{text-align:left;font-weight:700}
 .pass{color:#118044;font-weight:800}
 .fail{color:#c02020;font-weight:800}
 .pending{color:#a16a00;font-weight:800}
+/* TOTAL and summary rows: keep the existing status-colored background and use white text. */
+.table-wrap.pass .total-blue-row td,
+.table-wrap.fail .total-blue-row td,
+.table-wrap.pending .total-blue-row td{
+    color:#fff !important;
+}
+.table-wrap.pass .result-cell .pass,
+.table-wrap.fail .result-cell .fail,
+.table-wrap.pending .result-cell .pending{
+    color:#fff !important;
+}
+.table-wrap.pending .result-cell .pending{
+    color:#a16a00 !important;
+}
+
 
 .no-result{
     text-align:center;
@@ -375,6 +395,65 @@ td.subject{text-align:left;font-weight:700}
   .total-label{
       font-size:13px!important;
   }
+}
+
+
+/* Print-only fix: keep table heading and TOTAL rows clearly readable in PDF/print. */
+@media print {
+    .table-wrap,
+    .table-wrap table,
+    .table-wrap thead,
+    .table-wrap tbody,
+    .table-wrap tr,
+    .table-wrap th,
+    .table-wrap td {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .table-wrap th {
+        background-color: #168a45 !important;
+        color: #ffffff !important;
+        font-weight: 800 !important;
+        opacity: 1 !important;
+        text-shadow: none !important;
+    }
+
+    .table-wrap.fail th {
+        background-color: #c62828 !important;
+    }
+
+    .table-wrap .total-blue-row td,
+    .table-wrap .total-code {
+        background-color: #168a45 !important;
+        color: #ffffff !important;
+        font-weight: 800 !important;
+        opacity: 1 !important;
+        text-shadow: none !important;
+    }
+
+    .table-wrap.fail .total-blue-row td,
+    .table-wrap.fail .total-code {
+        background-color: #c62828 !important;
+    }
+
+    .table-wrap .result-cell .pass,
+    .table-wrap .result-cell .fail,
+    .table-wrap .result-cell .pending {
+        color: #ffffff !important;
+        font-weight: 800 !important;
+    }
+
+    .table-wrap table {
+        border-collapse: collapse !important;
+    }
+
+    .table-wrap th,
+    .table-wrap .total-blue-row td {
+        border: 1px solid #b7c5cc !important;
+        padding: 6px 5px !important;
+        font-size: 11px !important;
+    }
 }
 
 </style>
