@@ -78,14 +78,14 @@ button{
 .result-head h2{margin:0 0 6px}
 .student-info{
     display:grid;
-    grid-template-columns:repeat(6,minmax(0,1fr));
-    gap:10px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px 14px;
     background:#f4f9fc;
     border-radius:10px;
     padding:13px;
     margin-bottom:18px;
 }
-.info-item{font-size:15px;white-space:normal;min-width:0}\n.info-wide{grid-column:span 3}\n.info-third{grid-column:span 2}
+.info-item{font-size:14px;white-space:nowrap;min-width:0;}
 .info-item b{color:#075f89}
 
 .exam-title{
@@ -332,7 +332,7 @@ td.subject{text-align:left;font-weight:700}
   .header{padding:14px 8px!important;text-align:center!important;}
   .header h1{font-size:18px!important;line-height:1.35!important;margin:0 0 5px!important;}
   .header p{font-size:12px!important;margin:2px 0!important;}
-  .search-grid,.student-info{grid-template-columns:1fr!important;gap:8px!important;}\n  .student-info .info-item{grid-column:1!important;}
+  .search-grid,.student-info{grid-template-columns:1fr!important;gap:8px!important;}
   .student-info{padding:10px!important;}
   .student-info .label{font-size:11px!important;}
   .student-info .value{font-size:14px!important;font-weight:700!important;}
@@ -1163,37 +1163,37 @@ function renderResult(student,subjects,results,marksMap){
 
         <div class="student-info">
 
-            <div class="info-item info-wide">
+            <div class="info-item">
                 <b>Roll No:</b>
                 ${esc(student.roll_no)}
             </div>
 
-            <div class="info-item info-wide">
+            <div class="info-item">
                 <b>ತರಗತಿ:</b>
                 ${esc(student.class_name)}
             </div>
 
-            <div class="info-item info-wide">
-                <b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:</b>
-                ${esc(getStudentName(student))}
-            </div>
-
-            <div class="info-item info-wide">
-                <b>ತಂದೆಯ ಹೆಸರು:</b>
-                ${esc(student.father_name ?? student.fatherName ?? student.father ?? "")}
-            </div>
-
-            <div class="info-item info-third">
-                <b>ತಾಯಿಯ ಹೆಸರು:</b>
-                ${esc(student.mother_name ?? student.motherName ?? student.mother ?? "")}
-            </div>
-
-            <div class="info-item info-third">
+            <div class="info-item">
                 <b>DOB:</b>
                 ${esc(formatDate(student.dob))}
             </div>
 
-            <div class="info-item info-third">
+            <div class="info-item">
+                <b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು:</b>
+                ${esc(getStudentName(student))}
+            </div>
+
+            <div class="info-item">
+                <b>ತಂದೆಯ ಹೆಸರು:</b>
+                ${esc(student.father_name ?? student.fatherName ?? student.father ?? "")}
+            </div>
+
+            <div class="info-item">
+                <b>ತಾಯಿಯ ಹೆಸರು:</b>
+                ${esc(student.mother_name ?? student.motherName ?? student.mother ?? "")}
+            </div>
+
+            <div class="info-item">
                 <b>SATS No:</b>
                 ${esc(student.sats_no)}
             </div>
