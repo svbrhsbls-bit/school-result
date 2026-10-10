@@ -891,9 +891,18 @@ function overallGrade(percentage){
 }
 
 function subjectGrade(mark,max,subject){
-    // All classes use Grade Settings for the displayed subject Grade.
-    // For 9th/10th the special PASS rule may still override 24–27 to C.
-    return gradeFromConfiguredSettings(mark);
+    // Grade Settings stores grade bands on a 0–100 scale.
+    // For 8th class, convert subject marks to percentage first,
+    // otherwise a mark out of 10/30/50 is compared to percentage bands incorrectly.
+    // Keep the already-working 9th/10th behavior and their special PASS rule unchanged.
+    if(currentClass === "8"){
+        const percentage = percentageOf(mark,max);
+        return percentage === null ? "" : gradeFromConfiguredSettings(percentage);
+    }
+    if(currentClass === "9" || currentClass === "10"){
+        return gradeFromConfiguredSettings(mark);
+    }
+    return "";
 }
 
 /* =====================================================
