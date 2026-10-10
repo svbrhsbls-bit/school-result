@@ -431,6 +431,9 @@ let currentDivision = "";
 let currentExam = "";
 let currentAcademicYear = "";
 let currentExamHeading = "";
+// Grade Settings are loaded per selected class and academic year.
+// Existing PASS/FAIL calculations below are intentionally unchanged.
+let currentGradeSettings = [];
 
 
 /* =====================================================
@@ -831,13 +834,52 @@ function grade8(mark,max){
 }
 
 function grade910(mark,subject){
-    /* 9th/10th grade is calculated from the actual
-       Subject Master maximum marks for the selected exam. */
-    return gradeByPercentage(
-        mark,
-        maximumMarks(subject),
-        GRADE_910
-    );
+    /* 9th/10th subject grade uses the selected class's Grade Settings.
+       Grade boundaries are percentage ranges, based on the actual
+       maximum marks for the selected exam. If settings are unavailable,
+       retain the existing default grading bands. */
+    const percentage = percentageOf(mark, maximumMarks(subject));
+    if(percentage === null) return "";
+
+    if(Array.isArray(currentGradeSettings) && currentGradeSettings.length){
+        const matched = currentGradeSettings.find(band =>
+            percentage >= Number(band.min) && percentage <= Number(band.max)
+        );
+        if(matched) return String(matched.grade || "");
+    }
+
+    return gradeByPercentage(mark, maximumMarks(subject), GRADE_910);
+}
+
+async function loadClassGradeSettings(){
+    currentGradeSettings = [];
+    if(currentClass !== "9" && currentClass !== "10") return;
+
+    try{
+        const year = String(document.getElementById("academicYearSelect")?.value || currentAcademicYear || "").trim();
+        if(!year) return;
+        const {data,error} = await supabaseClient
+            .from("grade_settings")
+            .select("grades")
+            .eq("school_id", "svbrhsbls-school")
+            .eq("academic_year", year)
+            .eq("class_name", currentClass)
+            .maybeSingle();
+        if(error) throw error;
+        if(data && Array.isArray(data.grades)){
+            currentGradeSettings = data.grades
+                .map(row => ({
+                    grade: String(row.grade ?? "").trim(),
+                    min: Number(row.min),
+                    max: Number(row.max)
+                }))
+                .filter(row => row.grade && Number.isFinite(row.min) && Number.isFinite(row.max))
+                .sort((a,b) => b.min - a.min);
+        }
+    }catch(error){
+        currentGradeSettings = [];
+        console.warn("Grade Settings load failed; existing default grades will be used:", error.message || error);
+    }
 }
 
 function overallGrade(percentage){
@@ -1252,7 +1294,9 @@ async function loadStudents(){
                 "examSelect"
             ).value;
 
+        currentAcademicYear = String(document.getElementById("academicYearSelect")?.value || currentAcademicYear || "").trim();
         await loadConfiguredExamHeading();
+        await loadClassGradeSettings();
 
         showMessage(
             "Students ಮತ್ತು Subjects loading...",
