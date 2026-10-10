@@ -430,6 +430,7 @@ let currentClass = "";
 let currentDivision = "";
 let currentExam = "";
 let currentAcademicYear = "";
+let currentExamHeading = "";
 
 
 /* =====================================================
@@ -487,6 +488,35 @@ function updatePreparatoryExamOptions(){
     if(!isClass10 && ["PREPARATORY_1", "PREPARATORY_2", "PREPARATORY_3"].includes(examSelect.value)){
         examSelect.value = "HALF_YEARLY";
     }
+}
+
+async function loadConfiguredExamHeading(){
+    currentExamHeading = "";
+    try{
+        const schoolName = String(appSettings?.school_name || "").trim();
+        const year = String(document.getElementById("academicYearSelect")?.value || currentAcademicYear || "").trim();
+        const cls = String(classNumber(document.getElementById("classSelect")?.value || currentClass) || "").trim();
+        const division = String(document.getElementById("divisionSelect")?.value || currentDivision || "A").trim().toUpperCase();
+        const exam = String(document.getElementById("examSelect")?.value || currentExam || "").trim();
+        if(!schoolName || !year || !cls || !exam) return "";
+        const {data,error} = await supabaseClient.from("exam_heading_settings")
+            .select("heading")
+            .eq("school_name",schoolName)
+            .eq("academic_year",year)
+            .eq("class_name",cls)
+            .eq("division",division)
+            .eq("exam_type",exam)
+            .maybeSingle();
+        if(error) throw error;
+        currentExamHeading = String(data?.heading || "").trim();
+    }catch(error){
+        console.warn("Exam heading setting load failed:",error.message||error);
+    }
+    const examHeader = document.getElementById("examNameHeader");
+    if(examHeader){
+        examHeader.textContent = currentExamHeading || examDisplayName(currentExam);
+    }
+    return currentExamHeading;
 }
 
 
@@ -1222,6 +1252,7 @@ async function loadStudents(){
                 "examSelect"
             ).value;
 
+        await loadConfiguredExamHeading();
 
         showMessage(
             "Students ಮತ್ತು Subjects loading...",
@@ -3086,7 +3117,7 @@ function printMarks(){
        School name / Marks Entry / academic year
        are already present in the page header. */
 
-    const examText = examDisplayName(currentExam);
+    const examText = currentExamHeading || examDisplayName(currentExam);
 
     html +=
         "<h3 style='text-align:center;margin:8px 0 10px;font-size:16px;'>" +
