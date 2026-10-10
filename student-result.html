@@ -419,6 +419,10 @@ td.subject{text-align:left;font-weight:700}
 
     .table-wrap th {
         background-color: #168a45 !important;
+        /* Fallback for mobile print engines that omit CSS backgrounds */
+        box-shadow: inset 0 0 0 1000px #168a45 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         color: #ffffff !important;
         font-weight: 800 !important;
         opacity: 1 !important;
@@ -427,11 +431,16 @@ td.subject{text-align:left;font-weight:700}
 
     .table-wrap.fail th {
         background-color: #c62828 !important;
+        box-shadow: inset 0 0 0 1000px #c62828 !important;
     }
 
     .table-wrap .total-blue-row td,
     .table-wrap .total-code {
         background-color: #168a45 !important;
+        /* Inset shadow helps preserve colored cells in mobile Save as PDF */
+        box-shadow: inset 0 0 0 1000px #168a45 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         color: #ffffff !important;
         font-weight: 800 !important;
         opacity: 1 !important;
@@ -441,6 +450,7 @@ td.subject{text-align:left;font-weight:700}
     .table-wrap.fail .total-blue-row td,
     .table-wrap.fail .total-code {
         background-color: #c62828 !important;
+        box-shadow: inset 0 0 0 1000px #c62828 !important;
     }
 
     .table-wrap .result-cell .pass,
