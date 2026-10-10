@@ -702,6 +702,7 @@ let appSettings = {
     class_teacher_10: "",
     academic_year: "2026-27"
 };
+let examHeadingMap = {};
 
 async function loadAppSettings(){
     try{
@@ -795,13 +796,14 @@ function examDisplayName(examType){
    Settings tableನಲ್ಲಿ exam_name column ಇಲ್ಲದಿದ್ದರೂ Result page error ಆಗಬಾರದು. */
 function getExamHeaderName(results){
     const configured = String(appSettings.exam_name || "").trim();
-    if(configured) return configured + " ಫಲಿತಾಂಶ";
-
-return (results || [])
-    .map(r => examDisplayName(r.exam_type))
-    .filter(Boolean)
-    .map(name => name + " ಫಲಿತಾಂಶ")
-    .join(" / ");
+    if(!Object.keys(examHeadingMap).length && configured)
+        return configured + " ಫಲಿತಾಂಶ";
+    const configuredNames = (results || [])
+        .map(r => String(examHeadingMap[r.exam_type] || "").trim() || examDisplayName(r.exam_type))
+        .filter(Boolean)
+        .map(name => name + " ಫಲಿತಾಂಶ");
+    if(configuredNames.length) return [...new Set(configuredNames)].join(" / ");
+    return configured ? configured + " ಫಲಿತಾಂಶ" : "";
 }
 
 /* =========================================================
@@ -1057,6 +1059,35 @@ async function viewResult(){
 
         if(resultError)
             throw resultError;
+
+        /* Load optional per-class/exam heading settings. If the
+           settings table is not available, continue showing the
+           existing default exam names without blocking results. */
+        examHeadingMap = {};
+        try{
+            const schoolName = String(appSettings.school_name || "").trim();
+            const year = String(student.academic_year || appSettings.academic_year || "").trim();
+            const cls = normalizeClass(student.class_name);
+            const division = getDivision(student) || "A";
+            if(schoolName && year && cls && (results || []).length){
+                const {data:headingRows,error:headingError}=await db
+                    .from("exam_heading_settings")
+                    .select("exam_type,heading")
+                    .eq("school_name",schoolName)
+                    .eq("academic_year",year)
+                    .eq("class_name",cls)
+                    .eq("division",division)
+                    .in("exam_type",(results || []).map(r=>r.exam_type));
+                if(headingError) throw headingError;
+                (headingRows || []).forEach(row=>{
+                    if(row.exam_type && String(row.heading || "").trim()){
+                        examHeadingMap[row.exam_type]=String(row.heading).trim();
+                    }
+                });
+            }
+        }catch(headingError){
+            console.warn("Custom exam headings could not be loaded:",headingError.message||headingError);
+        }
 
         /* ---------------------------------------------
            4. Load marks for published results
@@ -1529,7 +1560,7 @@ if(getClass(student)==="9" || getClass(student)==="10"){
 
     return `
         <div class="exam-title">
-            📝 ${esc(examDisplayName(result.exam_type))}
+            📝 ${esc(examHeadingMap[result.exam_type] || examDisplayName(result.exam_type))}
         </div>
 
         <div class="exam-status">
