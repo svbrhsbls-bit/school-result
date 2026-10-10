@@ -171,8 +171,7 @@ td.subject{text-align:left;font-weight:700}
 }
 
 .total-value{
-    font-size:24px;
-    font-weight:900;
+    font-size:18px;
 }
 
 .words-cell{
@@ -370,7 +369,7 @@ td.subject{text-align:left;font-weight:700}
   .search-grid{grid-template-columns:1fr!important;gap:8px!important;}
   .student-info-layout{grid-template-columns:minmax(0,1fr)!important;gap:8px!important;padding:10px!important;}
   .student-info-layout .info-item{font-size:10px!important;white-space:normal!important;overflow-wrap:anywhere!important;}
-  .student-info-layout .info-item b{display:block!important;}
+  .student-info-layout .info-item b{display:inline!important;}
   .student-info .label{font-size:11px!important;}
   .student-info .value{font-size:14px!important;font-weight:700!important;}
   .summary{grid-template-columns:repeat(2,1fr)!important;gap:7px!important;padding:8px!important;}
@@ -454,6 +453,13 @@ td.subject{text-align:left;font-weight:700}
         border: 1px solid #b7c5cc !important;
         padding: 6px 5px !important;
         font-size: 11px !important;
+    }
+
+    /* Print-only: enlarge the three TOTAL values (maximum, obtained marks, grade). */
+    .table-wrap .total-blue-row td.total-value {
+        font-size: 18px !important;
+        font-weight: 900 !important;
+        line-height: 1.3 !important;
     }
 }
 
