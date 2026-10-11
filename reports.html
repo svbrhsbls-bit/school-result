@@ -393,17 +393,25 @@ function schoolIdentity(){
 }
 async function loadGradeSettings(){
  gradeSettingsRows=[];
- const school=schoolIdentity();
+ const detectedSchool=schoolIdentity();
  const year=$('academicYearSelect').value||await getReportAcademicYear();
- if(!school||!year||!currentClass)return;
- // Grade Settings stores class_name as 8 / 9 / 10. Also support older display-name rows.
+ if(!year||!currentClass)return;
+ // grade-settings.html currently saves this school's rows under this exact school_id.
+ // On hosted pages, login localStorage can expose a different identifier; try the
+ // detected identifier first, then the Grade Settings page's configured identifier.
+ const schoolCandidates=[...new Set([detectedSchool,'svbrhsbls-school'].filter(Boolean))];
  const classNames=[...new Set([String(currentClass),`${currentClass}ನೇ ತರಗತಿ`,`${currentClass} ನೇ ತರಗತಿ`])];
- let foundData=null, lastError=null;
- for(const className of classNames){
-  const {data,error}=await db.from('grade_settings').select('grades')
-   .eq('school_id',school).eq('academic_year',year).eq('class_name',className).maybeSingle();
-  if(error){lastError=error;continue;}
-  if(data && Array.isArray(data.grades) && data.grades.length){foundData=data;break;}
+ let foundData=null, lastError=null, matchedSchool='', matchedClass='';
+ for(const school of schoolCandidates){
+  for(const className of classNames){
+   const {data,error}=await db.from('grade_settings').select('grades')
+    .eq('school_id',school).eq('academic_year',year).eq('class_name',className).maybeSingle();
+   if(error){lastError=error;continue;}
+   if(data && Array.isArray(data.grades) && data.grades.length){
+    foundData=data; matchedSchool=school; matchedClass=className; break;
+   }
+  }
+  if(foundData)break;
  }
  if(!foundData && lastError)throw lastError;
  if(foundData && Array.isArray(foundData.grades)){
@@ -412,9 +420,9 @@ async function loadGradeSettings(){
   })).filter(g=>g.grade && Number.isFinite(g.min) && Number.isFinite(g.max) && g.min<=g.max)
    .sort((a,b)=>b.min-a.min);
  }
- console.log('Report Grade Settings loaded:',{school,year,className:classNames.find(c=>gradeSettingsRows.length),rows:gradeSettingsRows.length});
+ console.log('Report Grade Settings loaded:',{school:matchedSchool||detectedSchool,year,className:matchedClass,rows:gradeSettingsRows.length});
  if(!gradeSettingsRows.length){
-  console.warn('No Grade Settings matched. Verify school_id, academic_year, class_name and SELECT policy.',{school,year,currentClass});
+  console.warn('No Grade Settings matched. Verify school_id, academic_year, class_name and SELECT policy.',{detectedSchool,schoolCandidates,year,currentClass});
  }
 }
 async function loadExamHeading(cls=currentClass){
