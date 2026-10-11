@@ -229,6 +229,9 @@ th{background:#087db5;color:#fff}
 <select id="examSelect">
 <option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
 <option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option>
+<option value="PREPARATORY_1">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-01</option>
+<option value="PREPARATORY_2">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-02</option>
+<option value="PREPARATORY_3">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-03</option>
 </select>
 </div>
 <div>
@@ -268,6 +271,9 @@ let currentDivision="A";
 let reportType="progress";
 let currentCasteStudents=[];
 let currentCombinedSchool={8:[],9:[],10:[]};
+let gradeSettingsRows=[];
+let currentExamHeading="";
+const EXAM_LABELS={ANNUAL:"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",HALF_YEARLY:"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ",PREPARATORY_1:"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-01",PREPARATORY_2:"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-02",PREPARATORY_3:"ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ-03"};
 
 const $=id=>document.getElementById(id);
 
@@ -342,33 +348,93 @@ function maxMarks(s){
  }
  return 100;
 }
-function grade8(m,max){
- m=Number(m); if(!Number.isFinite(m))return "";
- if(currentExam==="HALF_YEARLY"&&max===50){
-  if(m>=45)return"A+";if(m>=35)return"A";if(m>=25)return"B+";if(m>=15)return"B";return"C";
- }
- if(currentExam==="ANNUAL"&&max===100){
-  if(m>=90)return"A+";if(m>=70)return"A";if(m>=50)return"B+";if(m>=30)return"B";return"C";
- }
- return"";
+function gradeForPercent(percent){
+ // Grade Settings stores percentage bands (min/max). Normalize the
+ // percentage to 2 decimals and sort bands by highest minimum first so
+ // results do not depend on the order in which rows were saved.
+ const raw = Number(percent);
+ if(!Number.isFinite(raw) || !Array.isArray(gradeSettingsRows) || !gradeSettingsRows.length) return "-";
+ const p = Math.round((raw + Number.EPSILON) * 100) / 100;
+ const bands = gradeSettingsRows
+   .map(g => ({grade:String(g.grade ?? "").trim(), min:Number(g.min), max:Number(g.max)}))
+   .filter(g => g.grade && Number.isFinite(g.min) && Number.isFinite(g.max) && g.min <= g.max)
+   .sort((a,b) => b.min - a.min);
+ const found = bands.find(g => p >= g.min && p <= g.max);
+ if(found) return found.grade;
+ // If settings intentionally leave a gap, do not silently assign a wrong grade.
+ return "-";
 }
-function grade910(m,s){
- m=Number(m);if(!Number.isFinite(m))return"";
- const k=isKannada(s);
- if(currentExam==="HALF_YEARLY"){
-  if(k){if(m>=90)return"A+";if(m>=80)return"A";if(m>=70)return"B+";if(m>=60)return"B";if(m>=50)return"C+";if(m>=35)return"C";return"NC"}
-  if(m>=72)return"A+";if(m>=64)return"A";if(m>=56)return"B+";if(m>=48)return"B";if(m>=40)return"C+";if(m>=28)return"C";return"NC";
- }
- if(k){if(m>=112)return"A+";if(m>=100)return"A";if(m>=87)return"B+";if(m>=75)return"B";if(m>=63)return"C+";if(m>=44)return"C";return"NC"}
- if(m>=90)return"A+";if(m>=80)return"A";if(m>=70)return"B+";if(m>=60)return"B";if(m>=50)return"C+";if(m>=35)return"C";return"NC";
+function grade8(m,max){
+ m=Number(m); max=Number(max); if(!Number.isFinite(m)||!Number.isFinite(max)||max<=0)return "";
+ return gradeForPercent((m/max)*100);
+}
+function grade910(m,s,max){
+ m=Number(m); max=Number(max); if(!Number.isFinite(m)||!Number.isFinite(max)||max<=0)return "";
+ return gradeForPercent((m/max)*100);
 }
 function subjectGrade(m,max,s){
- return currentClass==="8"?grade8(m,max):grade910(m,s);
+ const mark=Number(m), maximum=Number(max);
+ if(m === "" || m === null || m === undefined || !Number.isFinite(mark) || !Number.isFinite(maximum) || maximum<=0) return "";
+ return gradeForPercent((mark/maximum)*100);
 }
-function overallGrade(p){
- p=Number(p);
- if(currentClass==="8"){if(p>=90)return"A+";if(p>=70)return"A";if(p>=50)return"B+";if(p>=30)return"B";return"C"}
- if(p>=90)return"A+";if(p>=80)return"A";if(p>=70)return"B+";if(p>=60)return"B";if(p>=50)return"C+";if(p>=35)return"C";return"NC";
+function overallGrade(p){ return gradeForPercent(p); }
+
+function schoolIdentity(){
+ // Prefer the authenticated school identifier; DISE code is only a last-resort legacy key.
+ for(const k of ['school_id','schoolId','currentSchoolId','current_school_id','selectedSchoolId','tenant_id']){
+  try{const v=localStorage.getItem(k);if(v&&v.trim())return v.trim();}catch(e){}
+ }
+ try{const v=localStorage.getItem('school_dise_code');if(v&&v.trim())return v.trim();}catch(e){}
+ // Local-file testing uses a separate browser origin and cannot read the
+ // authenticated site's localStorage. Use this school's known ID only for
+ // file:// previews; hosted pages must use the logged-in school's ID.
+ try{if(window.location && window.location.protocol==='file:')return 'svbrhsbls-school';}catch(e){}
+ return '';
+}
+async function loadGradeSettings(){
+ gradeSettingsRows=[];
+ const school=schoolIdentity();
+ const year=$('academicYearSelect').value||await getReportAcademicYear();
+ if(!school||!year||!currentClass)return;
+ // Grade Settings stores class_name as 8 / 9 / 10. Also support older display-name rows.
+ const classNames=[...new Set([String(currentClass),`${currentClass}ನೇ ತರಗತಿ`,`${currentClass} ನೇ ತರಗತಿ`])];
+ let foundData=null, lastError=null;
+ for(const className of classNames){
+  const {data,error}=await db.from('grade_settings').select('grades')
+   .eq('school_id',school).eq('academic_year',year).eq('class_name',className).maybeSingle();
+  if(error){lastError=error;continue;}
+  if(data && Array.isArray(data.grades) && data.grades.length){foundData=data;break;}
+ }
+ if(!foundData && lastError)throw lastError;
+ if(foundData && Array.isArray(foundData.grades)){
+  gradeSettingsRows=foundData.grades.map(g=>({
+   grade:String(g.grade??'').trim(), min:Number(g.min), max:Number(g.max)
+  })).filter(g=>g.grade && Number.isFinite(g.min) && Number.isFinite(g.max) && g.min<=g.max)
+   .sort((a,b)=>b.min-a.min);
+ }
+ console.log('Report Grade Settings loaded:',{school,year,className:classNames.find(c=>gradeSettingsRows.length),rows:gradeSettingsRows.length});
+ if(!gradeSettingsRows.length){
+  console.warn('No Grade Settings matched. Verify school_id, academic_year, class_name and SELECT policy.',{school,year,currentClass});
+ }
+}
+async function loadExamHeading(cls=currentClass){
+ currentExamHeading='';
+ const {data:settings,error:settingsError}=await db.from('settings').select('school_name').order('id',{ascending:true}).limit(1).maybeSingle();
+ if(settingsError)throw settingsError;
+ const schoolName=String(settings?.school_name||'').trim();
+ if(!schoolName)return '';
+ const {data,error}=await db.from('exam_heading_settings').select('heading').eq('school_name',schoolName)
+  .eq('academic_year',$('academicYearSelect').value||await getReportAcademicYear()).eq('class_name',String(cls))
+  .eq('division',$('divisionSelect').value||'A').eq('exam_type',currentExam).maybeSingle();
+ if(error)throw error;
+ currentExamHeading=String(data?.heading||'').trim();
+ return currentExamHeading;
+}
+function displayExamHeading(){return currentExamHeading||EXAM_LABELS[currentExam]||currentExam;}
+
+function isNumericExamMark(value){
+ const raw=String(value??"").trim().toUpperCase();
+ return raw!=="" && raw!=="AB" && Number.isFinite(Number(raw));
 }
 function passResult(p){
  return Number(p)>=(currentClass==="8"?30:35)?"PASS":"FAIL";
@@ -378,6 +444,35 @@ async function loadSettings(){
  const r=await db.from("settings").select("*").eq("id",1).maybeSingle();
  if(!r.error&&r.data)appSettings=r.data;
 }
+async function refreshStudentDropdown(){
+ const sel=$("studentSelect");
+ if(!sel)return;
+ const previous=String(sel.value||"");
+ sel.innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
+ try{
+  const year=String($("academicYearSelect").value||await getReportAcademicYear()).trim();
+  const cls=classNumber($("classSelect").value);
+  const div=$("divisionSelect").value.trim().toUpperCase();
+  const {data,error}=await db.from("students").select("*").eq("academic_year",year);
+  if(error)throw error;
+  const matches=(data||[]).filter(st=>st.is_active!==false &&
+    classNumber(st.class_name||st.class||st.standard||"")===cls &&
+    division(st)===div
+  ).sort((a,b)=>Number(roll(a,0)||999999)-Number(roll(b,0)||999999));
+  matches.forEach(st=>{
+   const opt=document.createElement("option");
+   opt.value=String(st.id);
+   opt.textContent=String(roll(st,0))+" - "+studentName(st);
+   sel.appendChild(opt);
+  });
+  if(previous && matches.some(st=>String(st.id)===previous))sel.value=previous;
+  console.info("Student dropdown loaded",{year,class:cls,division:div,count:matches.length});
+ }catch(err){
+  console.error("Student dropdown load failed:",err);
+  msg("ವಿದ್ಯಾರ್ಥಿಗಳ ಹೆಸರು ಲೋಡ್ ಆಗಲಿಲ್ಲ: "+(err.message||err),"error");
+ }
+}
+
 async function loadBase(){
   currentClass=classNumber($("classSelect").value);
   currentDivision=$("divisionSelect").value.trim().toUpperCase();
@@ -386,7 +481,7 @@ async function loadBase(){
 
   await loadSettings();
 
-  const year=await getReportAcademicYear();
+  const year=$("academicYearSelect").value||await getReportAcademicYear();
 
   const sr=await db.from("students").select("*")
     .eq("academic_year",year)
@@ -409,13 +504,48 @@ async function loadBase(){
   ));
 
   const sel=$("studentSelect");
+  // Preserve the user's student selection when Load Report rebuilds the dropdown.
+  const previouslySelectedStudent = String(sel.value || "");
   sel.innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
   currentStudents.forEach(s=>{
     const o=document.createElement("option");
-    o.value=s.id;
+    o.value=String(s.id);
     o.textContent=roll(s,0)+" - "+studentName(s);
     sel.appendChild(o);
   });
+  if(previouslySelectedStudent && currentStudents.some(s=>String(s.id)===previouslySelectedStudent)){
+    sel.value=previouslySelectedStudent;
+  }
+}
+
+function applyReportPassRules(items, total, maximum, entered){
+ // Match Marks Entry special pass rules for classes 9 and 10.
+ const completed=items.filter(item=>{
+  const raw=String(item.mark??"").trim().toUpperCase();
+  return isNumericExamMark(raw) || raw==="AB";
+ }).length;
+ if((currentClass !== "9" && currentClass !== "10") || completed !== items.length || !items.length){
+  return {percentage: maximum > 0 ? (total / maximum) * 100 : 0, resultText: entered === items.length ? passResult(maximum > 0 ? (total / maximum) * 100 : 0) : "PENDING", grade: entered === items.length ? overallGrade(maximum > 0 ? (total / maximum) * 100 : 0) : "-"};
+ }
+ let lowCount=0, below24=false;
+ items.forEach(item=>{
+  const raw=String(item.mark ?? "").trim().toUpperCase();
+  if(!raw || raw === "AB") return;
+  const mark=Number(raw);
+  if(!Number.isFinite(mark)) return;
+  if(mark >= 24 && mark <= 27) lowCount++;
+  if(mark >= 0 && mark <= 23) below24=true;
+ });
+ const percentage=maximum > 0 ? (total / maximum) * 100 : 0;
+ const pass=percentage >= 35 && !below24 && lowCount <= 2;
+ items.forEach(item=>{
+  const raw=String(item.mark ?? "").trim().toUpperCase();
+  const mark=Number(raw);
+  if(raw && raw !== "AB" && Number.isFinite(mark) && mark >= 24 && mark <= 27){
+   item.grade=pass ? "C" : "NC";
+  }
+ });
+ return {percentage, resultText:pass ? "PASS" : "FAIL", grade:pass ? overallGrade(percentage) : "NC"};
 }
 
 async function loadResults(){
@@ -446,41 +576,56 @@ async function loadResults(){
   const items=currentSubjects.map(sub=>{
    const value=r?map[`${r.id}_${sub.id}`]:"";
    const mm=maxMarks(sub);max+=mm;
-   if(value!==""&&value!==null&&value!==undefined){total+=Number(value);entered++}
+   if(isNumericExamMark(value)){total+=Number(value);entered++}
    return {subject:subjectName(sub),code:subjectCode(sub),mark:value??"",max:mm,grade:value===""||value===null?"":subjectGrade(value,mm,sub),subjectId:sub.id};
   });
-  const pct=max?total/max*100:0;
-  return {student:s,result:r,items,total,max,percentage:pct,grade:entered===currentSubjects.length?overallGrade(pct):"-",resultText:entered===currentSubjects.length?passResult(pct):"PENDING"};
+  const status=applyReportPassRules(items,total,max,entered);
+  return {student:s,result:r,items,total,max,percentage:status.percentage,grade:status.grade,resultText:status.resultText};
  });
 }
 
 function header(title){
  return `<div class="school">
   <h2>${esc(appSettings.school_name||"ಶಾಲೆಯ ಹೆಸರು")}</h2>
-  <p>ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc(appSettings.academic_year||"2026-27")}</p>
+  <p>ಶೈಕ್ಷಣಿಕ ವರ್ಷ - ${esc($("academicYearSelect").value||appSettings.academic_year||"2026-27")}</p>
+  ${reportType!=="caste"?`<h3>${esc(displayExamHeading())}</h3>`:""}
   <h3>${title}</h3>
  </div>`;
 }
 function studentInfo(d){
  const s=d.student;
+ const firstValue=(obj,keys)=>{
+  for(const key of keys){
+   const value=obj?.[key];
+   if(value!==null && value!==undefined && String(value).trim()!=="") return String(value).trim();
+  }
+  return "-";
+ };
+ const father=firstValue(s,["father_name","fathername","father","guardian_name","parent_name"," ತಂದೆಯ_ಹೆಸರು"]);
+ const mother=firstValue(s,["mother_name","mothername","mother","ತಾಯಿಯ_ಹೆಸರು"]);
+ const dob=firstValue(s,["date_of_birth","dob","birth_date","dateofbirth"]);
+ const sats=firstValue(s,["sats_no","sats_number","sats_id","satsNo","SATS_NO","sats"]);
  return `<div class="student-head">
   <div class="info-box"><b>Roll No</b><br>${esc(roll(s,0))}</div>
+  <div class="info-box"><b>ತರಗತಿ</b><br>${esc(s.class_name||s.class||s.standard||currentClass)}</div>
   <div class="info-box"><b>ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು</b><br>${esc(studentName(s))}</div>
-  <div class="info-box"><b>ತರಗತಿ</b><br>${esc(s.class_name||currentClass)}</div>
-  <div class="info-box"><b>ವಿಭಾಗ</b><br>${esc(division(s)||currentDivision)}</div>
+  <div class="info-box"><b>ತಂದೆಯ ಹೆಸರು</b><br>${esc(father)}</div>
+  <div class="info-box"><b>ತಾಯಿಯ ಹೆಸರು</b><br>${esc(mother)}</div>
+  <div class="info-box"><b>ಜನ್ಮದಿನಾಂಕ</b><br>${esc(dob)}</div>
+  <div class="info-box"><b>SATS No</b><br>${esc(sats)}</div>
  </div>`;
 }
 function progressHTML(d){
  return `<div class="student-page">`+
  header("📄 ಪ್ರಗತಿ ವರದಿ")+
  studentInfo(d)+
- `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಅಂಕ</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
- d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.max}</td><td>${x.grade||"-"}</td></tr>`).join("")+
+ `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
+ d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.max}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.grade||"-"}</td></tr>`).join("")+
  `</tbody></table>
  <div class="summary">
   <div class="sum">ಪಡೆದ ಅಂಕ <b>${Number.isInteger(d.total)?d.total:d.total.toFixed(2)}</b></div>
   <div class="sum">ಒಟ್ಟು ಅಂಕ <b>${Number.isInteger(d.max)?d.max:d.max.toFixed(2)}</b></div>
-  <div class="sum">Percentage <b>${d.percentage.toFixed(2)}%</b></div>
+  <div class="sum">Percentage <b>${d.resultText === "FAIL" ? "-" : d.percentage.toFixed(2)+"%"}</b></div>
   <div class="sum">Grade <b>${d.grade}</b></div>
   <div class="sum">Result <b>${d.resultText}</b></div>
  </div>
@@ -498,19 +643,18 @@ function countStats(rows){
   const female=["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g);
   if(male){stats.registered.m++;stats.registered.t++}
   else if(female){stats.registered.f++;stats.registered.t++}
-  const appeared=d.items.some(x=>x.mark!==""&&x.mark!==null&&x.mark!==undefined);
+  const appeared=d.items.some(x=>isNumericExamMark(x.mark));
   if(appeared){
    if(male){stats.appeared.m++;stats.appeared.t++}
    else if(female){stats.appeared.f++;stats.appeared.t++}
   }
   if(d.resultText==="PASS"){
    if(male){stats.passed.m++;stats.passed.t++}
-   else if(female){stats.passed.f++;stats.passed.t++}
-  }else if(d.resultText==="FAIL"){
-   if(male){stats.failed.m++;stats.failed.t++}
-   else if(female){stats.failed.f++;stats.failed.t++}
-  }
+   else if(female){stats.passed.f++;stats.passed.t++}  }
  });
+ stats.failed.m=Math.max(0,stats.appeared.m-stats.passed.m);
+ stats.failed.f=Math.max(0,stats.appeared.f-stats.passed.f);
+ stats.failed.t=stats.failed.m+stats.failed.f;
  return stats;
 }
 function statTable(title, rows){
@@ -528,7 +672,7 @@ function statTable(title, rows){
 }
 function schoolHTML(rows){
  return header("🏫 ಶಾಲಾ ಘೋಷವಾರು")+
- `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</b></div>`+
+ `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>${esc(displayExamHeading())}</b></div>`+
  statTable("ಫಲಿತಾಂಶದ ಸಾರಾಂಶ",rows);
 }
 
@@ -543,29 +687,24 @@ function genderCounts(list){
  return out;
 }
 function combinedExamStats(allRows){
- const out={registered:genderCounts(allStudents.filter(s=>{
-   const c=classNumber(
-     s.class_name ?? s.class ?? s.standard ?? s.class_number ?? s.className ?? s.standard_name ?? ""
-   );
-   return ["8","9","10"].includes(c);
- })), appeared:{m:0,f:0,t:0}, passed:{m:0,f:0,t:0}, failed:{m:0,f:0,t:0}};
+ // Admission count must be based on the students in this class/report row set,
+ // not all school students. This includes students marked AB in the exam.
+ const out={registered:genderCounts((allRows||[]).map(d=>d.student)), appeared:{m:0,f:0,t:0}, passed:{m:0,f:0,t:0}, failed:{m:0,f:0,t:0}};
  allRows.forEach(d=>{
    const g=String(d.student.gender||d.student.sex||"").trim().toLowerCase();
    const male=["male","m","ಗಂಡು","ಪುರುಷ"].includes(g);
    const female=["female","f","ಹೆಣ್ಣು","ಮಹಿಳೆ"].includes(g);
-   const appeared=d.items.some(x=>x.mark!==""&&x.mark!==null&&x.mark!==undefined);
+   const appeared=d.items.some(x=>isNumericExamMark(x.mark));
    if(appeared){
      if(male)out.appeared.m++;
      else if(female)out.appeared.f++;
    }
    if(d.resultText==="PASS"){
      if(male)out.passed.m++;
-     else if(female)out.passed.f++;
-   }else if(d.resultText==="FAIL"){
-     if(male)out.failed.m++;
-     else if(female)out.failed.f++;
-   }
+     else if(female)out.passed.f++;  }
  });
+ out.failed.m=Math.max(0,out.appeared.m-out.passed.m);
+ out.failed.f=Math.max(0,out.appeared.f-out.passed.f);
  ["appeared","passed","failed"].forEach(k=>out[k].t=out[k].m+out[k].f);
  return out;
 }
@@ -573,7 +712,7 @@ function combinedSchoolHTML(allRowsByClass){
  const allRows=[].concat(...Object.values(allRowsByClass));
  const s=combinedExamStats(allRows);
  let out=header("🏫 ಶಾಲಾ ಘೋಷವಾರು")+
- `<div class="annual-note">8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ — ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</div>
+ `<div class="annual-note">8ನೇ, 9ನೇ ಮತ್ತು 10ನೇ ತರಗತಿಗಳ ಒಟ್ಟು ಶಾಲಾ ಫಲಿತಾಂಶ — ${esc(displayExamHeading())}</div>
  <table class="announcement-stats">
  <thead><tr>
  <th rowspan="2">ತರಗತಿ</th>
@@ -742,28 +881,25 @@ function subjectStats(rows, sub){
   if(male){out.registered.m++;out.registered.t++}
   else if(female){out.registered.f++;out.registered.t++}
   const x=d.items.find(i=>String(i.subjectId)===String(sub.id));
-  const appeared=x && x.mark!=="" && x.mark!==null && x.mark!==undefined;
+  const appeared=x && isNumericExamMark(x.mark);
   if(appeared){
    if(male){out.appeared.m++;out.appeared.t++}
-   else if(female){out.appeared.f++;out.appeared.t++}
-   const passed=(d.resultText==="PASS" && Number(x.mark)>=0) ? true : false;
-   // Subject pass is based on the subject grade, not the overall result.
-   const sg=String(x.grade||"");
-   const isPass=sg && sg!=="NC";
+   else if(female){out.appeared.f++;out.appeared.t++}   const sg=String(x.grade||"").trim().toUpperCase();
+   const isPass=sg && sg!=="NC" && sg!=="-";
    if(isPass){
     if(male){out.passed.m++;out.passed.t++}
     else if(female){out.passed.f++;out.passed.t++}
-   }else{
-    if(male){out.failed.m++;out.failed.t++}
-    else if(female){out.failed.f++;out.failed.t++}
    }
   }
  });
+ out.failed.m=Math.max(0,out.appeared.m-out.passed.m);
+ out.failed.f=Math.max(0,out.appeared.f-out.passed.f);
+ out.failed.t=out.failed.m+out.failed.f;
  return out;
 }
 function subjectHTML(rows){
  let htmlOut=header("📚 ವಿಷಯವಾರು ಘೋಷವಾರು")+
- `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</b></div>
+ `<div class="annual-note">ಪರಿಗಣಿಸಿದ ಪರೀಕ್ಷೆ: <b>${esc(displayExamHeading())}</b></div>
  <table class="announcement-stats">
  <thead>
    <tr>
@@ -806,20 +942,25 @@ function subjectHTML(rows){
 }
 
 async function generate(){
-     const reportYear = await getReportAcademicYear();
+     const reportYear = $("academicYearSelect").value||await getReportAcademicYear();
 try{
   msg("Report loading...","info");
   reportType=$("reportType").value;
+   currentExam=$("examSelect").value || "ANNUAL";
+   currentClass=classNumber($("classSelect").value) || "8";
+   currentDivision=String($("divisionSelect").value||"A").trim().toUpperCase();
 
   // School Announcement and Caste Report combine 8, 9 and 10.
   if(reportType==="school" || reportType==="caste"){
-    currentExam="ANNUAL";
+    if(reportType==="caste") currentExam="ANNUAL";
     currentCasteStudents=[];
     currentCombinedSchool={8:[],9:[],10:[]};
     const combined={8:[],9:[],10:[]};
     const savedClass=currentClass;
     for(const c of ["8","9","10"]){
       currentClass=c;
+      await loadGradeSettings();
+      await loadExamHeading(c);
       const sr=await db.from("students").select("*")
         .eq("academic_year", document.getElementById("academicYearSelect")?.value || "2026-27");
       if(sr.error)throw sr.error;
@@ -834,7 +975,7 @@ try{
       const ids=clsStudents.map(s=>s.id);
       let results=[];
       if(ids.length){
-        const rr=await db.from("exam_results").select("id,student_id,exam_type,published").in("student_id",ids).eq("exam_type","ANNUAL");
+        const rr=await db.from("exam_results").select("id,student_id,exam_type,published").in("student_id",ids).eq("exam_type",currentExam);
         if(rr.error)throw rr.error;
         const rids=(rr.data||[]).map(r=>r.id);
         let marks=[];
@@ -850,17 +991,18 @@ try{
           const items=currentSubjects.map(sub=>{
             const value=r?map[`${r.id}_${sub.id}`]:"";
             const mm=maxMarks(sub); max+=mm;
-            if(value!==""&&value!==null&&value!==undefined){total+=Number(value);entered++}
+            if(isNumericExamMark(value)){total+=Number(value);entered++}
             return {subject:subjectName(sub),code:subjectCode(sub),mark:value??"",max:mm,grade:value===""||value===null?"":subjectGrade(value,mm,sub),subjectId:sub.id};
           });
-          const pct=max?total/max*100:0;
-          return {student:s,result:r,items,total,max,percentage:pct,grade:entered===currentSubjects.length?overallGrade(pct):"-",resultText:entered===currentSubjects.length?passResult(pct):"PENDING"};
+          const status=applyReportPassRules(items,total,max,entered);
+          return {student:s,result:r,items,total,max,percentage:status.percentage,grade:status.grade,resultText:status.resultText};
         });
       }
       combined[c]=results;
     }
     currentCombinedSchool=combined;
     currentClass=savedClass;
+    if(reportType==="school") await loadExamHeading(savedClass);
     currentRows=[].concat(...Object.values(combined));
     if(reportType==="school"){
       $("reportArea").innerHTML=combinedSchoolHTML(combined);
@@ -880,16 +1022,14 @@ try{
   }
 
   await loadBase();
-
-  // Progress and Subject-wise Announcement are annual-only.
-  if((reportType==="progress"||reportType==="subject") && currentExam!=="ANNUAL"){
-   msg("ಈ reportಗೆ ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ ಮಾತ್ರ ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ. Excel/PDF/Printಗೆ ಅರ್ಧವಾರ್ಷಿಕ ಆಯ್ಕೆ ಮಾಡಬಹುದು.","error");
-   return;
-  }
+  await loadGradeSettings();
+  await loadExamHeading(currentClass);
 
   let rows=await loadResults();
-  const studentId=$("studentSelect").value;
-  if(studentId)rows=rows.filter(x=>String(x.student.id)===String(studentId));
+  const studentId=String($("studentSelect").value || "");
+  if(studentId){
+    rows=rows.filter(x=>String(x.student?.id ?? "")===studentId);
+  }
   currentRows=rows;
 
   if(!rows.length){$("reportArea").innerHTML="<p style='text-align:center;color:red'>ವಿದ್ಯಾರ್ಥಿಗಳ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.</p>";msg("ವಿದ್ಯಾರ್ಥಿಗಳ ದಾಖಲೆ ಸಿಗಲಿಲ್ಲ.","error");return}
@@ -1089,12 +1229,12 @@ function subjectExcelSheet(wb){
 function progressExcelData(){
   const data=[];
   data.push(["ಪ್ರಗತಿ ವರದಿ"]);
-  data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,"ಪರೀಕ್ಷೆ",currentExam==="ANNUAL"?"ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ":"ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"]);
+  data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,"ಪರೀಕ್ಷೆ",(EXAM_LABELS[currentExam]||currentExam)]);
   data.push(["Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ","ವಿಷಯ","Subject Code","ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"]);
   currentRows.forEach(d=>{
     d.items.forEach(x=>data.push([roll(d.student,0),studentName(d.student),d.student.class_name||currentClass,division(d.student)||currentDivision,x.subject,x.code,x.mark===""?"":Number(x.mark),x.max,x.grade||""]));
     data.push(["","","","","ಒಟ್ಟು","",Number(d.total.toFixed(2)),Number(d.max.toFixed(2)),d.grade||"-"]);
-    data.push(["","","","","Percentage","",Number(d.percentage.toFixed(2)),"Result",d.resultText]);
+    data.push(["","","","","Percentage","",d.resultText === "FAIL" ? "-" : Number(d.percentage.toFixed(2)),"Result",d.resultText]);
     data.push([]);
   });
   return data;
@@ -1147,20 +1287,27 @@ $("clearBtn").onclick=()=>{
  $("studentSelect").innerHTML='<option value="">ಎಲ್ಲಾ ವಿದ್ಯಾರ್ಥಿಗಳು</option>';
  currentRows=[];msg("Cleared.","info");
 };
-$("classSelect").onchange=()=>{currentRows=[]};
-$("divisionSelect").onchange=()=>{currentRows=[]};
+$("classSelect").onchange=async()=>{
+ currentRows=[];
+ const is10=classNumber($("classSelect").value)==="10";
+ [...$("examSelect").options].forEach(o=>{if(o.value.startsWith("PREPARATORY_"))o.disabled=!is10;});
+ if(!is10 && $("examSelect").value.startsWith("PREPARATORY_"))$("examSelect").value="ANNUAL";
+ await refreshStudentDropdown();
+};
+$("divisionSelect").onchange=async()=>{currentRows=[];await refreshStudentDropdown()};
+$("academicYearSelect").onchange=async()=>{currentRows=[];await refreshStudentDropdown()};
 $("examSelect").onchange=()=>{currentRows=[]};
 $("reportType").onchange=()=>{
  currentRows=[];
  const type=$("reportType").value;
- if(["progress","school","subject","caste"].includes(type)) $("examSelect").value="ANNUAL";
+ if(type==="caste") $("examSelect").value="ANNUAL";
  const combined=(type==="school"||type==="caste");
  $("classBox").style.opacity=combined?"0.55":"1";
  $("classSelect").disabled=combined;
  $("divisionSelect").disabled=combined;
 };
 
-loadReportsAcademicYear().then(()=>loadSettings()).catch(e=>console.warn(e));
+loadReportsAcademicYear().then(async()=>{await loadSettings();await refreshStudentDropdown();}).catch(e=>console.warn(e));
 
 /* Academic Year for Reports - uses the same Settings source */
 async function loadReportsAcademicYear(){
