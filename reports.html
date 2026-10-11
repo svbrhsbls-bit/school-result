@@ -627,7 +627,7 @@ function progressHTML(d){
  return `<div class="student-page">`+
  header("📄 ಪ್ರಗತಿ ವರದಿ")+
  studentInfo(d)+
- `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
+ `<table><thead><tr><th>ವಿಷಯ</th><th>Subject Code</th><th>ಗರಿಷ್ಠ ಅಂಕ</th><th>ಪಡೆದ ಅಂಕ</th><th>Grade</th></tr></thead><tbody>`+
  d.items.map(x=>`<tr><td class="left">${esc(x.subject)}</td><td>${esc(x.code)}</td><td>${x.max}</td><td>${x.mark===""?"-":x.mark}</td><td>${x.grade||"-"}</td></tr>`).join("")+
  `</tbody></table>
  <div class="summary">
