@@ -1238,7 +1238,7 @@ function progressExcelData(){
   const data=[];
   data.push(["ಪ್ರಗತಿ ವರದಿ"]);
   data.push(["ತರಗತಿ",currentClass+"ನೇ ತರಗತಿ","ವಿಭಾಗ",currentDivision,"ಪರೀಕ್ಷೆ",(EXAM_LABELS[currentExam]||currentExam)]);
-  data.push(["Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ","ವಿಷಯ","Subject Code","ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"]);
+  data.push(["Roll No","ವಿದ್ಯಾರ್ಥಿಯ ಹೆಸರು","ತರಗತಿ","ವಿಭಾಗ","ವಿಷಯ","Subject Code","ಪಡೆದ ಅಂಕ","ಗರಿಷ್ಠ ಅಂಕ","Grade"]);
   currentRows.forEach(d=>{
     d.items.forEach(x=>data.push([roll(d.student,0),studentName(d.student),d.student.class_name||currentClass,division(d.student)||currentDivision,x.subject,x.code,x.mark===""?"":Number(x.mark),x.max,x.grade||""]));
     data.push(["","","","","ಒಟ್ಟು","",Number(d.total.toFixed(2)),Number(d.max.toFixed(2)),d.grade||"-"]);
