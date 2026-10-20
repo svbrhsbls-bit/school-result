@@ -66,7 +66,7 @@ tbody tr:last-child{font-weight:bold;background:#f1f5f8}
       <div><label>ಶೈಕ್ಷಣಿಕ ವರ್ಷ</label><select id="academicYear"><option>Loading...</option></select></div>
       <div><label>ತರಗತಿ</label><select id="classSelect"><option value="8">8ನೇ ತರಗತಿ</option><option value="9">9ನೇ ತರಗತಿ</option><option value="10">10ನೇ ತರಗತಿ</option></select></div>
       <div><label>ವಿಭಾಗ</label><select id="division"><option value="A">A</option></select></div>
-      <div><label>ಪರೀಕ್ಷೆ</label><select id="exam"><option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option><option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option></select></div>
+      <div><label>ಪರೀಕ್ಷೆ</label><select id="exam"><option value="HALF_YEARLY">ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option><option value="ANNUAL">ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ</option><option value="PREPARATORY_1" data-class="10">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ - 01</option><option value="PREPARATORY_2" data-class="10">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ - 02</option><option value="PREPARATORY_3" data-class="10">ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ - 03</option></select></div>
     </div>
     <button class="btn-blue" id="loadBtn">Analysis ತೋರಿಸಿ</button>
     <button class="btn-green" onclick="window.print()">Print / PDF</button>
@@ -120,13 +120,21 @@ function maxMarks(s){
   // Match Marks Entry: use the selected class/exam Subject Master value first.
   const code=String(get(s,["subject_code","code"])||"").trim();
   const cls=currentClass==="8"?"8ನೇ ತರಗತಿ":currentClass+"ನೇ ತರಗತಿ";
+  // Keep preparatory-test maxima isolated from Annual values in this local HTML page.
+  // A separate file:// page may not share the Subject Master localStorage keys.
   const examKeys=[currentExam];
-  if(["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(currentExam))examKeys.push("ANNUAL");
   const keys=[];
   if(currentYear)examKeys.forEach(ex=>keys.push("subject_marks_"+currentYear+"_"+cls+"_"+ex+"_"+code));
   examKeys.forEach(ex=>keys.push("subject_marks_"+cls+"_"+ex+"_"+code));
   for(const k of keys){const v=localStorage.getItem(k);if(v!==null&&v!==""&&Number.isFinite(Number(v))&&Number(v)>0)return Number(v)}
-  const defaultExam=["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(currentExam)?"ANNUAL":currentExam;
+  // Preparatory Exam marks must match Marks Entry: 100 for subject code 01K,
+  // and 80 for the remaining subjects. Do NOT fall back to Annual maxima
+  // (125/100), otherwise totals, percentages and grade counts disagree.
+  if(["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(currentExam)){
+    if(cls==="9ನೇ ತರಗತಿ"||cls==="10ನೇ ತರಗತಿ")return code==="01K"?100:80;
+    return 100;
+  }
+  const defaultExam=currentExam;
   if(cls==="8ನೇ ತರಗತಿ")return defaultExam==="HALF_YEARLY"?50:100;
   if(cls==="9ನೇ ತರಗತಿ"||cls==="10ನೇ ತರಗತಿ"){
     if(defaultExam==="HALF_YEARLY")return code==="01K"?100:80;
@@ -159,8 +167,52 @@ function grade8LikeMarksEntry(mark,max){
   return m/mx*100>=90?"A+":m/mx*100>=70?"A":m/mx*100>=50?"B+":m/mx*100>=30?"B":"C";
 }
 function baseGrade(mark,s){const mx=maxMarks(s);return currentClass==="8"?grade8LikeMarksEntry(mark,mx):gradePct(mark,mx)}
-function overall910(st,marks){let total=0,max=0,low=0,below=false,ab=false;subjects.forEach(s=>{const v=String(marks[s.id]??"").trim().toUpperCase();max+=maxMarks(s);if(v==="AB"){ab=true;return}if(v!==""){const n=Number(v);total+=n;if(n<=23)below=true;if(n>=24&&n<=27)low++}});if(ab)return {status:"AB",total,max,pct:max?total/max*100:0,low,below};const complete=subjects.every(s=>String(marks[s.id]??"").trim()!=="");if(!complete)return {status:"PENDING",total,max,pct:max?total/max*100:0,low,below};return {status:(total/max*100>=35&&!below&&low<=2)?"PASS":"FAIL",total,max,pct:max?total/max*100:0,low,below}}
-function finalSubjectGrade(st,marks,s){const v=String(marks[s.id]??"").trim().toUpperCase();if(v==="AB")return "AB";if(v==="")return "";const n=Number(v);if(currentClass!=="9"&&currentClass!=="10")return baseGrade(n,s);const ov=overall910(st,marks);if(ov.status==="PASS"&&n>=24&&n<=27)return "C";if(ov.status==="FAIL"&&n>=24&&n<=27)return "NC";return baseGrade(n,s)}
+function isLowPass910(mark, subject){
+  const value=Number(mark), maximum=maxMarks(subject);
+  if(!Number.isFinite(value)||!Number.isFinite(maximum)||maximum<=0)return false;
+  const percentage=(value/maximum)*100;
+  return percentage>=30 && percentage<35;
+}
+function overall910(st,marks){
+  let total=0, maximum=0, lowCount=0, below30=false, hasAB=false, complete=true;
+  for(const subject of subjects){
+    const raw=String(marks[subject.id]??"").trim().toUpperCase();
+    const max=maxMarks(subject);
+    if(!Number.isFinite(max)||max<=0){complete=false;continue;}
+    maximum+=max;
+    if(raw==="AB"){hasAB=true;complete=false;continue;}
+    if(raw===""){complete=false;continue;}
+    const mark=Number(raw);
+    if(!Number.isFinite(mark)){complete=false;continue;}
+    total+=mark;
+    const percentage=(mark/max)*100;
+    if(percentage>=0 && percentage<30)below30=true;
+    if(percentage>=30 && percentage<35)lowCount++;
+  }
+  const percentage=maximum>0?(total/maximum)*100:0;
+  if(hasAB)return {status:"AB",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
+  if(!complete || subjects.length===0 || maximum<=0)return {status:"PENDING",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
+  // Class 9/10 rule: total >=30%, no subject below 30%, and at most 2 subjects in 30%-34.99%.
+  const pass=percentage>=30 && !below30 && lowCount<=2;
+  return {status:pass?"PASS":"FAIL",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
+}
+function finalSubjectGrade(st,marks,s){
+  const raw=String(marks[s.id]??"").trim().toUpperCase();
+  if(raw==="AB")return "AB";
+  if(raw==="")return "";
+  const mark=Number(raw);
+  if(!Number.isFinite(mark))return "";
+  if(currentClass!=="9"&&currentClass!=="10")return baseGrade(mark,s);
+  const maximum=maxMarks(s);
+  const percentage=maximum>0?(mark/maximum)*100:-1;
+  // 9th/10th subject grades: 30%-34.99% is recorded as C only
+  // when the student qualifies for the overall concession (max 2 subjects).
+  // A failed student's concession-range subjects remain NC; below 30% is NC.
+  const outcome=overall910(st,marks);
+  if(percentage>=30 && percentage<35)return outcome.status==="PASS"?"C":"NC";
+  if(percentage>=0 && percentage<30)return "NC";
+  return baseGrade(mark,s);
+}
 function gradeCounts(st,marks,s){const g=finalSubjectGrade(st,marks,s);const c={"A+":0,A:0,"B+":0,B:0,"C+":0,C:0,NC:0,AB:0};if(c[g]!==undefined)c[g]++;return c}
 function subjectPass(g){return ["A+","A","B+","B","C+","C"].includes(g)}
 function qpi(c,total){if(!total)return 0;return ((c["A+"]*6+c.A*5+c["B+"]*4+c.B*3+c["C+"]*2+c.C)/total)}
@@ -220,8 +272,17 @@ function exportExcel(){
 
 function qualityWeightage(overall,valid){const eligible=valid.length;let obtained=0,maximum=0,sixty=0;valid.forEach(st=>{let t=0,mx=0;subjects.forEach(s=>{const v=String(st._marks[s.id]??"").trim().toUpperCase();if(v!=="AB"&&v!==""){const n=Number(v);if(Number.isFinite(n))t+=n;mx+=maxMarks(s)}});obtained+=t;maximum+=mx;if(mx>0&&t/mx*100>=60)sixty++});const part40Marks=maximum?obtained/maximum*40:0;const part40Pass=eligible?(overall.PASS/eligible)*40:0;const part20=eligible?(sixty/eligible)*20:0;const total=part40Marks+part40Pass+part20;const grade=total>=75?"A":total>=60?"B":"C";return{part40Marks,part40Pass,part20,total,grade}}
 
+function syncExamOptions(){const cls=document.getElementById("classSelect").value,sel=document.getElementById("exam");[...sel.options].forEach(o=>{if(o.dataset.class==="10"){o.hidden=cls!=="10";o.disabled=cls!=="10"}});if(cls!=="10"&&sel.selectedOptions[0]?.dataset.class==="10")sel.value="HALF_YEARLY";}
+document.getElementById("classSelect").addEventListener("change",async()=>{syncExamOptions();try{await loadDivisions()}catch(e){msg(e.message||e,"error")}});
+syncExamOptions();
 document.getElementById("excelBtn").addEventListener("click",exportExcel);
 document.getElementById("loadBtn").addEventListener("click",async()=>{try{msg("Analysis loading...","info");await fetchData();msg("✅ Analysis ಸಿದ್ಧವಾಗಿದೆ.","success")}catch(e){console.error(e);msg("❌ "+(e.message||e),"error")}});
+document.getElementById("classSelect").addEventListener("change",()=>{
+  const cls=document.getElementById("classSelect").value;
+  const examSelect=document.getElementById("exam");
+  [...examSelect.options].forEach(option=>{if(option.dataset.class==="10")option.hidden=cls!=="10";});
+  if(cls!=="10" && ["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(examSelect.value))examSelect.value="ANNUAL";
+});
 document.getElementById("academicYear").addEventListener("change",async()=>{try{currentYear=document.getElementById("academicYear").value;await loadDivisions()}catch(e){msg(e.message||e,"error")}});
 (async()=>{try{await loadSettings();await loadYears();await loadDivisions()}catch(e){console.error(e);msg("❌ "+(e.message||e),"error")}})();
 </script>
