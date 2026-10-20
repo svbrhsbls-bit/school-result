@@ -1918,9 +1918,17 @@ function markChanged(input){
    CALCULATE STUDENT
 ===================================================== */
 
+function isSpecial910LowPassSubject(mark,subject){
+    const value=Number(mark);
+    if(!Number.isFinite(value) || !subject) return false;
+    // For classes 9 and 10, only subject percentages from 30% to below 35%
+    // receive the C-grade concession. The old fixed 24–27 mark rule is removed.
+    const percentage=percentageOf(value,maximumMarks(subject));
+    return percentage!==null && percentage>=30 && percentage<35;
+}
 function special910Result(studentId){
     if(currentClass!=="9" && currentClass!=="10") return null;
-    let total=0, maximum=0, entered=0, lowCount=0, below24=false;
+    let total=0, maximum=0, entered=0, lowCount=0, below30=false;
     subjects.forEach(subject=>{
         const max=maximumMarks(subject); maximum+=max;
         const input=getInput(studentId,subject.id);
@@ -1928,15 +1936,16 @@ function special910Result(studentId){
             const raw=String(input.value).trim().toUpperCase();
             if(raw!=="AB"){
                 const mark=Number(input.value); total+=mark;
-                if(mark>=24 && mark<=27) lowCount++;
-                if(mark>=0 && mark<=23) below24=true;
+                if(isSpecial910LowPassSubject(mark,subject)) lowCount++;
+                const subjectPercentage=percentageOf(mark,max);
+                if(subjectPercentage!==null && subjectPercentage<30) below30=true;
             }
             entered++;
         }
     });
     if(entered!==subjects.length || subjects.length===0) return null;
     const percentage=maximum>0?(total/maximum)*100:0;
-    return {total,maximum,percentage,lowCount,below24,pass:percentage>=35 && !below24 && lowCount<=2};
+    return {total,maximum,percentage,lowCount,below30,pass:percentage>=35 && !below30 && lowCount<=2};
 }
 function applySpecial910SubjectGrades(studentId,isPass){
     if(currentClass!=="9" && currentClass!=="10") return;
@@ -1947,7 +1956,7 @@ function applySpecial910SubjectGrades(studentId,isPass){
         const raw=String(input.value).trim().toUpperCase();
         if(raw==="AB") return;
         const mark=Number(input.value);
-        if(mark>=24 && mark<=27){
+        if(isSpecial910LowPassSubject(mark,subject)){
             gradeElement.textContent=isPass ? "C" : "NC";
         }
     });
@@ -2631,7 +2640,7 @@ function downloadExcel(){
                     grade = "AB";
                 }else{
                     const special = (currentClass === "9" || currentClass === "10") ? special910Result(studentId) : null;
-                    grade = special && Number(value) >= 24 && Number(value) <= 27
+                    grade = special && isSpecial910LowPassSubject(Number(value),subject)
                         ? (special.pass ? "C" : "NC")
                         : subjectGrade(Number(value),max,subject);
                     total += Number(value);
@@ -2812,7 +2821,7 @@ function printMarks(){
             const grade =
                 value === ""
                 ? ""
-                : (special && value >= 24 && value <= 27
+                : (special && isSpecial910LowPassSubject(value,subject)
                     ? (special.pass ? "C" : "NC")
                     : subjectGrade(
                         value,
