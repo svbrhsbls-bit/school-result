@@ -336,31 +336,27 @@ function isKannada(s){
  return n.includes("kannada")||n.includes("ಕನ್ನಡ")||c==="1"||c==="01";
 }
 function maxMarks(s){
- // Match Subject Master: selected academic year + class + exam + subject code.
- // Preparatory exams use their own saved value first, then the Annual value.
- const cls=currentClass+"ನೇ ತರಗತಿ";
+ // Use the same Subject Master key priority as Marks Entry.
+ // Subject Master stores separate maxima by class, exam and subject code;
+ // subjects.max_marks is shared across exams and must not override them.
+ const cls=currentClass==="8"?"8ನೇ ತರಗತಿ":currentClass+"ನೇ ತರಗತಿ";
  const code=String(subjectCode(s)||"").trim();
- const year=String($("academicYearSelect")?.value||appSettings.academic_year||"2026-27").trim();
- const exam=String(currentExam||"ANNUAL").trim();
+ const year=String($("academicYearSelect")?.value||currentAcademicYear||appSettings.academic_year||"").trim();
+ const exam=String(currentExam||"").trim();
  const examKeys=[exam];
  if(["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(exam)) examKeys.push("ANNUAL");
  const keys=[];
- examKeys.forEach(examKey=>keys.push("subject_marks_"+year+"_"+cls+"_"+examKey+"_"+code));
+ if(year) examKeys.forEach(examKey=>keys.push("subject_marks_"+year+"_"+cls+"_"+examKey+"_"+code));
  examKeys.forEach(examKey=>keys.push("subject_marks_"+cls+"_"+examKey+"_"+code));
  for(const key of keys){
   const saved=localStorage.getItem(key);
   if(saved!==null && saved!=="" && Number.isFinite(Number(saved)) && Number(saved)>0) return Number(saved);
  }
- // When Reports is opened as a downloaded file (file://), its localStorage
- // is separate from the hosted Subject Master. In that case use the maximum
- // marks stored on the matching Supabase subject record before applying defaults.
- const databaseMax=Number(s && s.max_marks);
- if(Number.isFinite(databaseMax) && databaseMax>0) return databaseMax;
- if(currentClass==="8") return exam==="HALF_YEARLY"?50:100;
- if(currentClass==="9"||currentClass==="10"){
-  const defaultExam=["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(exam)?"ANNUAL":exam;
-  if(defaultExam==="HALF_YEARLY")return isKannada(s)?100:80;
-  return isKannada(s)?125:100;
+ const defaultExam=["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(exam)?"ANNUAL":exam;
+ if(cls==="8ನೇ ತರಗತಿ") return defaultExam==="HALF_YEARLY"?50:100;
+ if(cls==="9ನೇ ತರಗತಿ"||cls==="10ನೇ ತರಗತಿ"){
+  if(defaultExam==="HALF_YEARLY") return code==="01K"?100:80;
+  if(defaultExam==="ANNUAL") return code==="01K"?125:100;
  }
  return 100;
 }
@@ -542,6 +538,10 @@ async function loadBase(){
   }
 }
 
+function minimumCGradePercent(){
+ const c=gradeSettingsRows.filter(g=>String(g.grade||"").trim().toUpperCase()==="C").sort((a,b)=>Number(a.min)-Number(b.min))[0];
+ return c ? Number(c.min) : 33;
+}
 function applyReportPassRules(items, total, maximum, entered){
  const completed=items.filter(item=>{
   const raw=String(item.mark??"").trim().toUpperCase();
@@ -558,16 +558,16 @@ function applyReportPassRules(items, total, maximum, entered){
   const mark=Number(raw), max=Number(item.max);
   if(!Number.isFinite(mark)||!Number.isFinite(max)||max<=0) return;
   const p=(mark/max)*100;
-  if(p>=30&&p<35) lowCount++;
+  if(p>=30&&p<minimumCGradePercent()) lowCount++;
   if(p>=0&&p<30) below30=true;
  });
  const percentage=maximum>0?(total/maximum)*100:0;
- const pass=percentage>=35&&!below30&&lowCount<=2;
+ const pass=percentage>=minimumCGradePercent()&&!below30&&lowCount<=2;
  items.forEach(item=>{
   const raw=String(item.mark??"").trim().toUpperCase(), max=Number(item.max), mark=Number(raw);
   if(!raw||raw==="AB"||!Number.isFinite(mark)||!Number.isFinite(max)||max<=0)return;
   const p=(mark/max)*100;
-  if(p>=30&&p<35)item.grade=pass?"C":"NC";
+  if(p>=30&&p<minimumCGradePercent())item.grade=pass?"C":"NC";
  });
  return {percentage,resultText:pass?"PASS":"FAIL",grade:pass?overallGrade(percentage):"NC"};
 }
