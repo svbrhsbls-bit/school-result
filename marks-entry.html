@@ -1921,20 +1921,17 @@ function markChanged(input){
 function isSpecial910LowPassSubject(mark,subject){
     const value=Number(mark);
     if(!Number.isFinite(value) || !subject) return false;
-    // For classes 9 and 10, only subject percentages from 30% to below 35%
-    // receive the C-grade concession. The old fixed 24–27 mark rule is removed.
+    // Only marks from 30% up to (but not including) the configured C minimum
+    // use the concession. Marks that already earn C under Grade Settings must
+    // not count against the two-subject concession limit.
     const percentage=percentageOf(value,maximumMarks(subject));
-    return percentage!==null && percentage>=30 && percentage<35;
+    const cGradeBand=configuredGradeBands.find(r=>String(r.grade).trim().toUpperCase()==="C");
+    const cMinimum=cGradeBand ? Number(cGradeBand.min) : 35;
+    return percentage!==null && percentage>=30 && percentage<cMinimum;
 }
 function special910Result(studentId){
     if(currentClass!=="9" && currentClass!=="10") return null;
     let total=0, maximum=0, entered=0, lowCount=0, below30=false;
-    // The configured C-grade minimum is the ordinary passing threshold.
-    // Only subjects below that C threshold but still at least 30% count as
-    // concession subjects; subjects already graded C (e.g. 33% when C starts
-    // at 33%) must not consume the two-subject concession allowance.
-    const cGradeBand=configuredGradeBands.find(r=>String(r.grade).trim().toUpperCase()==="C");
-    const passThreshold=cGradeBand ? cGradeBand.min : 35;
     subjects.forEach(subject=>{
         const max=maximumMarks(subject); maximum+=max;
         const input=getInput(studentId,subject.id);
@@ -1942,8 +1939,8 @@ function special910Result(studentId){
             const raw=String(input.value).trim().toUpperCase();
             if(raw!=="AB"){
                 const mark=Number(input.value); total+=mark;
+                if(isSpecial910LowPassSubject(mark,subject)) lowCount++;
                 const subjectPercentage=percentageOf(mark,max);
-                if(subjectPercentage!==null && subjectPercentage>=30 && subjectPercentage<passThreshold) lowCount++;
                 if(subjectPercentage!==null && subjectPercentage<30) below30=true;
             }
             entered++;
@@ -1951,6 +1948,10 @@ function special910Result(studentId){
     });
     if(entered!==subjects.length || subjects.length===0) return null;
     const percentage=maximum>0?(total/maximum)*100:0;
+    // Use the minimum percentage configured for grade C as the overall
+    // PASS threshold. Keep the existing subject concession limits unchanged.
+    const cGradeBand=configuredGradeBands.find(r=>String(r.grade).trim().toUpperCase()==="C");
+    const passThreshold=cGradeBand ? cGradeBand.min : 35;
     return {total,maximum,percentage,lowCount,below30,pass:percentage>=passThreshold && !below30 && lowCount<=2};
 }
 function applySpecial910SubjectGrades(studentId,isPass){
@@ -1966,7 +1967,11 @@ function applySpecial910SubjectGrades(studentId,isPass){
         // The 30%-34.99% concession affects only the overall PASS/FAIL result;
         // it must not replace a configured subject grade (for example C) with NC.
         if(isSpecial910LowPassSubject(mark,subject)){
-            gradeElement.textContent=subjectGrade(mark,maximumMarks(subject),subject);
+            // If the overall PASS conditions are met, grant C for up to two
+            // subjects in the 30%-below-C-band concession range (30% to < C min).
+            gradeElement.textContent=isPass
+                ? "C"
+                : subjectGrade(mark,maximumMarks(subject),subject);
         }
     });
 }
