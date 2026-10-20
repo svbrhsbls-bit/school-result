@@ -745,11 +745,13 @@ const RESULT_SCHOOL_ID = "svbrhsbls-school";
 let subjectExamMaxCache = {};
 function normalizeExamMaxType(value){
     const v=String(value || "").trim();
-    if(v === "HALF_YEARLY" || v.includes("ಅರ್ಧವಾರ್ಷಿಕ")) return "HALF_YEARLY";
-    if(v === "ANNUAL" || v.includes("ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ")) return "ANNUAL";
-    if(v === "PREPARATORY_1" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?1/i.test(v)) return "PREPARATORY_1";
-    if(v === "PREPARATORY_2" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?2/i.test(v)) return "PREPARATORY_2";
-    if(v === "PREPARATORY_3" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?3/i.test(v)) return "PREPARATORY_3";
+    const upper=v.toUpperCase().replace(/[\s–—-]+/g,"_");
+    // Match result exam identifiers (SA-1/SA-2) to the exam types stored by Marks Entry.
+    if(["HALF_YEARLY","HALFYEARLY","SA1","SA_1","SUMMATIVE_1","FIRST_TERM"].includes(upper) || v.includes("ಅರ್ಧವಾರ್ಷಿಕ")) return "HALF_YEARLY";
+    if(["ANNUAL","SA2","SA_2","SUMMATIVE_2","SECOND_TERM","YEAR_END"].includes(upper) || v.includes("ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ")) return "ANNUAL";
+    if(upper === "PREPARATORY_1" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?1/i.test(v)) return "PREPARATORY_1";
+    if(upper === "PREPARATORY_2" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?2/i.test(v)) return "PREPARATORY_2";
+    if(upper === "PREPARATORY_3" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?3/i.test(v)) return "PREPARATORY_3";
     return v;
 }
 function examMaxCacheKey(year,cls,exam,code){
@@ -779,7 +781,7 @@ async function loadSubjectExamMaxMarks(student){
             if(!Number.isFinite(n) || n<=0) return;
             subjectExamMaxCache[examMaxCacheKey(row.academic_year,row.class_name,row.exam_type,row.subject_code)]=n;
         });
-        console.info("Subject Master exam maxima loaded from subject_exam_marks:",Object.keys(subjectExamMaxCache).length,"academic year:",year,"school:",resultExamMaxSchoolId());
+        console.info("Subject Result exam maxima loaded from subject_exam_marks:",Object.keys(subjectExamMaxCache).length,"academic year:",year,"school:",resultExamMaxSchoolId());
     }catch(error){
         console.warn("Could not load exam maxima from subject_exam_marks. Check table access and school/year values.",error);
     }
@@ -801,14 +803,27 @@ function getSubjectMasterExamMax(student, examType, subject){
         const parts=key.split("|");
         if(parts.length===4 && parts[0]===year && normalizeClass(parts[1])===cls && normalizeExamMaxType(parts[2])===exam && parts[3]===code && Number.isFinite(value) && value>0) return value;
     }
-    // Legacy browser-local values remain a fallback only.
+    // Read the exact Subject Master localStorage key as well. Subject Master
+    // stores the full Kannada class label (for example, 10ನೇ ತರಗತಿ), while
+    // getClass(student) may return only the normalized number (10).
     try{
-        const oldKeys=[
-            `subject_marks_${year}_${cls}_${exam}_${code}`,
-            `subject_marks_${cls}_${exam}_${code}`,
-            `subject_marks_${student?.class_name || student?.class || cls}_${exam}_${code}`
-        ];
-        for(const key of oldKeys){
+        const classLabels=[
+            String(student?.class_name || student?.class || student?.standard || "").trim(),
+            `${cls}ನೇ ತರಗತಿ`,
+            cls
+        ].filter(Boolean);
+        const examLabels=[exam, String(examType || "").trim()];
+        const oldKeys=[];
+        for(const classLabel of classLabels){
+            for(const examLabel of examLabels){
+                oldKeys.push(`subject_marks_${year}_${classLabel}_${examLabel}_${code}`);
+                oldKeys.push(`subject_marks_${classLabel}_${examLabel}_${code}`);
+            }
+        }
+        // Also support normalized legacy keys.
+        oldKeys.push(`subject_marks_${year}_${cls}_${exam}_${code}`);
+        oldKeys.push(`subject_marks_${cls}_${exam}_${code}`);
+        for(const key of [...new Set(oldKeys)]){
             const raw=localStorage.getItem(key);
             if(raw!==null){const oldValue=Number(raw);if(Number.isFinite(oldValue)&&oldValue>0)return oldValue;}
         }
