@@ -741,27 +741,58 @@ function isKannadaSubject(subject){
            name.includes("kannada");
 }
 
+function getSubjectMasterExamMax(student, examType, subject){
+    // Subject Master stores each exam/year maximum separately in localStorage.
+    // Read that exact saved value before using any class-based default.
+    const year = String(student?.academic_year || student?.school_year || appSettings?.academic_year || "").trim();
+    const cls = getClass(student);
+    const code = String(subject?.subject_code || subject?.code || "").trim();
+    const exam = String(examType || "").trim();
+    if(!year || !cls || !code || !exam) return null;
+
+    const normalizeStoredClass = value => normalizeClass(value);
+    const prefixes = [
+        `subject_marks_${year}_`,
+        `subject_marks_${year.replace(/[–—−]/g,"-")}_`
+    ];
+    try{
+        for(let i=0;i<localStorage.length;i++){
+            const key = localStorage.key(i);
+            if(!key || !prefixes.some(prefix=>key.startsWith(prefix))) continue;
+            const parts = key.split("_");
+            // subject_marks_YEAR_CLASS_EXAM_CODE; year may itself contain a dash, not underscores.
+            if(parts.length < 6) continue;
+            const storedYear = parts[2];
+            const storedClass = parts[3];
+            const storedExam = parts[4];
+            const storedCode = parts.slice(5).join("_");
+            if(storedYear === year && normalizeStoredClass(storedClass) === cls && storedExam === exam && storedCode === code){
+                const value = Number(localStorage.getItem(key));
+                if(Number.isFinite(value) && value > 0) return value;
+            }
+        }
+    }catch(error){
+        console.warn("Could not read Subject Master exam maximum from localStorage", error);
+    }
+    return null;
+}
+
 function getMaxMarks(student, examType, subject){
     const cls=getClass(student);
     const kannada=isKannadaSubject(subject);
+    const savedExamMax = getSubjectMasterExamMax(student, examType, subject);
+    if(savedExamMax !== null) return savedExamMax;
 
-    if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ"){
+    if(examType==="ಅರ್ಧವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" || examType==="HALF_YEARLY"){
         if(cls==="8") return 50;
-
-        if(cls==="9" || cls==="10")
-            return kannada ? 100 : 80;
+        if(cls==="9" || cls==="10") return kannada ? 100 : 80;
     }
 
-    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" ||
-       examType==="PREPARATORY_1" ||
-       examType==="PREPARATORY_2" ||
-       examType==="PREPARATORY_3" ||
-       String(examType || "").includes("ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ")){
-        // Use the exam-specific maximum saved in Subject Master first.
-        // Fixed annual/preparatory defaults must not override this value.
+    if(examType==="ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ" || examType==="ANNUAL" ||
+       examType==="PREPARATORY_1" || examType==="PREPARATORY_2" ||
+       examType==="PREPARATORY_3" || String(examType || "").includes("ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ")){
         const savedMax = Number(subject?.max_marks);
         if(Number.isFinite(savedMax) && savedMax > 0) return savedMax;
-
         if(cls==="8") return 100;
         if(cls==="9" || cls==="10") return kannada ? 125 : 100;
     }
