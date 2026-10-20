@@ -167,11 +167,15 @@ function grade8LikeMarksEntry(mark,max){
   return m/mx*100>=90?"A+":m/mx*100>=70?"A":m/mx*100>=50?"B+":m/mx*100>=30?"B":"C";
 }
 function baseGrade(mark,s){const mx=maxMarks(s);return currentClass==="8"?grade8LikeMarksEntry(mark,mx):gradePct(mark,mx)}
+function minimumCGradePercent(){
+  const band=configuredGradeBands.filter(r=>String(r.grade||"").trim().toUpperCase()==="C").sort((a,b)=>a.min-b.min)[0];
+  return band ? Number(band.min) : 33;
+}
 function isLowPass910(mark, subject){
   const value=Number(mark), maximum=maxMarks(subject);
   if(!Number.isFinite(value)||!Number.isFinite(maximum)||maximum<=0)return false;
   const percentage=(value/maximum)*100;
-  return percentage>=30 && percentage<35;
+  return percentage>=30 && percentage<minimumCGradePercent();
 }
 function overall910(st,marks){
   let total=0, maximum=0, lowCount=0, below30=false, hasAB=false, complete=true;
@@ -187,13 +191,13 @@ function overall910(st,marks){
     total+=mark;
     const percentage=(mark/max)*100;
     if(percentage>=0 && percentage<30)below30=true;
-    if(percentage>=30 && percentage<35)lowCount++;
+    if(percentage>=30 && percentage<minimumCGradePercent())lowCount++;
   }
   const percentage=maximum>0?(total/maximum)*100:0;
   if(hasAB)return {status:"AB",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
   if(!complete || subjects.length===0 || maximum<=0)return {status:"PENDING",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
   // Class 9/10 rule: total >=30%, no subject below 30%, and at most 2 subjects in 30%-34.99%.
-  const pass=percentage>=30 && !below30 && lowCount<=2;
+  const pass=percentage>=minimumCGradePercent() && !below30 && lowCount<=2;
   return {status:pass?"PASS":"FAIL",total,maximum,pct:percentage,low:lowCount,below:below30,hasAB};
 }
 function finalSubjectGrade(st,marks,s){
@@ -209,7 +213,7 @@ function finalSubjectGrade(st,marks,s){
   // when the student qualifies for the overall concession (max 2 subjects).
   // A failed student's concession-range subjects remain NC; below 30% is NC.
   const outcome=overall910(st,marks);
-  if(percentage>=30 && percentage<35)return outcome.status==="PASS"?"C":"NC";
+  if(percentage>=30 && percentage<minimumCGradePercent())return outcome.status==="PASS"?"C":"NC";
   if(percentage>=0 && percentage<30)return "NC";
   return baseGrade(mark,s);
 }
