@@ -787,6 +787,17 @@ function passMark(student,percent){
         : percent>=35;
 }
 
+/* The 9th/10th low-score exception must use the minimum C grade
+   configured in Grade Settings, not a hard-coded 35%. */
+function minimumCGradePercentage(){
+    const cBand = configuredGradeBands.find(r =>
+        String(r.grade || "").trim().toUpperCase() === "C"
+    );
+    return cBand && Number.isFinite(Number(cBand.min))
+        ? Number(cBand.min)
+        : null;
+}
+
 /* Total marks in English words */
 function numberToWordsIndian(num){
     num = Math.floor(Number(num) || 0);
@@ -1459,7 +1470,13 @@ function renderExam(student,subjects,result,marksMap){
                     const mark = Number(markValue);
                     specialTotal += mark;
                     const subjectPercentage = max > 0 ? mark / max * 100 : null;
-                    if(subjectPercentage !== null && subjectPercentage >= 30 && subjectPercentage < 35){
+                    const minimumC = minimumCGradePercentage();
+                    // Only scores from 30% up to (but not including) the
+                    // configured C-grade minimum use the special PASS rule.
+                    // A subject that already earns C under Grade Settings
+                    // does not consume the two-subject exception allowance.
+                    if(subjectPercentage !== null && minimumC !== null &&
+                       subjectPercentage >= 30 && subjectPercentage < minimumC){
                         specialLowCount++;
                         specialGradeMap[subject.id] = "C";
                     }
@@ -1470,7 +1487,11 @@ function renderExam(student,subjects,result,marksMap){
             }
         });
         const specialPercentage = specialMaximum > 0 ? specialTotal / specialMaximum * 100 : 0;
-        specialPass = specialPercentage >= 35 && !specialBelow30 && specialLowCount <= 2;
+        const minimumC = minimumCGradePercentage();
+        specialPass = minimumC !== null &&
+            specialPercentage >= minimumC &&
+            !specialBelow30 &&
+            specialLowCount <= 2;
         if(!specialPass){
             Object.keys(specialGradeMap).forEach(id => specialGradeMap[id] = "NC");
         }
