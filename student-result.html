@@ -743,8 +743,17 @@ function isKannadaSubject(subject){
 
 const RESULT_SCHOOL_ID = "svbrhsbls-school";
 let subjectExamMaxCache = {};
+function normalizeExamMaxType(value){
+    const v=String(value || "").trim();
+    if(v === "HALF_YEARLY" || v.includes("ಅರ್ಧವಾರ್ಷಿಕ")) return "HALF_YEARLY";
+    if(v === "ANNUAL" || v.includes("ವಾರ್ಷಿಕ ಪರೀಕ್ಷೆ")) return "ANNUAL";
+    if(v === "PREPARATORY_1" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?1/i.test(v)) return "PREPARATORY_1";
+    if(v === "PREPARATORY_2" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?2/i.test(v)) return "PREPARATORY_2";
+    if(v === "PREPARATORY_3" || /ಪೂರ್ವ ಸಿದ್ಧತಾ ಪರೀಕ್ಷೆ\s*[-–]?\s*0?3/i.test(v)) return "PREPARATORY_3";
+    return v;
+}
 function examMaxCacheKey(year,cls,exam,code){
-    return [String(year||""),normalizeClass(cls),String(exam||""),String(code||"")].join("|");
+    return [String(year||"").trim(),normalizeClass(cls),normalizeExamMaxType(exam),String(code||"").trim()].join("|");
 }
 async function loadSubjectExamMaxMarks(student){
     subjectExamMaxCache={};
@@ -762,23 +771,32 @@ async function loadSubjectExamMaxMarks(student){
                 subjectExamMaxCache[examMaxCacheKey(row.academic_year,row.class_name,row.exam_type,row.subject_code)]=n;
             }
         });
+        console.info("Subject Master exam maxima loaded:",Object.keys(subjectExamMaxCache).length,"academic year:",year);
     }catch(error){
-        console.warn("Shared Subject Master exam maxima could not be loaded. Ensure SQL setup has been run.",error);
+        console.warn("Shared Subject Master exam maxima could not be loaded. Ensure SQL setup has been run and table access is allowed.",error);
     }
 }
 function getSubjectMasterExamMax(student, examType, subject){
     const year=String(student?.academic_year || student?.school_year || appSettings?.academic_year || "").trim();
     const cls=getClass(student);
     const code=String(subject?.subject_code || subject?.code || "").trim();
-    const exam=String(examType || "").trim();
+    const exam=normalizeExamMaxType(examType);
     if(!year || !cls || !code || !exam) return null;
     const shared=subjectExamMaxCache[examMaxCacheKey(year,cls,exam,code)];
     if(Number.isFinite(shared) && shared>0) return shared;
-    // Keep legacy browser-local values as a temporary fallback for old records.
+    // Temporary compatibility fallback for earlier browser-local settings.
     try{
-        const oldKey=`subject_marks_${cls}_${exam}_${code}`;
-        const oldValue=Number(localStorage.getItem(oldKey));
-        if(Number.isFinite(oldValue) && oldValue>0) return oldValue;
+        const oldKeys=[
+            `subject_marks_${cls}_${exam}_${code}`,
+            `subject_marks_${student?.class_name || student?.class || cls}_${exam}_${code}`
+        ];
+        for(const key of oldKeys){
+            const raw=localStorage.getItem(key);
+            if(raw!==null){
+                const oldValue=Number(raw);
+                if(Number.isFinite(oldValue) && oldValue>0) return oldValue;
+            }
+        }
     }catch(e){}
     return null;
 }
