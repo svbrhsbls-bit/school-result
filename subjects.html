@@ -185,7 +185,6 @@ const db = window.supabase.createClient(
 let editingId = null;
 let selectedAcademicYear = "";
 const YEAR_STORAGE_KEY = "school_result_academic_years";
-const SCHOOL_ID = "svbrhsbls-school";
 
 const SUBJECTS = {
     "01K":"ಕನ್ನಡ",
@@ -514,25 +513,25 @@ function onClassChange(){
 }
 
 /* =========================================================
-   Exam-wise maximum marks: shared Supabase table + local fallback
+   Exam-wise maximum marks: shared Supabase table + local cache
    ========================================================= */
-function marksKey(year,cls,exam,code){
+const SUBJECT_MAX_MARKS_SCHOOL_ID = "svbrhsbls-school";
+
+function marksKey(cls,exam,code){
+    const year=String(selectedAcademicYear || document.getElementById("academicYear")?.value || "").trim();
     return "subject_marks_" + year + "_" + cls + "_" + exam + "_" + code;
 }
 
-function getSavedExamMarks(year,cls,exam,code){
-    let value=localStorage.getItem(marksKey(year,cls,exam,code));
-    if(value===null){
-        // Legacy browser-local key from the earlier version.
-        value=localStorage.getItem("subject_marks_" + cls + "_" + exam + "_" + code);
-    }
+function getSavedExamMarks(cls,exam,code){
+    let value=localStorage.getItem(marksKey(cls,exam,code));
+    if(value===null) value=localStorage.getItem("subject_marks_" + cls + "_" + exam + "_" + code);
     return value === null ? null : Number(value);
 }
 
 async function getDbExamMarks(year,cls,exam,code){
     const {data,error}=await db.from("subject_exam_max_marks")
         .select("max_marks")
-        .eq("school_id",SCHOOL_ID)
+        .eq("school_id",SUBJECT_MAX_MARKS_SCHOOL_ID)
         .eq("academic_year",String(year))
         .eq("class_name",String(cls))
         .eq("exam_type",String(exam))
@@ -544,10 +543,12 @@ async function getDbExamMarks(year,cls,exam,code){
 }
 
 async function saveExamMarks(year,cls,exam,code,marks){
-    const row={school_id:SCHOOL_ID,academic_year:String(year),class_name:String(cls),exam_type:String(exam),subject_code:String(code),max_marks:Number(marks),updated_at:new Date().toISOString()};
+    const row={school_id:SUBJECT_MAX_MARKS_SCHOOL_ID,academic_year:String(year),class_name:String(cls),exam_type:String(exam),subject_code:String(code),max_marks:Number(marks),updated_at:new Date().toISOString()};
     const {error}=await db.from("subject_exam_max_marks").upsert(row,{onConflict:"school_id,academic_year,class_name,exam_type,subject_code"});
     if(error) throw error;
-    localStorage.setItem(marksKey(year,cls,exam,code),String(marks));
+    localStorage.setItem(marksKey(cls,exam,code),String(marks));
+    // Keep the earlier key too, for compatibility with existing local pages.
+    localStorage.setItem("subject_marks_" + cls + "_" + exam + "_" + code,String(marks));
 }
 
 function defaultMarks(cls,exam,code){
@@ -570,23 +571,20 @@ function defaultMarks(cls,exam,code){
     return 100;
 }
 
-async function applyExamMarks(){
+function applyExamMarks(){
+
     const cls=document.getElementById("classSelect").value;
     const exam=document.getElementById("examType").value;
     const code=document.getElementById("subjectCode").value;
-    const year=selectedAcademicYear || document.getElementById("academicYear").value;
+
     if(!cls || !exam || !code) return;
-    const input=document.getElementById("maxMarks");
-    input.value=defaultMarks(cls,exam,code);
-    try{
-        const saved=year ? await getDbExamMarks(year,cls,exam,code) : null;
-        const local=year ? getSavedExamMarks(year,cls,exam,code) : null;
-        input.value=saved !== null ? saved : (local !== null ? local : defaultMarks(cls,exam,code));
-    }catch(error){
-        console.warn("Shared exam maximum marks could not be loaded. Run the supplied SQL setup first.",error);
-        const local=year ? getSavedExamMarks(year,cls,exam,code) : null;
-        input.value=local !== null ? local : defaultMarks(cls,exam,code);
-    }
+
+    const saved=getSavedExamMarks(cls,exam,code);
+
+    document.getElementById("maxMarks").value =
+        saved !== null
+        ? saved
+        : defaultMarks(cls,exam,code);
 }
 
 /* =========================================================
@@ -705,6 +703,7 @@ async function saveSubject(){
                 class_name:cls,
                 subject_code:code,
                 subject_name:name,
+                max_marks:marks,
                 display_order:order,
                 is_active:active
             }]);
@@ -779,16 +778,29 @@ async function loadSubjects(){
             return;
         }
 
+        let dbMarksByCode={};
+        const {data:examMaxRows,error:examMaxError}=await db.from("subject_exam_max_marks")
+            .select("subject_code,max_marks")
+            .eq("school_id",SUBJECT_MAX_MARKS_SCHOOL_ID)
+            .eq("academic_year",String(year))
+            .eq("class_name",String(cls))
+            .eq("exam_type",String(exam));
+        if(examMaxError) throw examMaxError;
+        (examMaxRows||[]).forEach(row=>{ dbMarksByCode[String(row.subject_code)]=Number(row.max_marks); });
+
         tbody.innerHTML="";
 
-        for(let index=0; index<data.length; index++){
-            const s=data[index];
+        data.forEach((s,index)=>{
 
-            let savedMarks=null;
-            try{ savedMarks=await getDbExamMarks(year,cls,exam,s.subject_code); }
-            catch(e){ console.warn("Could not load shared exam marks",e); }
-            if(savedMarks===null) savedMarks=getSavedExamMarks(year,cls,exam,s.subject_code);
-            const displayMarks=savedMarks !== null ? savedMarks : s.max_marks;
+            const savedMarks=getSavedExamMarks(
+                cls,
+                exam,
+                s.subject_code
+            );
+            const dbMarks=dbMarksByCode[String(s.subject_code)];
+            const displayMarks=Number.isFinite(dbMarks) && dbMarks>0
+                ? dbMarks
+                : (savedMarks !== null ? savedMarks : s.max_marks);
 
             const tr=document.createElement("tr");
 
@@ -821,7 +833,7 @@ async function loadSubjects(){
             `;
 
             tbody.appendChild(tr);
-        }
+        });
 
     }catch(error){
 
@@ -872,12 +884,16 @@ async function editSubject(id){
 
         if(exam){
 
-            let saved=null;
-            const year=selectedAcademicYear || document.getElementById("academicYear").value;
-            try{ saved=await getDbExamMarks(year,cls,exam,data.subject_code); }
-            catch(e){ console.warn("Could not load shared exam maximum",e); }
-            if(saved===null) saved=getSavedExamMarks(year,cls,exam,data.subject_code);
-            document.getElementById("maxMarks").value=saved !== null ? saved : data.max_marks;
+            const saved=getSavedExamMarks(
+                cls,
+                exam,
+                data.subject_code
+            );
+
+            document.getElementById("maxMarks").value=
+                saved !== null
+                ? saved
+                : data.max_marks;
         }else{
 
             document.getElementById("maxMarks").value=
@@ -954,6 +970,7 @@ async function updateSubject(){
                 class_name:cls,
                 subject_code:code,
                 subject_name:name,
+                max_marks:marks,
                 display_order:order,
                 is_active:active
             })
