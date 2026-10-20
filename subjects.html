@@ -514,27 +514,34 @@ function onClassChange(){
 
 /* =========================================================
    Exam-wise marks
-   NOTE:
-   Your current subjects table does NOT have exam_type.
-   Therefore exam-wise maximum marks are stored separately
-   in browser localStorage. Existing Supabase columns are
-   NOT changed.
+   The subjects table has one shared max_marks field and no exam_type.
+   Therefore each exam/year maximum is kept separately in localStorage.
+   Never overwrite the shared max_marks field when editing a particular exam.
    ========================================================= */
 
-function marksKey(cls,exam,code){
-    return "subject_marks_" + cls + "_" + exam + "_" + code;
+function marksKey(cls,exam,code,year){
+    const activeYear = String(year || selectedAcademicYear || document.getElementById("academicYear").value || "").trim();
+    return "subject_marks_" + activeYear + "_" + cls + "_" + exam + "_" + code;
 }
 
 function getSavedExamMarks(cls,exam,code){
-    const value=localStorage.getItem(marksKey(cls,exam,code));
-    return value === null ? null : Number(value);
+    const key = marksKey(cls,exam,code);
+    let value = localStorage.getItem(key);
+    if(value !== null) return Number(value);
+
+    /* One-time compatibility migration from the older year-less key.
+       New saves are always isolated by academic year and exam. */
+    const legacyKey = "subject_marks_" + cls + "_" + exam + "_" + code;
+    value = localStorage.getItem(legacyKey);
+    if(value !== null){
+        localStorage.setItem(key, value);
+        return Number(value);
+    }
+    return null;
 }
 
 function saveExamMarks(cls,exam,code,marks){
-    localStorage.setItem(
-        marksKey(cls,exam,code),
-        String(marks)
-    );
+    localStorage.setItem(marksKey(cls,exam,code), String(marks));
 }
 
 function defaultMarks(cls,exam,code){
@@ -689,7 +696,7 @@ async function saveSubject(){
                 class_name:cls,
                 subject_code:code,
                 subject_name:name,
-                max_marks:marks,
+                /* Do not update shared subjects.max_marks from an exam-specific edit. */
                 display_order:order,
                 is_active:active
             }]);
@@ -777,7 +784,7 @@ async function loadSubjects(){
             const displayMarks=
                 savedMarks !== null
                 ? savedMarks
-                : s.max_marks;
+                : defaultMarks(cls,exam,s.subject_code);
 
             const tr=document.createElement("tr");
 
@@ -870,7 +877,7 @@ async function editSubject(id){
             document.getElementById("maxMarks").value=
                 saved !== null
                 ? saved
-                : data.max_marks;
+                : defaultMarks(cls,exam,data.subject_code);
         }else{
 
             document.getElementById("maxMarks").value=
@@ -947,7 +954,7 @@ async function updateSubject(){
                 class_name:cls,
                 subject_code:code,
                 subject_name:name,
-                max_marks:marks,
+                /* Do not update shared subjects.max_marks from an exam-specific edit. */
                 display_order:order,
                 is_active:active
             })
