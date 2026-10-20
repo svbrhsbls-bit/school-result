@@ -336,14 +336,30 @@ function isKannada(s){
  return n.includes("kannada")||n.includes("ಕನ್ನಡ")||c==="1"||c==="01";
 }
 function maxMarks(s){
+ // Match Subject Master: selected academic year + class + exam + subject code.
+ // Preparatory exams use their own saved value first, then the Annual value.
  const cls=currentClass+"ನೇ ತರಗತಿ";
- const code=subjectCode(s);
- const key="subject_marks_"+cls+"_"+currentExam+"_"+code;
- const saved=localStorage.getItem(key);
- if(saved!==null && saved!=="" && Number.isFinite(Number(saved))) return Number(saved);
- if(currentClass==="8") return currentExam==="HALF_YEARLY"?50:100;
+ const code=String(subjectCode(s)||"").trim();
+ const year=String($("academicYearSelect")?.value||appSettings.academic_year||"2026-27").trim();
+ const exam=String(currentExam||"ANNUAL").trim();
+ const examKeys=[exam];
+ if(["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(exam)) examKeys.push("ANNUAL");
+ const keys=[];
+ examKeys.forEach(examKey=>keys.push("subject_marks_"+year+"_"+cls+"_"+examKey+"_"+code));
+ examKeys.forEach(examKey=>keys.push("subject_marks_"+cls+"_"+examKey+"_"+code));
+ for(const key of keys){
+  const saved=localStorage.getItem(key);
+  if(saved!==null && saved!=="" && Number.isFinite(Number(saved)) && Number(saved)>0) return Number(saved);
+ }
+ // When Reports is opened as a downloaded file (file://), its localStorage
+ // is separate from the hosted Subject Master. In that case use the maximum
+ // marks stored on the matching Supabase subject record before applying defaults.
+ const databaseMax=Number(s && s.max_marks);
+ if(Number.isFinite(databaseMax) && databaseMax>0) return databaseMax;
+ if(currentClass==="8") return exam==="HALF_YEARLY"?50:100;
  if(currentClass==="9"||currentClass==="10"){
-  if(currentExam==="HALF_YEARLY")return isKannada(s)?100:80;
+  const defaultExam=["PREPARATORY_1","PREPARATORY_2","PREPARATORY_3"].includes(exam)?"ANNUAL":exam;
+  if(defaultExam==="HALF_YEARLY")return isKannada(s)?100:80;
   return isKannada(s)?125:100;
  }
  return 100;
@@ -527,33 +543,33 @@ async function loadBase(){
 }
 
 function applyReportPassRules(items, total, maximum, entered){
- // Match Marks Entry special pass rules for classes 9 and 10.
  const completed=items.filter(item=>{
   const raw=String(item.mark??"").trim().toUpperCase();
   return isNumericExamMark(raw) || raw==="AB";
  }).length;
  if((currentClass !== "9" && currentClass !== "10") || completed !== items.length || !items.length){
-  return {percentage: maximum > 0 ? (total / maximum) * 100 : 0, resultText: entered === items.length ? passResult(maximum > 0 ? (total / maximum) * 100 : 0) : "PENDING", grade: entered === items.length ? overallGrade(maximum > 0 ? (total / maximum) * 100 : 0) : "-"};
+  const percentage=maximum > 0 ? (total / maximum) * 100 : 0;
+  return {percentage, resultText:entered === items.length ? passResult(percentage) : "PENDING", grade:entered === items.length ? overallGrade(percentage) : "-"};
  }
- let lowCount=0, below24=false;
+ let lowCount=0, below30=false;
  items.forEach(item=>{
-  const raw=String(item.mark ?? "").trim().toUpperCase();
-  if(!raw || raw === "AB") return;
-  const mark=Number(raw);
-  if(!Number.isFinite(mark)) return;
-  if(mark >= 24 && mark <= 27) lowCount++;
-  if(mark >= 0 && mark <= 23) below24=true;
+  const raw=String(item.mark??"").trim().toUpperCase();
+  if(!raw || raw==="AB") return;
+  const mark=Number(raw), max=Number(item.max);
+  if(!Number.isFinite(mark)||!Number.isFinite(max)||max<=0) return;
+  const p=(mark/max)*100;
+  if(p>=30&&p<35) lowCount++;
+  if(p>=0&&p<30) below30=true;
  });
- const percentage=maximum > 0 ? (total / maximum) * 100 : 0;
- const pass=percentage >= 35 && !below24 && lowCount <= 2;
+ const percentage=maximum>0?(total/maximum)*100:0;
+ const pass=percentage>=35&&!below30&&lowCount<=2;
  items.forEach(item=>{
-  const raw=String(item.mark ?? "").trim().toUpperCase();
-  const mark=Number(raw);
-  if(raw && raw !== "AB" && Number.isFinite(mark) && mark >= 24 && mark <= 27){
-   item.grade=pass ? "C" : "NC";
-  }
+  const raw=String(item.mark??"").trim().toUpperCase(), max=Number(item.max), mark=Number(raw);
+  if(!raw||raw==="AB"||!Number.isFinite(mark)||!Number.isFinite(max)||max<=0)return;
+  const p=(mark/max)*100;
+  if(p>=30&&p<35)item.grade=pass?"C":"NC";
  });
- return {percentage, resultText:pass ? "PASS" : "FAIL", grade:pass ? overallGrade(percentage) : "NC"};
+ return {percentage,resultText:pass?"PASS":"FAIL",grade:pass?overallGrade(percentage):"NC"};
 }
 
 async function loadResults(){
