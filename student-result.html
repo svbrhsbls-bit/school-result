@@ -769,9 +769,9 @@ async function loadSubjectExamMaxMarks(student){
     const year=String(student?.academic_year || student?.school_year || appSettings?.academic_year || "").trim();
     if(!year) return;
     try{
-        // Marks Entry reads the shared exam maxima from subject_exam_marks.
-        // Student Result must read the same table and use the same school/year/class/exam keys.
-        const {data,error}=await db.from("subject_exam_marks")
+        // Subject Master saves shared exam maxima to subject_exam_max_marks.
+        // Read the same shared table so results are consistent across devices.
+        const {data,error}=await db.from("subject_exam_max_marks")
             .select("school_id,academic_year,class_name,exam_type,subject_code,max_marks")
             .eq("school_id",resultExamMaxSchoolId())
             .eq("academic_year",year);
@@ -781,9 +781,9 @@ async function loadSubjectExamMaxMarks(student){
             if(!Number.isFinite(n) || n<=0) return;
             subjectExamMaxCache[examMaxCacheKey(row.academic_year,row.class_name,row.exam_type,row.subject_code)]=n;
         });
-        console.info("Subject Result exam maxima loaded from subject_exam_marks:",Object.keys(subjectExamMaxCache).length,"academic year:",year,"school:",resultExamMaxSchoolId());
+        console.info("Student Result exam maxima loaded from subject_exam_max_marks:",Object.keys(subjectExamMaxCache).length,"academic year:",year,"school:",resultExamMaxSchoolId());
     }catch(error){
-        console.warn("Could not load exam maxima from subject_exam_marks. Check table access and school/year values.",error);
+        console.warn("Could not load exam maxima from subject_exam_max_marks. Check table access and school/year values.",error);
     }
 }
 function getSubjectMasterExamMax(student, examType, subject){
@@ -792,20 +792,10 @@ function getSubjectMasterExamMax(student, examType, subject){
     const code=String(subject?.subject_code || subject?.code || "").trim();
     const exam=normalizeExamMaxType(examType);
     if(!year || !cls || !code || !exam) return null;
-    // The table stores class names in the same Kannada format used by Marks Entry.
-    const classNames=[cls,`${cls}ನೇ ತರಗತಿ`,`${cls}ನೇ ತರಗತಿ`.replace("8ನೇ","8ನೇ")];
-    for(const className of classNames){
-        const shared=subjectExamMaxCache[examMaxCacheKey(year,className,exam,code)];
-        if(Number.isFinite(shared) && shared>0) return shared;
-    }
-    // Also match by normalized class in case the database class spelling differs.
-    for(const [key,value] of Object.entries(subjectExamMaxCache)){
-        const parts=key.split("|");
-        if(parts.length===4 && parts[0]===year && normalizeClass(parts[1])===cls && normalizeExamMaxType(parts[2])===exam && parts[3]===code && Number.isFinite(value) && value>0) return value;
-    }
-    // Read the exact Subject Master localStorage key as well. Subject Master
-    // stores the full Kannada class label (for example, 10ನೇ ತರಗತಿ), while
-    // getClass(student) may return only the normalized number (10).
+
+    // Priority 1: Subject Master's saved value in this same website origin.
+    // This prevents an older subject_exam_marks row (e.g. 80) overriding
+    // a newer Subject Master value (e.g. 100) stored under its localStorage key.
     try{
         const classLabels=[
             String(student?.class_name || student?.class || student?.standard || "").trim(),
@@ -813,21 +803,34 @@ function getSubjectMasterExamMax(student, examType, subject){
             cls
         ].filter(Boolean);
         const examLabels=[exam, String(examType || "").trim()];
-        const oldKeys=[];
+        const keys=[];
         for(const classLabel of classLabels){
             for(const examLabel of examLabels){
-                oldKeys.push(`subject_marks_${year}_${classLabel}_${examLabel}_${code}`);
-                oldKeys.push(`subject_marks_${classLabel}_${examLabel}_${code}`);
+                keys.push(`subject_marks_${year}_${classLabel}_${examLabel}_${code}`);
+                keys.push(`subject_marks_${classLabel}_${examLabel}_${code}`);
             }
         }
-        // Also support normalized legacy keys.
-        oldKeys.push(`subject_marks_${year}_${cls}_${exam}_${code}`);
-        oldKeys.push(`subject_marks_${cls}_${exam}_${code}`);
-        for(const key of [...new Set(oldKeys)]){
+        keys.push(`subject_marks_${year}_${cls}_${exam}_${code}`);
+        keys.push(`subject_marks_${cls}_${exam}_${code}`);
+        for(const key of [...new Set(keys)]){
             const raw=localStorage.getItem(key);
-            if(raw!==null){const oldValue=Number(raw);if(Number.isFinite(oldValue)&&oldValue>0)return oldValue;}
+            if(raw!==null){
+                const value=Number(raw);
+                if(Number.isFinite(value)&&value>0) return value;
+            }
         }
     }catch(e){}
+
+    // Priority 2: shared Supabase table, only when no newer local Subject Master value exists.
+    const classNames=[String(student?.class_name || student?.class || student?.standard || "").trim(),`${cls}ನೇ ತರಗತಿ`,cls].filter(Boolean);
+    for(const className of classNames){
+        const shared=subjectExamMaxCache[examMaxCacheKey(year,className,exam,code)];
+        if(Number.isFinite(shared)&&shared>0) return shared;
+    }
+    for(const [key,value] of Object.entries(subjectExamMaxCache)){
+        const parts=key.split("|");
+        if(parts.length===4&&parts[0]===year&&normalizeClass(parts[1])===cls&&normalizeExamMaxType(parts[2])===exam&&parts[3]===code&&Number.isFinite(value)&&value>0) return value;
+    }
     return null;
 }
 
